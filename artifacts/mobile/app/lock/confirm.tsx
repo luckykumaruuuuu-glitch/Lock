@@ -14,9 +14,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useLock } from "@/context/LockContext";
+import { formatExpiryDate, getDurationLabel, getDurationMs } from "@/hooks/useLockStorage";
 import { useColors } from "@/hooks/useColors";
 
-function formatDuration(
+function getDisplayDuration(
   preset: string,
   customDays: string,
   customHours: string
@@ -35,16 +36,24 @@ function formatDuration(
 export default function ConfirmScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { selection, resetSelection } = useLock();
+  const { selection, confirmLock, resetSelection } = useLock();
+  const [saving, setSaving] = useState(false);
   const [locked, setLocked] = useState(false);
 
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const durationText = formatDuration(
+  const durationText = getDisplayDuration(
     selection.durationPreset,
     selection.customDays,
     selection.customHours
   );
+
+  const durationMs = getDurationMs(
+    selection.durationPreset,
+    selection.customDays,
+    selection.customHours
+  );
+  const expiryDate = formatExpiryDate(Date.now() + durationMs);
 
   function handleConfirm() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -53,22 +62,26 @@ export default function ConfirmScreen() {
       "Final Confirmation",
       `You are about to lock ${selection.selectedApps.length} app${
         selection.selectedApps.length !== 1 ? "s" : ""
-      } for ${durationText}.\n\nThis CANNOT be undone. Are you absolutely sure?`,
+      } for ${durationText}.\n\nLock expires: ${expiryDate}\n\nThis CANNOT be undone. Are you absolutely sure?`,
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
+        { text: "Cancel", style: "cancel" },
         {
           text: "Lock Forever",
           style: "destructive",
-          onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            setLocked(true);
-            setTimeout(() => {
-              resetSelection();
-              router.replace("/(tabs)");
-            }, 1800);
+          onPress: async () => {
+            setSaving(true);
+            try {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              await confirmLock();
+              setLocked(true);
+              setTimeout(() => {
+                resetSelection();
+                router.replace("/(tabs)");
+              }, 1800);
+            } catch (e) {
+              setSaving(false);
+              Alert.alert("Error", "Failed to save lock. Please try again.");
+            }
           },
         },
       ]
@@ -78,24 +91,16 @@ export default function ConfirmScreen() {
   if (locked) {
     return (
       <View
-        style={[
-          styles.successContainer,
-          { backgroundColor: colors.background },
-        ]}
+        style={[styles.successContainer, { backgroundColor: colors.background }]}
       >
-        <View
-          style={[
-            styles.successIcon,
-            { backgroundColor: colors.primary + "15" },
-          ]}
-        >
+        <View style={[styles.successIcon, { backgroundColor: colors.primary + "15" }]}>
           <Feather name="shield" size={48} color={colors.primary} />
         </View>
         <Text style={[styles.successTitle, { color: colors.foreground }]}>
           Lock Active
         </Text>
         <Text style={[styles.successSub, { color: colors.mutedForeground }]}>
-          Your apps are now blocked
+          {selection.selectedApps.length} app{selection.selectedApps.length !== 1 ? "s" : ""} locked until {expiryDate}
         </Text>
       </View>
     );
@@ -104,10 +109,7 @@ export default function ConfirmScreen() {
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={[
-        styles.content,
-        { paddingBottom: bottomPad + 120 },
-      ]}
+      contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 120 }]}
       showsVerticalScrollIndicator={false}
     >
       <View
@@ -125,50 +127,30 @@ export default function ConfirmScreen() {
       <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
         APPS TO BE LOCKED
       </Text>
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: colors.card, borderColor: colors.border },
-        ]}
-      >
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         {selection.selectedApps.map((app, idx) => (
           <View key={app.id}>
             <View style={styles.appRow}>
-              <View
-                style={[
-                  styles.appIconBg,
-                  { backgroundColor: app.iconColor + "18" },
-                ]}
-              >
-                <FontAwesome5
-                  name={app.iconName as any}
-                  size={16}
-                  color={app.iconColor}
-                />
+              <View style={[styles.appIconBg, { backgroundColor: app.iconColor + "18" }]}>
+                <FontAwesome5 name={app.iconName as any} size={16} color={app.iconColor} />
               </View>
-              <Text style={[styles.appName, { color: colors.foreground }]}>
-                {app.name}
-              </Text>
+              <View style={styles.appInfo}>
+                <Text style={[styles.appName, { color: colors.foreground }]}>{app.name}</Text>
+                <Text style={[styles.appPkg, { color: colors.mutedForeground }]}>{app.packageName}</Text>
+              </View>
               <Feather name="lock" size={14} color={colors.mutedForeground} />
             </View>
             {idx < selection.selectedApps.length - 1 && (
-              <View
-                style={[styles.divider, { backgroundColor: colors.border }]}
-              />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
             )}
           </View>
         ))}
       </View>
 
       <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-        LOCK DURATION
+        LOCK DURATION & EXPIRY
       </Text>
-      <View
-        style={[
-          styles.durationCard,
-          { backgroundColor: colors.card, borderColor: colors.border },
-        ]}
-      >
+      <View style={[styles.durationCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={[styles.durationIcon, { backgroundColor: colors.primary + "15" }]}>
           <Feather name="clock" size={24} color={colors.primary} />
         </View>
@@ -176,18 +158,13 @@ export default function ConfirmScreen() {
           <Text style={[styles.durationValue, { color: colors.foreground }]}>
             {durationText}
           </Text>
-          <Text style={[styles.durationSub, { color: colors.mutedForeground }]}>
-            Lock expires automatically
+          <Text style={[styles.durationExpiry, { color: colors.mutedForeground }]}>
+            Unlocks: {expiryDate}
           </Text>
         </View>
       </View>
 
-      <View
-        style={[
-          styles.detailsBox,
-          { backgroundColor: colors.muted, borderColor: colors.border },
-        ]}
-      >
+      <View style={[styles.detailsBox, { backgroundColor: colors.muted, borderColor: colors.border }]}>
         <View style={styles.detailRow}>
           <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Apps blocked</Text>
           <Text style={[styles.detailValue, { color: colors.foreground }]}>
@@ -197,14 +174,17 @@ export default function ConfirmScreen() {
         <View style={[styles.detailDivider, { backgroundColor: colors.border }]} />
         <View style={styles.detailRow}>
           <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Duration</Text>
-          <Text style={[styles.detailValue, { color: colors.foreground }]}>
-            {durationText}
-          </Text>
+          <Text style={[styles.detailValue, { color: colors.foreground }]}>{durationText}</Text>
         </View>
         <View style={[styles.detailDivider, { backgroundColor: colors.border }]} />
         <View style={styles.detailRow}>
-          <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Can be cancelled</Text>
-          <Text style={[styles.detailValueNo, { color: "#DC2626" }]}>Never</Text>
+          <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Expires</Text>
+          <Text style={[styles.detailValue, { color: colors.foreground }]}>{expiryDate}</Text>
+        </View>
+        <View style={[styles.detailDivider, { backgroundColor: colors.border }]} />
+        <View style={styles.detailRow}>
+          <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Early unlock</Text>
+          <Text style={[styles.detailValueNo, { color: "#DC2626" }]}>Impossible</Text>
         </View>
       </View>
 
@@ -213,25 +193,24 @@ export default function ConfirmScreen() {
       <View
         style={[
           styles.footer,
-          {
-            paddingBottom: bottomPad + 20,
-            backgroundColor: colors.background,
-            borderTopColor: colors.border,
-          },
+          { paddingBottom: bottomPad + 20, backgroundColor: colors.background, borderTopColor: colors.border },
         ]}
       >
         <Pressable
           onPress={handleConfirm}
+          disabled={saving}
           style={({ pressed }) => [
             styles.confirmButton,
-            { opacity: pressed ? 0.88 : 1 },
+            { opacity: saving ? 0.6 : pressed ? 0.88 : 1 },
           ]}
         >
           <Feather name="lock" size={18} color="#fff" />
-          <Text style={styles.confirmButtonText}>Confirm & Lock Forever</Text>
+          <Text style={styles.confirmButtonText}>
+            {saving ? "Saving Lock…" : "Confirm & Lock Forever"}
+          </Text>
         </Pressable>
         <Text style={[styles.confirmCaveat, { color: colors.mutedForeground }]}>
-          By tapping above, you acknowledge this lock is permanent until the timer expires.
+          Lock is permanent. No PIN, no override — only the timer can release it.
         </Text>
       </View>
     </ScrollView>
@@ -240,167 +219,37 @@ export default function ConfirmScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    gap: 12,
-  },
-  successContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
-  },
-  successIcon: {
-    width: 100,
-    height: 100,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  successTitle: {
-    fontSize: 28,
-    fontFamily: "Inter_700Bold",
-  },
-  successSub: {
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
-  },
+  content: { paddingHorizontal: 20, paddingTop: 20, gap: 12 },
+  successContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16 },
+  successIcon: { width: 100, height: 100, borderRadius: 30, alignItems: "center", justifyContent: "center" },
+  successTitle: { fontSize: 28, fontFamily: "Inter_700Bold" },
+  successSub: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", paddingHorizontal: 32, lineHeight: 22 },
   warningBox: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    marginBottom: 8,
+    flexDirection: "row", alignItems: "flex-start", gap: 10,
+    padding: 16, borderRadius: 14, borderWidth: 1.5, marginBottom: 8,
   },
-  warningTitle: {
-    flex: 1,
-    fontSize: 14,
-    fontFamily: "Inter_700Bold",
-    lineHeight: 20,
-    letterSpacing: 0.2,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 1,
-    marginTop: 4,
-    marginLeft: 2,
-    marginBottom: 4,
-  },
-  card: {
-    borderRadius: 14,
-    borderWidth: 1,
-    overflow: "hidden",
-  },
-  appRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    gap: 12,
-  },
-  appIconBg: {
-    width: 36,
-    height: 36,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  appName: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: "Inter_500Medium",
-  },
-  divider: {
-    height: 1,
-    marginLeft: 62,
-  },
-  durationCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  durationIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  warningTitle: { flex: 1, fontSize: 14, fontFamily: "Inter_700Bold", lineHeight: 20, letterSpacing: 0.2 },
+  sectionLabel: { fontSize: 11, fontFamily: "Inter_500Medium", letterSpacing: 1, marginTop: 4, marginLeft: 2, marginBottom: 4 },
+  card: { borderRadius: 14, borderWidth: 1, overflow: "hidden" },
+  appRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 14, gap: 12 },
+  appIconBg: { width: 36, height: 36, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  appInfo: { flex: 1 },
+  appName: { fontSize: 15, fontFamily: "Inter_500Medium", marginBottom: 2 },
+  appPkg: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  divider: { height: 1, marginLeft: 62 },
+  durationCard: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16, borderRadius: 14, borderWidth: 1 },
+  durationIcon: { width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   durationText: { flex: 1 },
-  durationValue: {
-    fontSize: 17,
-    fontFamily: "Inter_700Bold",
-    marginBottom: 3,
-  },
-  durationSub: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-  },
-  detailsBox: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 4,
-    overflow: "hidden",
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  detailLabel: {
-    flex: 1,
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-  },
-  detailValue: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-  },
-  detailValueNo: {
-    fontSize: 14,
-    fontFamily: "Inter_700Bold",
-  },
-  detailDivider: {
-    height: 1,
-    marginHorizontal: 14,
-  },
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    gap: 10,
-    borderTopWidth: 1,
-  },
-  confirmButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    paddingVertical: 16,
-    borderRadius: 14,
-    backgroundColor: "#DC2626",
-  },
-  confirmButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 0.3,
-  },
-  confirmCaveat: {
-    fontSize: 11,
-    fontFamily: "Inter_400Regular",
-    textAlign: "center",
-    lineHeight: 16,
-  },
+  durationValue: { fontSize: 17, fontFamily: "Inter_700Bold", marginBottom: 3 },
+  durationExpiry: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  detailsBox: { borderRadius: 14, borderWidth: 1, padding: 4, overflow: "hidden" },
+  detailRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 12 },
+  detailLabel: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular" },
+  detailValue: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  detailValueNo: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  detailDivider: { height: 1, marginHorizontal: 14 },
+  footer: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 14, gap: 10, borderTopWidth: 1 },
+  confirmButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 16, borderRadius: 14, backgroundColor: "#DC2626" },
+  confirmButtonText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
+  confirmCaveat: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 16 },
 });

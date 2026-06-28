@@ -9,29 +9,32 @@ import {
   StyleSheet,
   Text,
   View,
-  useColorScheme,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { DUMMY_ACTIVE_LOCKS, useLock } from "@/context/LockContext";
+import { useLock } from "@/context/LockContext";
 import { useColors } from "@/hooks/useColors";
+import {
+  ActiveLockDisplayItem,
+  formatExpiryDate,
+  formatTimeRemaining,
+  getLockProgress,
+  useActiveLocks,
+} from "@/hooks/useLockStorage";
 
-function formatTimeLeft(days: number, hours: number): string {
-  if (days > 0) return `${days}d ${hours}h remaining`;
-  return `${hours}h remaining`;
-}
-
+/* ───────────────────────────────────────────────
+   Active Lock Card — real data
+─────────────────────────────────────────────── */
 function ActiveLockCard({
-  lock,
+  item,
   colors,
 }: {
-  lock: (typeof DUMMY_ACTIVE_LOCKS)[0];
+  item: ActiveLockDisplayItem;
   colors: ReturnType<typeof useColors>;
 }) {
-  const progress = Math.max(
-    0,
-    Math.min(1, 1 - lock.expiresInDays / 30)
-  );
+  const progress = getLockProgress(item.startTime, item.endTime);
+  const remaining = formatTimeRemaining(item.endTime);
+  const expiry = formatExpiryDate(item.endTime);
 
   return (
     <View
@@ -41,19 +44,20 @@ function ActiveLockCard({
       ]}
     >
       <View
-        style={[
-          styles.lockIconBg,
-          { backgroundColor: lock.iconColor + "18" },
-        ]}
+        style={[styles.lockIconBg, { backgroundColor: item.app.iconColor + "18" }]}
       >
-        <FontAwesome5 name={lock.iconName as any} size={20} color={lock.iconColor} />
+        <FontAwesome5
+          name={item.app.iconName as any}
+          size={20}
+          color={item.app.iconColor}
+        />
       </View>
       <View style={styles.lockCardContent}>
         <Text style={[styles.lockAppName, { color: colors.foreground }]}>
-          {lock.appName}
+          {item.app.name}
         </Text>
         <Text style={[styles.lockTimeLeft, { color: colors.mutedForeground }]}>
-          {formatTimeLeft(lock.expiresInDays, lock.expiresInHours)}
+          {remaining}
         </Text>
         <View style={[styles.progressBar, { backgroundColor: colors.muted }]}>
           <View
@@ -61,11 +65,14 @@ function ActiveLockCard({
               styles.progressFill,
               {
                 backgroundColor: colors.primary,
-                width: `${Math.round((1 - lock.expiresInDays / 30) * 100)}%`,
+                width: `${Math.round(progress * 100)}%`,
               },
             ]}
           />
         </View>
+        <Text style={[styles.lockExpiry, { color: colors.mutedForeground }]}>
+          Unlocks {expiry}
+        </Text>
       </View>
       <View style={[styles.lockBadge, { backgroundColor: colors.muted }]}>
         <Feather name="lock" size={14} color={colors.mutedForeground} />
@@ -74,14 +81,54 @@ function ActiveLockCard({
   );
 }
 
+/* ───────────────────────────────────────────────
+   Empty state
+─────────────────────────────────────────────── */
+function EmptyLocksState({ colors }: { colors: ReturnType<typeof useColors> }) {
+  return (
+    <View
+      style={[
+        styles.emptyBox,
+        { backgroundColor: colors.card, borderColor: colors.border },
+      ]}
+    >
+      <View
+        style={[styles.emptyIcon, { backgroundColor: colors.primary + "12" }]}
+      >
+        <Feather name="unlock" size={24} color={colors.primary} />
+      </View>
+      <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
+        No Active Locks
+      </Text>
+      <Text style={[styles.emptyDesc, { color: colors.mutedForeground }]}>
+        Tap "Select Apps to Lock" to start your first lock session.
+      </Text>
+    </View>
+  );
+}
+
+/* ───────────────────────────────────────────────
+   Home Screen
+─────────────────────────────────────────────── */
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { resetSelection } = useLock();
-  const colorScheme = useColorScheme();
+  const { displayItems, locks, loading } = useActiveLocks(30_000);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 + 84 : 84;
+
+  const totalAppsBlocked = displayItems.length;
+  const avgDays =
+    locks.length > 0
+      ? Math.round(
+          locks.reduce(
+            (acc, l) => acc + (l.endTime - l.startTime) / (24 * 60 * 60 * 1000),
+            0
+          ) / locks.length
+        )
+      : 0;
 
   function handleStartLock() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -98,6 +145,7 @@ export default function HomeScreen() {
       ]}
       showsVerticalScrollIndicator={false}
     >
+      {/* Header */}
       <View style={styles.headerRow}>
         <View>
           <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
@@ -110,13 +158,18 @@ export default function HomeScreen() {
         <View
           style={[
             styles.shieldBadge,
-            { backgroundColor: colors.primary + "18" },
+            { backgroundColor: totalAppsBlocked > 0 ? colors.primary + "18" : colors.muted },
           ]}
         >
-          <Feather name="shield" size={22} color={colors.primary} />
+          <Feather
+            name="shield"
+            size={22}
+            color={totalAppsBlocked > 0 ? colors.primary : colors.mutedForeground}
+          />
         </View>
       </View>
 
+      {/* Stats row */}
       <View
         style={[
           styles.statsRow,
@@ -125,7 +178,7 @@ export default function HomeScreen() {
       >
         <View style={styles.statItem}>
           <Text style={[styles.statValue, { color: colors.foreground }]}>
-            {DUMMY_ACTIVE_LOCKS.length}
+            {locks.length}
           </Text>
           <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
             Active Locks
@@ -134,7 +187,7 @@ export default function HomeScreen() {
         <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
         <View style={styles.statItem}>
           <Text style={[styles.statValue, { color: colors.foreground }]}>
-            3
+            {totalAppsBlocked}
           </Text>
           <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
             Apps Blocked
@@ -143,7 +196,7 @@ export default function HomeScreen() {
         <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
         <View style={styles.statItem}>
           <Text style={[styles.statValue, { color: colors.foreground }]}>
-            14d
+            {avgDays > 0 ? `${avgDays}d` : "—"}
           </Text>
           <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
             Avg Duration
@@ -151,6 +204,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      {/* CTA */}
       <Pressable
         onPress={handleStartLock}
         style={({ pressed }) => [
@@ -162,56 +216,80 @@ export default function HomeScreen() {
         <Text style={styles.startButtonText}>Select Apps to Lock</Text>
       </Pressable>
 
+      {/* Active Locks section */}
       <View style={styles.sectionHeader}>
         <Feather name="lock" size={15} color={colors.mutedForeground} />
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
           Active Locks
         </Text>
+        {!loading && displayItems.length > 0 && (
+          <View
+            style={[
+              styles.countBadge,
+              { backgroundColor: colors.primary },
+            ]}
+          >
+            <Text style={styles.countBadgeText}>{displayItems.length}</Text>
+          </View>
+        )}
       </View>
 
-      {DUMMY_ACTIVE_LOCKS.map((lock) => (
-        <ActiveLockCard key={lock.id} lock={lock} colors={colors} />
-      ))}
+      {loading ? (
+        <View
+          style={[
+            styles.loadingBox,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
+            Loading locks…
+          </Text>
+        </View>
+      ) : displayItems.length === 0 ? (
+        <EmptyLocksState colors={colors} />
+      ) : (
+        displayItems.map((item) => (
+          <ActiveLockCard
+            key={`${item.lockId}-${item.app.id}`}
+            item={item}
+            colors={colors}
+          />
+        ))
+      )}
 
-      <View
-        style={[
-          styles.warningBanner,
-          { backgroundColor: colors.destructive + "12", borderColor: colors.destructive + "30" },
-        ]}
-      >
-        <Feather name="alert-triangle" size={14} color={colors.destructive} />
-        <Text style={[styles.warningText, { color: colors.destructive }]}>
-          Active locks cannot be removed until the timer expires.
-        </Text>
-      </View>
+      {/* Warning banner */}
+      {displayItems.length > 0 && (
+        <View
+          style={[
+            styles.warningBanner,
+            {
+              backgroundColor: colors.destructive + "12",
+              borderColor: colors.destructive + "30",
+            },
+          ]}
+        >
+          <Feather name="alert-triangle" size={14} color={colors.destructive} />
+          <Text style={[styles.warningText, { color: colors.destructive }]}>
+            Active locks cannot be removed until the timer expires. No
+            exceptions.
+          </Text>
+        </View>
+      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    gap: 16,
-  },
+  container: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, gap: 16 },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 4,
   },
-  greeting: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    marginBottom: 2,
-  },
-  appTitle: {
-    fontSize: 28,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: -0.5,
-  },
+  greeting: { fontSize: 14, fontFamily: "Inter_400Regular", marginBottom: 2 },
+  appTitle: { fontSize: 28, fontFamily: "Inter_700Bold", letterSpacing: -0.5 },
   shieldBadge: {
     width: 44,
     height: 44,
@@ -226,25 +304,10 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: "center",
   },
-  statItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-  statValue: {
-    fontSize: 22,
-    fontFamily: "Inter_700Bold",
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: 11,
-    fontFamily: "Inter_400Regular",
-    textAlign: "center",
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-    marginHorizontal: 8,
-  },
+  statItem: { flex: 1, alignItems: "center" },
+  statValue: { fontSize: 22, fontFamily: "Inter_700Bold", marginBottom: 2 },
+  statLabel: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center" },
+  statDivider: { width: 1, height: 32, marginHorizontal: 8 },
   startButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -266,9 +329,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
+  sectionTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", flex: 1 },
+  countBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 22,
+    alignItems: "center",
+  },
+  countBadgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: "Inter_700Bold",
   },
   lockCard: {
     flexDirection: "row",
@@ -285,28 +357,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  lockCardContent: {
-    flex: 1,
-    gap: 4,
-  },
-  lockAppName: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-  },
-  lockTimeLeft: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-  },
+  lockCardContent: { flex: 1, gap: 3 },
+  lockAppName: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  lockTimeLeft: { fontSize: 12, fontFamily: "Inter_400Regular" },
   progressBar: {
     height: 4,
     borderRadius: 2,
     overflow: "hidden",
     marginTop: 4,
   },
-  progressFill: {
-    height: "100%",
-    borderRadius: 2,
-  },
+  progressFill: { height: "100%", borderRadius: 2 },
+  lockExpiry: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
   lockBadge: {
     width: 32,
     height: 32,
@@ -314,6 +375,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  emptyBox: {
+    alignItems: "center",
+    padding: 28,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 10,
+  },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  emptyDesc: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  loadingBox: {
+    padding: 24,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  loadingText: { fontSize: 14, fontFamily: "Inter_400Regular" },
   warningBanner: {
     flexDirection: "row",
     alignItems: "flex-start",

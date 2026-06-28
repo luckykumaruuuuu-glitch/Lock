@@ -1,5 +1,10 @@
 import React, { createContext, useContext, useState } from "react";
+import { getDurationLabel, getDurationMs, LockedAppEntry, LockEntry, saveLock } from "@/hooks/useLockStorage";
 
+/* ───────────────────────────────────────────────
+   App catalogue (dummy — replace with real
+   installed-apps query in a future milestone)
+─────────────────────────────────────────────── */
 export interface AppItem {
   id: string;
   name: string;
@@ -7,6 +12,7 @@ export interface AppItem {
   iconName: string;
   iconFamily: "FontAwesome5" | "MaterialCommunityIcons" | "Feather";
   iconColor: string;
+  packageName: string;
 }
 
 export type DurationPreset = "1d" | "7d" | "30d" | "custom";
@@ -25,6 +31,7 @@ interface LockContextType {
   setCustomDays: (v: string) => void;
   setCustomHours: (v: string) => void;
   resetSelection: () => void;
+  confirmLock: () => Promise<void>;
 }
 
 const defaultSelection: LockSelection = {
@@ -41,6 +48,7 @@ const LockContext = createContext<LockContextType>({
   setCustomDays: () => {},
   setCustomHours: () => {},
   resetSelection: () => {},
+  confirmLock: async () => {},
 });
 
 export function LockProvider({ children }: { children: React.ReactNode }) {
@@ -60,6 +68,34 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
 
   const resetSelection = () => setSelection(defaultSelection);
 
+  const confirmLock = async () => {
+    const { selectedApps, durationPreset, customDays, customHours } = selection;
+    if (selectedApps.length === 0) return;
+
+    const now = Date.now();
+    const durationMs = getDurationMs(durationPreset, customDays, customHours);
+    const endTime = now + durationMs;
+
+    const apps: LockedAppEntry[] = selectedApps.map((a) => ({
+      id: a.id,
+      name: a.name,
+      iconName: a.iconName,
+      iconColor: a.iconColor,
+      packageName: a.packageName,
+    }));
+
+    const entry: LockEntry = {
+      id: `lock_${now}_${Math.random().toString(36).slice(2, 7)}`,
+      apps,
+      startTime: now,
+      endTime,
+      status: "ACTIVE",
+      durationLabel: getDurationLabel(durationPreset, customDays, customHours),
+    };
+
+    await saveLock(entry);
+  };
+
   return (
     <LockContext.Provider
       value={{
@@ -69,6 +105,7 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
         setCustomDays,
         setCustomHours,
         resetSelection,
+        confirmLock,
       }}
     >
       {children}
@@ -80,23 +117,25 @@ export function useLock() {
   return useContext(LockContext);
 }
 
+/* ───────────────────────────────────────────────
+   App catalogue with Android package names
+─────────────────────────────────────────────── */
 export const DUMMY_APPS: AppItem[] = [
-  { id: "instagram", name: "Instagram", category: "Social", iconName: "instagram", iconFamily: "FontAwesome5", iconColor: "#E1306C" },
-  { id: "tiktok", name: "TikTok", category: "Social", iconName: "tiktok", iconFamily: "FontAwesome5", iconColor: "#010101" },
-  { id: "twitter", name: "Twitter / X", category: "Social", iconName: "twitter", iconFamily: "FontAwesome5", iconColor: "#1DA1F2" },
-  { id: "facebook", name: "Facebook", category: "Social", iconName: "facebook", iconFamily: "FontAwesome5", iconColor: "#1877F2" },
-  { id: "youtube", name: "YouTube", category: "Video", iconName: "youtube", iconFamily: "FontAwesome5", iconColor: "#FF0000" },
-  { id: "snapchat", name: "Snapchat", category: "Social", iconName: "snapchat-ghost", iconFamily: "FontAwesome5", iconColor: "#FFFC00" },
-  { id: "reddit", name: "Reddit", category: "Social", iconName: "reddit", iconFamily: "FontAwesome5", iconColor: "#FF4500" },
-  { id: "pinterest", name: "Pinterest", category: "Social", iconName: "pinterest", iconFamily: "FontAwesome5", iconColor: "#E60023" },
-  { id: "whatsapp", name: "WhatsApp", category: "Messaging", iconName: "whatsapp", iconFamily: "FontAwesome5", iconColor: "#25D366" },
-  { id: "telegram", name: "Telegram", category: "Messaging", iconName: "telegram", iconFamily: "FontAwesome5", iconColor: "#0088CC" },
-  { id: "discord", name: "Discord", category: "Social", iconName: "discord", iconFamily: "FontAwesome5", iconColor: "#5865F2" },
-  { id: "linkedin", name: "LinkedIn", category: "Professional", iconName: "linkedin", iconFamily: "FontAwesome5", iconColor: "#0A66C2" },
+  { id: "instagram", name: "Instagram", category: "Social", iconName: "instagram", iconFamily: "FontAwesome5", iconColor: "#E1306C", packageName: "com.instagram.android" },
+  { id: "tiktok", name: "TikTok", category: "Social", iconName: "tiktok", iconFamily: "FontAwesome5", iconColor: "#010101", packageName: "com.zhiliaoapp.musically" },
+  { id: "twitter", name: "Twitter / X", category: "Social", iconName: "twitter", iconFamily: "FontAwesome5", iconColor: "#1DA1F2", packageName: "com.twitter.android" },
+  { id: "facebook", name: "Facebook", category: "Social", iconName: "facebook", iconFamily: "FontAwesome5", iconColor: "#1877F2", packageName: "com.facebook.katana" },
+  { id: "youtube", name: "YouTube", category: "Video", iconName: "youtube", iconFamily: "FontAwesome5", iconColor: "#FF0000", packageName: "com.google.android.youtube" },
+  { id: "snapchat", name: "Snapchat", category: "Social", iconName: "snapchat-ghost", iconFamily: "FontAwesome5", iconColor: "#FFFC00", packageName: "com.snapchat.android" },
+  { id: "reddit", name: "Reddit", category: "Social", iconName: "reddit", iconFamily: "FontAwesome5", iconColor: "#FF4500", packageName: "com.reddit.frontpage" },
+  { id: "pinterest", name: "Pinterest", category: "Social", iconName: "pinterest", iconFamily: "FontAwesome5", iconColor: "#E60023", packageName: "com.pinterest" },
+  { id: "whatsapp", name: "WhatsApp", category: "Messaging", iconName: "whatsapp", iconFamily: "FontAwesome5", iconColor: "#25D366", packageName: "com.whatsapp" },
+  { id: "telegram", name: "Telegram", category: "Messaging", iconName: "telegram", iconFamily: "FontAwesome5", iconColor: "#0088CC", packageName: "org.telegram.messenger" },
+  { id: "discord", name: "Discord", category: "Social", iconName: "discord", iconFamily: "FontAwesome5", iconColor: "#5865F2", packageName: "com.discord" },
+  { id: "linkedin", name: "LinkedIn", category: "Professional", iconName: "linkedin", iconFamily: "FontAwesome5", iconColor: "#0A66C2", packageName: "com.linkedin.android" },
 ];
 
-export const DUMMY_ACTIVE_LOCKS = [
-  { id: "al1", appName: "Instagram", iconName: "instagram", iconColor: "#E1306C", expiresInDays: 2, expiresInHours: 14 },
-  { id: "al2", appName: "TikTok", iconName: "tiktok", iconColor: "#010101", expiresInDays: 5, expiresInHours: 3 },
-  { id: "al3", appName: "Twitter / X", iconName: "twitter", iconColor: "#1DA1F2", expiresInDays: 28, expiresInHours: 7 },
-];
+/* ───────────────────────────────────────────────
+   Re-export LockEntry type for screens
+─────────────────────────────────────────────── */
+export type { LockEntry, LockedAppEntry };
