@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "App UI Design"
+version = "1.0.0"
+id = "artifacts/ui-design"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22183
+
+[services.development]
+run = "pnpm --filter @workspace/ui-design run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ui-design", "run", "build" ]
+publicDir = "artifacts/ui-design/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22183"
+BASE_PATH = "/"
