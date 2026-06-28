@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassCard } from "@/components/ui/GlassCard";
+import theme from "@/constants/theme";
 import { useSounds } from "@/hooks/useSounds";
 
 const { width } = Dimensions.get("window");
@@ -24,11 +25,11 @@ export const ONBOARDING_DONE_KEY = "focuslock_onboarding_done";
 const SLIDES = [
   {
     icon: "shield" as const,
-    gradient: ["#FFD580", "#FFA500"] as const,
-    glowColor: "#FFD580",
+    gradient: ["#FFD60A", "#FF9F0A"] as const,
+    glowColor: "#FFD60A",
     title: "Take Back\nControl",
     body: "FocusLock lets you lock distracting apps for a set period — with absolutely no way to bypass it early. Your commitment, enforced.",
-    accent: "#FFD580",
+    accent: "#FFD60A",
   },
   {
     icon: "lock" as const,
@@ -40,19 +41,19 @@ const SLIDES = [
   },
   {
     icon: "clock" as const,
-    gradient: ["#3D9142", "#4CAF50"] as const,
-    glowColor: "#4CAF50",
+    gradient: ["#32D74B", "#30C244"] as const,
+    glowColor: "#32D74B",
     title: "Server-Verified\nTime",
     body: "FocusLock uses Firebase server time, not your device clock. Changing the date or time on your phone won't unlock a single app.",
-    accent: "#4CAF50",
+    accent: "#32D74B",
   },
   {
     icon: "alert-triangle" as const,
-    gradient: ["#FFD580", "#FFA500"] as const,
-    glowColor: "#FFD580",
+    gradient: ["#FFD60A", "#FF9F0A"] as const,
+    glowColor: "#FFD60A",
     title: "True\nEnforcement",
     body: "Device Administrator prevents uninstalling FocusLock while active. The Accessibility Service blocks apps in real-time.",
-    accent: "#FFD580",
+    accent: "#FFD60A",
   },
 ];
 
@@ -99,16 +100,12 @@ export default function OnboardingScreen() {
 
   return (
     <View style={styles.root}>
-
       <View style={[styles.container, { paddingTop: topPad + 20 }]}>
         {/* Icon with glow */}
         <Animated.View
           style={[
             styles.iconWrap,
-            {
-              transform: [{ scale: iconScale }],
-              shadowColor: slide.glowColor,
-            },
+            { transform: [{ scale: iconScale }], shadowColor: slide.glowColor },
           ]}
         >
           <LinearGradient
@@ -117,7 +114,7 @@ export default function OnboardingScreen() {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Feather name={slide.icon} size={60} color="#FFF8F0" />
+            <Feather name={slide.icon} size={60} color="#000000" />
           </LinearGradient>
         </Animated.View>
 
@@ -135,8 +132,7 @@ export default function OnboardingScreen() {
                 style={[
                   styles.dot,
                   {
-                    backgroundColor:
-                      i === currentIndex ? slide.accent : "rgba(255,213,128,0.2)",
+                    backgroundColor: i === currentIndex ? slide.accent : theme.elevated,
                     width: i === currentIndex ? 28 : 8,
                     shadowColor: i === currentIndex ? slide.accent : "transparent",
                   },
@@ -164,7 +160,7 @@ export default function OnboardingScreen() {
               <Feather
                 name={currentIndex < SLIDES.length - 1 ? "arrow-right" : "check"}
                 size={20}
-                color="#FFF8F0"
+                color="#000000"
               />
             </LinearGradient>
           </Pressable>
@@ -181,7 +177,7 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#000000" },
+  root: { flex: 1, backgroundColor: theme.background },
   container: {
     flex: 1,
     alignItems: "center",
@@ -209,13 +205,13 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
     marginBottom: 14,
     lineHeight: 40,
-    color: "#FFFFFF",
+    color: theme.primaryText,
   },
   slideBody: {
     fontSize: 16,
     fontFamily: "Inter_400Regular",
     lineHeight: 26,
-    color: "rgba(255,255,255,0.5)",
+    color: theme.secondaryText,
   },
   dotsRow: {
     flexDirection: "row",
@@ -248,13 +244,13 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   nextBtnText: {
-    color: "#1A1A1A",
+    color: theme.buttonText,
     fontSize: 17,
     fontFamily: "Inter_700Bold",
   },
   skipBtn: { paddingVertical: 8 },
   skipText: {
-    color: "rgba(212,165,116,0.5)",
+    color: theme.secondaryText,
     fontSize: 13,
     fontFamily: "Inter_400Regular",
     textDecorationLine: "underline",

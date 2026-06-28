@@ -21,69 +21,39 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientBackground } from "@/components/ui/GradientBackground";
+import theme from "@/constants/theme";
 import { PermissionId, usePermissionStatus } from "@/hooks/usePermissionStatus";
 
 const APP_PACKAGE = "com.focuslock.app";
 
-/* ── Intent openers ── */
 async function openUsageAccess() {
   if (Platform.OS !== "android") return;
-  try {
-    await IntentLauncher.startActivityAsync(
-      "android.settings.USAGE_ACCESS_SETTINGS"
-    );
-  } catch {
-    await IntentLauncher.startActivityAsync(
-      IntentLauncher.ActivityAction.SETTINGS
-    );
-  }
+  try { await IntentLauncher.startActivityAsync("android.settings.USAGE_ACCESS_SETTINGS"); }
+  catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
 }
 
 async function openDeviceAdmin() {
   if (Platform.OS !== "android") return;
   try {
-    await IntentLauncher.startActivityAsync(
-      "android.app.action.ADD_DEVICE_ADMIN",
-      {
-        extra: {
-          "android.app.extra.DEVICE_ADMIN": `${APP_PACKAGE}/.DeviceAdminReceiver`,
-          "android.app.extra.ADD_EXPLANATION":
-            "FocusLock needs device admin to prevent uninstall while a lock is active.",
-        },
-      }
-    );
-  } catch {
-    await IntentLauncher.startActivityAsync(
-      IntentLauncher.ActivityAction.SETTINGS
-    );
-  }
+    await IntentLauncher.startActivityAsync("android.app.action.ADD_DEVICE_ADMIN", {
+      extra: {
+        "android.app.extra.DEVICE_ADMIN": `${APP_PACKAGE}/.DeviceAdminReceiver`,
+        "android.app.extra.ADD_EXPLANATION": "FocusLock needs device admin to prevent uninstall while a lock is active.",
+      },
+    });
+  } catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
 }
 
 async function openAccessibility() {
   if (Platform.OS !== "android") return;
-  try {
-    await IntentLauncher.startActivityAsync(
-      "android.settings.ACCESSIBILITY_SETTINGS"
-    );
-  } catch {
-    await IntentLauncher.startActivityAsync(
-      IntentLauncher.ActivityAction.SETTINGS
-    );
-  }
+  try { await IntentLauncher.startActivityAsync("android.settings.ACCESSIBILITY_SETTINGS"); }
+  catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
 }
 
 async function openOverlay() {
   if (Platform.OS !== "android") return;
-  try {
-    await IntentLauncher.startActivityAsync(
-      "android.settings.action.MANAGE_OVERLAY_PERMISSION",
-      { data: `package:${APP_PACKAGE}` }
-    );
-  } catch {
-    await IntentLauncher.startActivityAsync(
-      IntentLauncher.ActivityAction.SETTINGS
-    );
-  }
+  try { await IntentLauncher.startActivityAsync("android.settings.action.MANAGE_OVERLAY_PERMISSION", { data: `package:${APP_PACKAGE}` }); }
+  catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
 }
 
 async function openNotification() {
@@ -91,42 +61,21 @@ async function openNotification() {
   try {
     const { status } = await Notifications.requestPermissionsAsync();
     if (status === "granted") return;
-    await IntentLauncher.startActivityAsync(
-      "android.settings.APP_NOTIFICATION_SETTINGS",
-      {
-        extra: {
-          "android.provider.extra.APP_PACKAGE": APP_PACKAGE,
-        },
-      }
-    );
-  } catch {
-    await IntentLauncher.startActivityAsync(
-      IntentLauncher.ActivityAction.SETTINGS
-    );
-  }
+    await IntentLauncher.startActivityAsync("android.settings.APP_NOTIFICATION_SETTINGS", {
+      extra: { "android.provider.extra.APP_PACKAGE": APP_PACKAGE },
+    });
+  } catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
 }
 
 async function openBattery() {
   if (Platform.OS !== "android") return;
-  try {
-    await IntentLauncher.startActivityAsync(
-      "android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
-      { data: `package:${APP_PACKAGE}` }
-    );
-  } catch {
-    try {
-      await IntentLauncher.startActivityAsync(
-        "android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"
-      );
-    } catch {
-      await IntentLauncher.startActivityAsync(
-        IntentLauncher.ActivityAction.SETTINGS
-      );
-    }
+  try { await IntentLauncher.startActivityAsync("android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS", { data: `package:${APP_PACKAGE}` }); }
+  catch {
+    try { await IntentLauncher.startActivityAsync("android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"); }
+    catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
   }
 }
 
-/* ── Permission definitions ── */
 interface PermissionStep {
   id: PermissionId;
   title: string;
@@ -148,8 +97,8 @@ const PERMISSION_STEPS: PermissionStep[] = [
     icon: "activity",
     settingsLabel: "Open Usage Access",
     openSettings: openUsageAccess,
-    colors: ["#C47B2B", "#E8943A"],
-    glow: "#C47B2B",
+    colors: ["#FFD60A", "#FF9F0A"],
+    glow: "#FFD60A",
   },
   {
     id: "deviceAdmin",
@@ -159,8 +108,8 @@ const PERMISSION_STEPS: PermissionStep[] = [
     icon: "shield",
     settingsLabel: "Activate Device Admin",
     openSettings: openDeviceAdmin,
-    colors: ["#E85A20", "#FF6B35"],
-    glow: "#E85A20",
+    colors: ["#FF6B35", "#E85A20"],
+    glow: "#FF6B35",
   },
   {
     id: "accessibility",
@@ -192,8 +141,8 @@ const PERMISSION_STEPS: PermissionStep[] = [
     icon: "bell",
     settingsLabel: "Allow Notifications",
     openSettings: openNotification,
-    colors: ["#A0522D", "#C47B2B"],
-    glow: "#A0522D",
+    colors: ["#FFD60A", "#FF9F0A"],
+    glow: "#FFD60A",
   },
   {
     id: "battery",
@@ -203,209 +152,106 @@ const PERMISSION_STEPS: PermissionStep[] = [
     icon: "zap",
     settingsLabel: "Ignore Battery Optimization",
     openSettings: openBattery,
-    colors: ["#3D9142", "#4CAF50"],
-    glow: "#3D9142",
+    colors: ["#32D74B", "#30C244"],
+    glow: "#32D74B",
   },
 ];
 
-/* ── Single permission card ── */
 function PermCard({
-  step,
-  granted,
-  openedSettings,
-  returnedFromSettings,
-  index,
-  onOpenSettings,
-  onMarkGranted,
+  step, granted, openedSettings, returnedFromSettings, index, onOpenSettings, onMarkGranted,
 }: {
-  step: PermissionStep;
-  granted: boolean;
-  openedSettings: boolean;
-  returnedFromSettings: boolean;
-  index: number;
-  onOpenSettings: () => Promise<void>;
-  onMarkGranted: (g: boolean) => void;
+  step: PermissionStep; granted: boolean; openedSettings: boolean;
+  returnedFromSettings: boolean; index: number;
+  onOpenSettings: () => Promise<void>; onMarkGranted: (g: boolean) => void;
 }) {
   const [opening, setOpening] = useState(false);
-  const slideY = useRef(new Animated.Value(40)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-  const checkScale = useRef(new Animated.Value(granted ? 1 : 0)).current;
+  const slideY   = useRef(new Animated.Value(40)).current;
+  const opacity  = useRef(new Animated.Value(0)).current;
+  const checkSc  = useRef(new Animated.Value(granted ? 1 : 0)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.spring(slideY, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 140,
-        friction: 12,
-        delay: index * 80,
-      }),
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 350,
-        delay: index * 80,
-        useNativeDriver: true,
-      }),
+      Animated.spring(slideY, { toValue: 0, useNativeDriver: true, tension: 140, friction: 12, delay: index * 80 }),
+      Animated.timing(opacity, { toValue: 1, duration: 350, delay: index * 80, useNativeDriver: true }),
     ]).start();
   }, [slideY, opacity, index]);
 
   useEffect(() => {
-    Animated.spring(checkScale, {
-      toValue: granted ? 1 : 0,
-      useNativeDriver: true,
-      tension: 260,
-      friction: 8,
-    }).start();
-  }, [granted, checkScale]);
+    Animated.spring(checkSc, { toValue: granted ? 1 : 0, useNativeDriver: true, tension: 260, friction: 8 }).start();
+  }, [granted, checkSc]);
 
   async function handleGrant() {
     setOpening(true);
-    try {
-      await onOpenSettings();
-    } finally {
-      setOpening(false);
-    }
+    try { await onOpenSettings(); } finally { setOpening(false); }
   }
 
   return (
-    <Animated.View
-      style={{ transform: [{ translateY: slideY }], opacity }}
-    >
+    <Animated.View style={{ transform: [{ translateY: slideY }], opacity }}>
       <GlassCard
         padding={18}
-        borderColor={
-          granted
-            ? step.colors[0] + "55"
-            : "rgba(196,123,43,0.18)"
-        }
-        backgroundColor={
-          granted
-            ? step.colors[0] + "18"
-            : "rgba(40,18,4,0.7)"
-        }
-        style={
-          granted
-            ? {
-                shadowColor: step.glow,
-                shadowOpacity: 0.22,
-                shadowRadius: 14,
-                shadowOffset: { width: 0, height: 0 },
-                elevation: 6,
-              }
-            : undefined
-        }
+        borderColor={granted ? step.colors[0] + "55" : theme.cardBorder}
+        backgroundColor={granted ? step.colors[0] + "15" : theme.cardBackground}
+        style={granted ? { shadowColor: step.glow, shadowOpacity: 0.2, shadowRadius: 14, shadowOffset: { width: 0, height: 0 }, elevation: 6 } : undefined}
       >
-        {/* Header row */}
+        {/* Header */}
         <View style={pStyles.header}>
-          <LinearGradient
-            colors={
-              granted
-                ? step.colors
-                : ["rgba(61,31,10,0.55)", "rgba(40,18,4,0.4)"]
-            }
-            style={pStyles.iconBg}
-          >
-            <Feather
-              name={step.icon}
-              size={20}
-              color={granted ? "#FFF8F0" : "#C47B2B"}
-            />
-          </LinearGradient>
-
+          <View style={[pStyles.iconBg, { backgroundColor: granted ? step.colors[0] + "22" : theme.divider }]}>
+            <Feather name={step.icon} size={20} color={granted ? step.colors[0] : theme.secondaryText} />
+          </View>
           <View style={{ flex: 1, gap: 3 }}>
             <Text style={pStyles.title}>{step.title}</Text>
             <View style={pStyles.statusPill}>
               {granted ? (
-                <>
-                  <Feather name="check-circle" size={12} color="#4CAF50" />
-                  <Text style={[pStyles.statusText, { color: "#4CAF50" }]}>
-                    Granted
-                  </Text>
-                </>
+                <><Feather name="check-circle" size={12} color={theme.success} /><Text style={[pStyles.statusText, { color: theme.success }]}>Granted</Text></>
               ) : (
-                <>
-                  <Feather name="alert-circle" size={12} color="#FF6B35" />
-                  <Text style={[pStyles.statusText, { color: "#FF6B35" }]}>
-                    Required
-                  </Text>
-                </>
+                <><Feather name="alert-circle" size={12} color={theme.error} /><Text style={[pStyles.statusText, { color: theme.error }]}>Required</Text></>
               )}
             </View>
           </View>
-
-          {/* Animated check badge */}
-          <Animated.View style={{ transform: [{ scale: checkScale }] }}>
-            <LinearGradient
-              colors={["#3D9142", "#4CAF50"]}
-              style={pStyles.checkBadge}
-            >
-              <Feather name="check" size={13} color="#FFF8F0" />
+          <Animated.View style={{ transform: [{ scale: checkSc }] }}>
+            <LinearGradient colors={["#32D74B", "#30C244"]} style={pStyles.checkBadge}>
+              <Feather name="check" size={13} color="#000000" />
             </LinearGradient>
           </Animated.View>
         </View>
 
-        {/* Description */}
         <Text style={pStyles.desc}>{step.description}</Text>
 
-        {/* Why needed box */}
         <View style={pStyles.whyBox}>
-          <Feather name="info" size={11} color="rgba(212,165,116,0.38)" />
+          <Feather name="info" size={11} color={theme.secondaryText} />
           <Text style={pStyles.whyText}>{step.whyNeeded}</Text>
         </View>
 
-        {/* Grant button (only when not granted) */}
         {!granted && (
           <View style={{ gap: 10, marginTop: 6 }}>
             <Pressable
               onPress={handleGrant}
               disabled={opening}
-              style={({ pressed }) => [
-                { opacity: opening ? 0.7 : pressed ? 0.82 : 1 },
-              ]}
+              style={({ pressed }) => [{ opacity: opening ? 0.7 : pressed ? 0.82 : 1 }]}
             >
               <LinearGradient
-                colors={opening ? ["rgba(61,31,10,0.5)", "rgba(40,18,4,0.3)"] : step.colors}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+                colors={opening ? theme.gradientDisabled : step.colors}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                 style={pStyles.grantBtn}
               >
-                <Feather name="external-link" size={14} color="#FFF8F0" />
-                <Text style={pStyles.grantBtnText}>
-                  {opening ? "Opening…" : step.settingsLabel}
-                </Text>
+                <Feather name="external-link" size={14} color="#000000" />
+                <Text style={pStyles.grantBtnText}>{opening ? "Opening…" : step.settingsLabel}</Text>
               </LinearGradient>
             </Pressable>
 
-            {/* "I've enabled this" confirmation — only after returning from settings */}
             {openedSettings && returnedFromSettings && (
-              <Pressable
-                onPress={() => onMarkGranted(true)}
-                style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
-              >
-                <View
-                  style={[
-                    pStyles.confirmRow,
-                    { borderColor: step.colors[0] + "40" },
-                  ]}
-                >
+              <Pressable onPress={() => onMarkGranted(true)} style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}>
+                <View style={[pStyles.confirmRow, { borderColor: step.colors[0] + "40" }]}>
                   <Feather name="check" size={14} color={step.colors[0]} />
-                  <Text
-                    style={[pStyles.confirmText, { color: step.colors[0] }]}
-                  >
-                    I've enabled this ✓
-                  </Text>
+                  <Text style={[pStyles.confirmText, { color: step.colors[0] }]}>I've enabled this ✓</Text>
                 </View>
               </Pressable>
             )}
           </View>
         )}
 
-        {/* Undo link (when granted) */}
         {granted && (
-          <Pressable
-            onPress={() => onMarkGranted(false)}
-            style={pStyles.undoBtn}
-          >
+          <Pressable onPress={() => onMarkGranted(false)} style={pStyles.undoBtn}>
             <Text style={pStyles.undoText}>Undo</Text>
           </Pressable>
         )}
@@ -415,57 +261,45 @@ function PermCard({
 }
 
 const pStyles = StyleSheet.create({
-  header: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 10 },
-  iconBg: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FFF8F0" },
-  statusPill: { flexDirection: "row", alignItems: "center", gap: 5 },
-  statusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  checkBadge: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  desc: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#D4A574", lineHeight: 19, marginBottom: 10 },
-  whyBox: { flexDirection: "row", alignItems: "flex-start", gap: 7, padding: 10, borderRadius: 10, backgroundColor: "rgba(40,18,4,0.55)", marginBottom: 2 },
-  whyText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(212,165,116,0.5)", lineHeight: 17 },
-  grantBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 13 },
-  grantBtnText: { color: "#FFF8F0", fontSize: 14, fontFamily: "Inter_700Bold" },
-  confirmRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 12, borderRadius: 12, borderWidth: 1, backgroundColor: "rgba(61,31,10,0.3)" },
+  header:      { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 10 },
+  iconBg:      { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  title:       { fontSize: 15, fontFamily: "Inter_700Bold", color: theme.primaryText },
+  statusPill:  { flexDirection: "row", alignItems: "center", gap: 5 },
+  statusText:  { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  checkBadge:  { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  desc:        { fontSize: 13, fontFamily: "Inter_400Regular", color: theme.secondaryText, lineHeight: 19, marginBottom: 10 },
+  whyBox:      { flexDirection: "row", alignItems: "flex-start", gap: 7, padding: 10, borderRadius: 10, backgroundColor: theme.divider, marginBottom: 2 },
+  whyText:     { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: theme.secondaryText, lineHeight: 17 },
+  grantBtn:    { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 13 },
+  grantBtnText:{ color: "#000000", fontSize: 14, fontFamily: "Inter_700Bold" },
+  confirmRow:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 12, borderRadius: 12, borderWidth: 1, backgroundColor: theme.cardBackground },
   confirmText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
-  undoBtn: { alignItems: "center", marginTop: 4 },
-  undoText: { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(212,165,116,0.25)", textDecorationLine: "underline" },
+  undoBtn:     { alignItems: "center", marginTop: 4 },
+  undoText:    { fontSize: 12, fontFamily: "Inter_400Regular", color: theme.tertiaryText, textDecorationLine: "underline" },
 });
 
-/* ── Main Setup Screen ── */
 export default function SetupScreen() {
   const insets = useSafeAreaInsets();
-  const { permissions, allGranted, markOpened, markGranted, completeSetup } =
-    usePermissionStatus();
+  const { permissions, allGranted, markOpened, markGranted, completeSetup } = usePermissionStatus();
 
   const [returnedFrom, setReturnedFrom] = useState<PermissionId | null>(null);
-  const lastOpenedRef = useRef<PermissionId | null>(null);
-  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  const lastOpenedRef  = useRef<PermissionId | null>(null);
+  const appStateRef    = useRef<AppStateStatus>(AppState.currentState);
+  const progressAnim   = useRef(new Animated.Value(0)).current;
 
-  const topPad = Platform.OS === "web" ? 0 : insets.top;
+  const topPad    = Platform.OS === "web" ? 0 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   const grantedCount = Object.values(permissions).filter((p) => p.granted).length;
   const total = PERMISSION_STEPS.length;
 
   useEffect(() => {
-    Animated.spring(progressAnim, {
-      toValue: (grantedCount / total) * 100,
-      useNativeDriver: false,
-      tension: 150,
-      friction: 12,
-    }).start();
+    Animated.spring(progressAnim, { toValue: (grantedCount / total) * 100, useNativeDriver: false, tension: 150, friction: 12 }).start();
   }, [grantedCount, total, progressAnim]);
 
-  /* Detect when user returns from settings */
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next: AppStateStatus) => {
-      if (
-        appStateRef.current !== "active" &&
-        next === "active" &&
-        lastOpenedRef.current
-      ) {
+      if (appStateRef.current !== "active" && next === "active" && lastOpenedRef.current) {
         setReturnedFrom(lastOpenedRef.current);
       }
       appStateRef.current = next;
@@ -473,31 +307,21 @@ export default function SetupScreen() {
     return () => sub.remove();
   }, []);
 
-  const handleOpenSettings = useCallback(
-    async (step: PermissionStep) => {
-      lastOpenedRef.current = step.id;
-      setReturnedFrom(null);
-      await markOpened(step.id);
+  const handleOpenSettings = useCallback(async (step: PermissionStep) => {
+    lastOpenedRef.current = step.id;
+    setReturnedFrom(null);
+    await markOpened(step.id);
 
-      if (Platform.OS !== "android") {
-        Alert.alert(
-          "Android Only",
-          "This permission is Android-only. Tap 'I've enabled this' to continue.",
-          [{ text: "OK" }]
-        );
-        setReturnedFrom(step.id);
-        return;
-      }
+    if (Platform.OS !== "android") {
+      Alert.alert("Android Only", "This permission is Android-only. Tap 'I've enabled this' to continue.", [{ text: "OK" }]);
+      setReturnedFrom(step.id);
+      return;
+    }
+    await step.openSettings();
+  }, [markOpened]);
 
-      await step.openSettings();
-    },
-    [markOpened]
-  );
-
-  const progressWidth = progressAnim.interpolate({
-    inputRange: [0, 100],
-    outputRange: ["0%", "100%"],
-  });
+  const progressWidth = progressAnim.interpolate({ inputRange: [0, 100], outputRange: ["0%", "100%"] });
+  const progressColor = grantedCount === total ? theme.success : theme.accent;
 
   async function handleEnter() {
     if (!allGranted) return;
@@ -505,61 +329,39 @@ export default function SetupScreen() {
     router.replace("/(tabs)");
   }
 
-  const progressColor =
-    grantedCount === total ? "#4CAF50" : grantedCount >= total / 2 ? "#E8943A" : "#C47B2B";
-
   return (
     <GradientBackground>
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: topPad + 20, paddingBottom: bottomPad + 40 },
-        ]}
+        contentContainerStyle={[styles.content, { paddingTop: topPad + 20, paddingBottom: bottomPad + 40 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.headerArea}>
-          <LinearGradient
-            colors={["#C47B2B", "#E8943A"]}
-            style={styles.headerIcon}
-          >
-            <Feather name="shield" size={34} color="#FFF8F0" />
-          </LinearGradient>
+          <View style={styles.headerIcon}>
+            <Feather name="shield" size={34} color={theme.buttonText} />
+          </View>
           <Text style={styles.heading}>Activate FocusLock</Text>
           <Text style={styles.subheading}>
-            Grant all permissions below to enable full protection. The app will
-            not work until all are granted.
+            Grant all permissions below to enable full protection. The app will not work until all are granted.
           </Text>
         </View>
 
         {/* Progress card */}
-        <GlassCard padding={18} borderColor="rgba(196,123,43,0.2)">
+        <GlassCard padding={18}>
           <View style={styles.progressRow}>
             <Text style={styles.progressLabel}>Permissions granted</Text>
-            <Text style={[styles.progressCount, { color: progressColor }]}>
-              {grantedCount}/{total}
-            </Text>
+            <Text style={[styles.progressCount, { color: progressColor }]}>{grantedCount}/{total}</Text>
           </View>
           <View style={styles.progressTrack}>
-            <Animated.View
-              style={[
-                styles.progressFill,
-                { width: progressWidth, backgroundColor: progressColor },
-              ]}
-            />
+            <Animated.View style={[styles.progressFill, { width: progressWidth, backgroundColor: progressColor }]} />
           </View>
           {grantedCount === total ? (
             <View style={styles.progressDone}>
-              <Feather name="check-circle" size={14} color="#4CAF50" />
-              <Text style={styles.progressDoneText}>
-                All permissions granted — ready to launch!
-              </Text>
+              <Feather name="check-circle" size={14} color={theme.success} />
+              <Text style={styles.progressDoneText}>All permissions granted — ready to launch!</Text>
             </View>
           ) : (
-            <Text style={styles.progressHint}>
-              {total - grantedCount} more permission
-              {total - grantedCount !== 1 ? "s" : ""} needed
-            </Text>
+            <Text style={styles.progressHint}>{total - grantedCount} more permission{total - grantedCount !== 1 ? "s" : ""} needed</Text>
           )}
         </GlassCard>
 
@@ -573,11 +375,7 @@ export default function SetupScreen() {
               index={i}
               granted={permissions[step.id]?.granted ?? false}
               openedSettings={permissions[step.id]?.openedSettings ?? false}
-              returnedFromSettings={
-                returnedFrom === step.id ||
-                (!permissions[step.id]?.granted &&
-                  (permissions[step.id]?.openedSettings ?? false))
-              }
+              returnedFromSettings={returnedFrom === step.id || (!permissions[step.id]?.granted && (permissions[step.id]?.openedSettings ?? false))}
               onOpenSettings={() => handleOpenSettings(step)}
               onMarkGranted={(g) => markGranted(step.id, g)}
             />
@@ -595,66 +393,36 @@ export default function SetupScreen() {
             <View key={p.label}>
               <View style={styles.autoRow}>
                 <View style={styles.autoIconBox}>
-                  <Feather name={p.icon} size={13} color="#C47B2B" />
+                  <Feather name={p.icon} size={13} color={theme.accent} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.autoLabel}>{p.label}</Text>
                   <Text style={styles.autoDesc}>{p.desc}</Text>
                 </View>
-                <Feather name="check-circle" size={15} color="#4CAF50" />
+                <Feather name="check-circle" size={15} color={theme.success} />
               </View>
               {i < arr.length - 1 && <View style={styles.autoDivider} />}
             </View>
           ))}
         </GlassCard>
 
-        {/* Enter button — HARD DISABLED until all granted */}
+        {/* Enter button */}
         <Pressable
           onPress={handleEnter}
           disabled={!allGranted}
-          style={({ pressed }) => [
-            { opacity: !allGranted ? 1 : pressed ? 0.85 : 1 },
-          ]}
+          style={({ pressed }) => [{ opacity: !allGranted ? 1 : pressed ? 0.85 : 1 }]}
         >
           <LinearGradient
-            colors={
-              allGranted
-                ? ["#3D9142", "#4CAF50"]
-                : ["rgba(50,25,5,0.6)", "rgba(40,20,4,0.4)"]
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+            colors={allGranted ? (["#32D74B", "#30C244"] as const) : theme.gradientDisabled}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={[
               styles.enterBtn,
-              allGranted && {
-                shadowColor: "#4CAF50",
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.38,
-                shadowRadius: 14,
-                elevation: 10,
-              },
+              allGranted && { shadowColor: theme.success, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 14, elevation: 10 },
             ]}
           >
-            <Feather
-              name={allGranted ? "check-circle" : "lock"}
-              size={18}
-              color={allGranted ? "#FFF8F0" : "rgba(212,165,116,0.35)"}
-            />
-            <Text
-              style={[
-                styles.enterBtnText,
-                {
-                  color: allGranted
-                    ? "#FFF8F0"
-                    : "rgba(212,165,116,0.35)",
-                },
-              ]}
-            >
-              {allGranted
-                ? "Enter FocusLock"
-                : `${total - grantedCount} Permission${
-                    total - grantedCount !== 1 ? "s" : ""
-                  } Remaining`}
+            <Feather name={allGranted ? "check-circle" : "lock"} size={18} color={allGranted ? "#000000" : theme.secondaryText} />
+            <Text style={[styles.enterBtnText, { color: allGranted ? "#000000" : theme.secondaryText }]}>
+              {allGranted ? "Enter FocusLock" : `${total - grantedCount} Permission${total - grantedCount !== 1 ? "s" : ""} Remaining`}
             </Text>
           </LinearGradient>
         </Pressable>
@@ -677,50 +445,53 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#C47B2B",
+    backgroundColor: theme.accentBg,
+    borderWidth: 1,
+    borderColor: theme.accentBorder,
+    shadowColor: theme.accent,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.55,
+    shadowOpacity: 0.4,
     shadowRadius: 22,
     elevation: 14,
   },
   heading: {
     fontSize: 26,
     fontFamily: "Inter_700Bold",
-    color: "#FFF8F0",
-    letterSpacing: -0.5,
+    color: theme.primaryText,
     textAlign: "center",
+    letterSpacing: -0.5,
   },
   subheading: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: "rgba(212,165,116,0.65)",
+    color: theme.secondaryText,
     textAlign: "center",
-    lineHeight: 20,
+    lineHeight: 21,
   },
 
-  progressRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
-  progressLabel: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#D4A574" },
-  progressCount: { fontSize: 15, fontFamily: "Inter_700Bold" },
-  progressTrack: { height: 6, borderRadius: 3, backgroundColor: "rgba(196,123,43,0.12)", overflow: "hidden", marginBottom: 10 },
-  progressFill: { height: "100%", borderRadius: 3 },
-  progressDone: { flexDirection: "row", alignItems: "center", gap: 7 },
-  progressDoneText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#4CAF50" },
-  progressHint: { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(212,165,116,0.4)" },
+  progressRow:      { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  progressLabel:    { fontSize: 13, fontFamily: "Inter_400Regular", color: theme.secondaryText },
+  progressCount:    { fontSize: 15, fontFamily: "Inter_700Bold" },
+  progressTrack:    { height: 6, borderRadius: 3, backgroundColor: theme.divider, overflow: "hidden", marginBottom: 10 },
+  progressFill:     { height: "100%", borderRadius: 3 },
+  progressDone:     { flexDirection: "row", alignItems: "center", gap: 6 },
+  progressDoneText: { fontSize: 12, fontFamily: "Inter_500Medium", color: theme.success },
+  progressHint:     { fontSize: 12, fontFamily: "Inter_400Regular", color: theme.secondaryText },
 
   sectionLabel: {
     fontSize: 11,
     fontFamily: "Inter_500Medium",
     letterSpacing: 1,
-    color: "rgba(212,165,116,0.35)",
+    color: theme.secondaryText,
     marginTop: 4,
     marginLeft: 2,
   },
 
-  autoRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 13, gap: 12 },
-  autoIconBox: { width: 30, height: 30, borderRadius: 9, backgroundColor: "rgba(196,123,43,0.13)", alignItems: "center", justifyContent: "center" },
-  autoLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#FFF8F0", marginBottom: 1 },
-  autoDesc: { fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(212,165,116,0.5)" },
-  autoDivider: { height: 1, backgroundColor: "rgba(196,123,43,0.08)", marginLeft: 58 },
+  autoRow:     { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
+  autoIconBox: { width: 28, height: 28, borderRadius: 8, backgroundColor: theme.accentBg, alignItems: "center", justifyContent: "center" },
+  autoLabel:   { fontSize: 13, fontFamily: "Inter_600SemiBold", color: theme.primaryText, marginBottom: 1 },
+  autoDesc:    { fontSize: 11, fontFamily: "Inter_400Regular", color: theme.secondaryText },
+  autoDivider: { height: 1, backgroundColor: theme.divider, marginLeft: 56 },
 
   enterBtn: {
     flexDirection: "row",
@@ -728,16 +499,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 10,
     paddingVertical: 18,
-    borderRadius: 18,
+    borderRadius: 20,
     marginTop: 4,
   },
-  enterBtnText: { fontSize: 16, fontFamily: "Inter_700Bold" },
+  enterBtnText: {
+    fontSize: 17,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.2,
+  },
 
   mandatoryNote: {
     fontSize: 11,
     fontFamily: "Inter_400Regular",
-    color: "rgba(212,165,116,0.25)",
+    color: theme.tertiaryText,
     textAlign: "center",
-    paddingBottom: 8,
+    lineHeight: 17,
+    marginTop: 2,
   },
 });

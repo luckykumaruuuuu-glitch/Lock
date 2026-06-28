@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientBackground } from "@/components/ui/GradientBackground";
+import theme from "@/constants/theme";
 import { useLanguage } from "@/context/LanguageContext";
 
 const FEEDBACK_EMAIL = "feedback@focuslock.app";
@@ -82,68 +83,41 @@ export default function FeedbackScreen() {
 
   return (
     <GradientBackground>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView
-          contentContainerStyle={[
-            styles.content,
-            { paddingTop: topPad + 16, paddingBottom: bottomPad + 24 },
-          ]}
+          contentContainerStyle={[styles.content, { paddingTop: topPad + 16, paddingBottom: bottomPad + 24 }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           {/* Back button */}
           <Pressable
-            onPress={() => {
-              if (step === "write") {
-                setStep("select");
-              } else {
-                router.back();
-              }
-            }}
+            onPress={() => { if (step === "write") setStep("select"); else router.back(); }}
             style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
           >
             <GlassCard radius={20} padding={8}>
-              <Feather name="arrow-left" size={18} color="#FFF8F0" />
+              <Feather name="arrow-left" size={18} color={theme.primaryText} />
             </GlassCard>
           </Pressable>
 
-          {/* Title */}
           <Text style={styles.title}>{t("feedbackTitle")}</Text>
 
           {step === "select" ? (
             <>
-              {/* Radio Options */}
               <GlassCard style={styles.optionsCard}>
-                <RadioOption
-                  selected={selected === "issue"}
-                  label={t("reportIssue")}
-                  onSelect={() => setSelected("issue")}
-                />
+                <RadioOption selected={selected === "issue"} label={t("reportIssue")} onSelect={() => setSelected("issue")} />
                 <View style={styles.divider} />
-                <RadioOption
-                  selected={selected === "idea"}
-                  label={t("shareIdea")}
-                  onSelect={() => setSelected("idea")}
-                />
+                <RadioOption selected={selected === "idea"} label={t("shareIdea")} onSelect={() => setSelected("idea")} />
                 <View style={styles.divider} />
-                <RadioOption
-                  selected={selected === "appreciate"}
-                  label={t("appreciateTeam")}
-                  onSelect={() => setSelected("appreciate")}
-                />
+                <RadioOption selected={selected === "appreciate"} label={t("appreciateTeam")} onSelect={() => setSelected("appreciate")} />
               </GlassCard>
 
-              {/* Continue Button */}
               <Pressable
                 onPress={() => selected && setStep("write")}
                 disabled={!selected}
                 style={({ pressed }) => [{ opacity: pressed && selected ? 0.85 : 1 }]}
               >
                 <LinearGradient
-                  colors={selected ? ["#C47B2B", "#E8943A"] : ["rgba(61,31,10,0.5)", "rgba(61,31,10,0.3)"]}
+                  colors={selected ? theme.gradientPrimary : theme.gradientDisabled}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.continueBtn}
@@ -151,11 +125,7 @@ export default function FeedbackScreen() {
                   <Text style={[styles.continueBtnText, !selected && styles.continueBtnTextDisabled]}>
                     {t("continueBtn")}
                   </Text>
-                  <Feather
-                    name="arrow-right"
-                    size={18}
-                    color={selected ? "#FFF8F0" : "rgba(255,248,240,0.35)"}
-                  />
+                  <Feather name="arrow-right" size={18} color={selected ? theme.buttonText : theme.secondaryText} />
                 </LinearGradient>
               </Pressable>
             </>
@@ -163,34 +133,23 @@ export default function FeedbackScreen() {
             <>
               {/* Selected Type Badge */}
               <GlassCard style={styles.badgeCard} padding={12}>
-                <LinearGradient colors={["#C47B2B", "#E8943A"]} style={styles.badgeIcon}>
+                <View style={styles.badgeIcon}>
                   <Feather
-                    name={
-                      selected === "issue"
-                        ? "alert-circle"
-                        : selected === "idea"
-                        ? "zap"
-                        : "heart"
-                    }
+                    name={selected === "issue" ? "alert-circle" : selected === "idea" ? "zap" : "heart"}
                     size={14}
-                    color="#FFF8F0"
+                    color={theme.accent}
                   />
-                </LinearGradient>
+                </View>
                 <Text style={styles.badgeLabel}>
-                  {selected === "issue"
-                    ? t("reportIssue")
-                    : selected === "idea"
-                    ? t("shareIdea")
-                    : t("appreciateTeam")}
+                  {selected === "issue" ? t("reportIssue") : selected === "idea" ? t("shareIdea") : t("appreciateTeam")}
                 </Text>
               </GlassCard>
 
-              {/* Text Box */}
               <GlassCard style={styles.textBoxCard} padding={0}>
                 <TextInput
                   style={styles.textInput}
                   placeholder={t("feedbackPlaceholder")}
-                  placeholderTextColor="rgba(212,165,116,0.4)"
+                  placeholderTextColor={theme.tertiaryText}
                   multiline
                   numberOfLines={7}
                   textAlignVertical="top"
@@ -200,33 +159,19 @@ export default function FeedbackScreen() {
                 />
               </GlassCard>
 
-              {/* Submit Button */}
               <Pressable
                 onPress={handleSubmit}
                 disabled={!message.trim()}
                 style={({ pressed }) => [{ opacity: pressed && message.trim() ? 0.85 : 1 }]}
               >
                 <LinearGradient
-                  colors={
-                    message.trim()
-                      ? ["#C47B2B", "#E8943A"]
-                      : ["rgba(61,31,10,0.5)", "rgba(61,31,10,0.3)"]
-                  }
+                  colors={message.trim() ? theme.gradientPrimary : theme.gradientDisabled}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.continueBtn}
                 >
-                  <Feather
-                    name="send"
-                    size={18}
-                    color={message.trim() ? "#FFF8F0" : "rgba(255,248,240,0.35)"}
-                  />
-                  <Text
-                    style={[
-                      styles.continueBtnText,
-                      !message.trim() && styles.continueBtnTextDisabled,
-                    ]}
-                  >
+                  <Feather name="send" size={18} color={message.trim() ? theme.buttonText : theme.secondaryText} />
+                  <Text style={[styles.continueBtnText, !message.trim() && styles.continueBtnTextDisabled]}>
                     {t("submitBtn")}
                   </Text>
                 </LinearGradient>
@@ -241,13 +186,12 @@ export default function FeedbackScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 20, gap: 16 },
-
   backBtn: { alignSelf: "flex-start", marginBottom: 4 },
 
   title: {
     fontSize: 26,
     fontFamily: "Inter_700Bold",
-    color: "#FFF8F0",
+    color: theme.primaryText,
     letterSpacing: -0.6,
     marginBottom: 8,
     lineHeight: 34,
@@ -267,29 +211,29 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: "rgba(196,123,43,0.35)",
+    borderColor: theme.radioInactive,
     alignItems: "center",
     justifyContent: "center",
   },
-  radioOuterSelected: { borderColor: "#C47B2B" },
+  radioOuterSelected: { borderColor: theme.radioActive },
   radioInner: {
     width: 11,
     height: 11,
     borderRadius: 5.5,
-    backgroundColor: "#C47B2B",
+    backgroundColor: theme.radioActive,
   },
   radioLabel: {
     fontSize: 16,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,248,240,0.6)",
+    color: theme.secondaryText,
   },
   radioLabelSelected: {
-    color: "#FFF8F0",
+    color: theme.primaryText,
     fontFamily: "Inter_500Medium",
   },
   divider: {
     height: 1,
-    backgroundColor: "rgba(196,123,43,0.12)",
+    backgroundColor: theme.divider,
     marginLeft: 52,
   },
 
@@ -300,32 +244,33 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 18,
     borderRadius: 20,
-    shadowColor: "#C47B2B",
+    shadowColor: theme.accent,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.3,
     shadowRadius: 14,
     elevation: 8,
   },
   continueBtnText: {
-    color: "#FFF8F0",
+    color: theme.buttonText,
     fontSize: 17,
     fontFamily: "Inter_700Bold",
     letterSpacing: 0.2,
   },
-  continueBtnTextDisabled: { color: "rgba(255,248,240,0.35)" },
+  continueBtnTextDisabled: { color: theme.secondaryText },
 
   badgeCard: { flexDirection: "row", alignItems: "center", gap: 10 },
   badgeIcon: {
     width: 28,
     height: 28,
     borderRadius: 8,
+    backgroundColor: theme.accentBg,
     alignItems: "center",
     justifyContent: "center",
   },
   badgeLabel: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: "#D4A574",
+    color: theme.accent,
   },
 
   textBoxCard: { minHeight: 180 },
@@ -333,7 +278,7 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    color: "#FFF8F0",
+    color: theme.primaryText,
     minHeight: 180,
   },
 });

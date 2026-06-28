@@ -16,6 +16,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientBackground } from "@/components/ui/GradientBackground";
 import { Toast } from "@/components/ui/Toast";
 import { LANGUAGES, useLanguage } from "@/context/LanguageContext";
+import theme from "@/constants/theme";
 import type { LangKey } from "@/lib/i18n/translations";
 
 function LanguageRow({
@@ -42,8 +43,8 @@ function LanguageRow({
           <Text style={styles.rowNative}>{nativeName}</Text>
         </View>
         {selected ? (
-          <LinearGradient colors={["#C47B2B", "#E8943A"]} style={styles.checkCircle}>
-            <Feather name="check" size={14} color="#FFF8F0" />
+          <LinearGradient colors={theme.gradientPrimary} style={styles.checkCircle}>
+            <Feather name="check" size={14} color={theme.buttonText} />
           </LinearGradient>
         ) : (
           <View style={styles.checkCircleEmpty} />
@@ -73,12 +74,8 @@ export default function LanguageScreen() {
 
   return (
     <GradientBackground>
-      {/* Scrollable area */}
       <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: topPad + 16, paddingBottom: 120 },
-        ]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: topPad + 16, paddingBottom: 120 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Back button */}
@@ -87,15 +84,13 @@ export default function LanguageScreen() {
           style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
         >
           <GlassCard radius={20} padding={8}>
-            <Feather name="arrow-left" size={18} color="#FFF8F0" />
+            <Feather name="arrow-left" size={18} color={theme.primaryText} />
           </GlassCard>
         </Pressable>
 
-        {/* Title */}
         <Text style={styles.title}>{t("selectLanguage")}</Text>
         <Text style={styles.subtitle}>{t("languageSubtitle")}</Text>
 
-        {/* Language list */}
         <GlassCard style={styles.listCard} padding={0}>
           {LANGUAGES.map((lang, idx) => (
             <LanguageRow
@@ -110,7 +105,7 @@ export default function LanguageScreen() {
         </GlassCard>
       </ScrollView>
 
-      {/* Fixed Save button at bottom */}
+      {/* Fixed Save button */}
       <View style={[styles.stickyFooter, { paddingBottom: bottomInset }]}>
         <Pressable
           onPress={handleSave}
@@ -118,20 +113,12 @@ export default function LanguageScreen() {
           style={({ pressed }) => [{ opacity: pressed && hasChanged ? 0.85 : 1 }]}
         >
           <LinearGradient
-            colors={
-              hasChanged
-                ? ["#C47B2B", "#E8943A"]
-                : ["rgba(61,31,10,0.55)", "rgba(61,31,10,0.35)"]
-            }
+            colors={hasChanged ? theme.gradientPrimary : theme.gradientDisabled}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.saveBtn}
           >
-            <Feather
-              name="check"
-              size={18}
-              color={hasChanged ? "#FFF8F0" : "rgba(255,248,240,0.3)"}
-            />
+            <Feather name="check" size={18} color={hasChanged ? theme.buttonText : theme.secondaryText} />
             <Text style={[styles.saveBtnText, !hasChanged && styles.saveBtnTextDisabled]}>
               {t("saveLanguage")}
             </Text>
@@ -139,12 +126,7 @@ export default function LanguageScreen() {
         </Pressable>
       </View>
 
-      <Toast
-        visible={toastVisible}
-        message={t("languageSaved")}
-        type="success"
-        onHide={() => setToastVisible(false)}
-      />
+      <Toast visible={toastVisible} message={t("languageSaved")} type="success" onHide={() => setToastVisible(false)} />
     </GradientBackground>
   );
 }
@@ -157,13 +139,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontFamily: "Inter_700Bold",
-    color: "#FFF8F0",
+    color: theme.primaryText,
     letterSpacing: -0.7,
   },
   subtitle: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: "#D4A574",
+    color: theme.secondaryText,
     marginBottom: 6,
   },
 
@@ -180,17 +162,17 @@ const styles = StyleSheet.create({
   rowName: {
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,248,240,0.7)",
+    color: theme.secondaryText,
     marginBottom: 2,
   },
   rowNameSelected: {
-    color: "#FFF8F0",
+    color: theme.primaryText,
     fontFamily: "Inter_600SemiBold",
   },
   rowNative: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: "rgba(212,165,116,0.55)",
+    color: theme.tertiaryText,
   },
   checkCircle: {
     width: 28,
@@ -198,9 +180,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#C47B2B",
+    shadowColor: theme.accent,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.45,
     shadowRadius: 6,
     elevation: 4,
   },
@@ -209,11 +191,11 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: "rgba(196,123,43,0.25)",
+    borderColor: theme.radioInactive,
   },
   divider: {
     height: 1,
-    backgroundColor: "rgba(196,123,43,0.1)",
+    backgroundColor: theme.divider,
     marginLeft: 18,
   },
 
@@ -224,9 +206,9 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 20,
     paddingTop: 12,
-    backgroundColor: "rgba(13,5,0,0.85)",
+    backgroundColor: theme.footerBg,
     borderTopWidth: 1,
-    borderTopColor: "rgba(196,123,43,0.12)",
+    borderTopColor: theme.divider,
   },
 
   saveBtn: {
@@ -236,19 +218,19 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 18,
     borderRadius: 20,
-    shadowColor: "#C47B2B",
+    shadowColor: theme.accent,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
+    shadowOpacity: 0.35,
     shadowRadius: 14,
     elevation: 8,
   },
   saveBtnText: {
-    color: "#FFF8F0",
+    color: theme.buttonText,
     fontSize: 17,
     fontFamily: "Inter_700Bold",
     letterSpacing: 0.2,
   },
   saveBtnTextDisabled: {
-    color: "rgba(255,248,240,0.3)",
+    color: theme.secondaryText,
   },
 });
