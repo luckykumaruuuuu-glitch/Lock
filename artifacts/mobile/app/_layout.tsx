@@ -70,12 +70,19 @@ function RootLayoutNav() {
           },
           headerShadowVisible: false,
           contentStyle: { backgroundColor: "transparent" },
+          animation: "slide_from_right",
+          animationDuration: 300,
+          gestureEnabled: true,
+          gestureDirection: "horizontal",
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="(tabs)"
+          options={{ headerShown: false, animation: "fade", animationDuration: 200 }}
+        />
         <Stack.Screen
           name="onboarding"
-          options={{ headerShown: false, gestureEnabled: false }}
+          options={{ headerShown: false, gestureEnabled: false, animation: "fade" }}
         />
         <Stack.Screen
           name="setup"
@@ -84,19 +91,42 @@ function RootLayoutNav() {
             headerShown: true,
             headerBackVisible: false,
             gestureEnabled: false,
+            animation: "slide_from_right",
+            animationDuration: 300,
           }}
         />
         <Stack.Screen
           name="lock/select-apps"
-          options={{ title: "Select Apps", headerBackTitle: "Home" }}
+          options={{
+            title: "Select Apps",
+            headerBackTitle: "Home",
+            animation: "slide_from_right",
+            animationDuration: 300,
+            gestureEnabled: true,
+            gestureDirection: "horizontal",
+          }}
         />
         <Stack.Screen
           name="lock/duration"
-          options={{ title: "Set Duration", headerBackTitle: "Apps" }}
+          options={{
+            title: "Set Duration",
+            headerBackTitle: "Apps",
+            animation: "slide_from_right",
+            animationDuration: 300,
+            gestureEnabled: true,
+            gestureDirection: "horizontal",
+          }}
         />
         <Stack.Screen
           name="lock/confirm"
-          options={{ title: "Confirm Lock", headerBackTitle: "Duration" }}
+          options={{
+            title: "Confirm Lock",
+            headerBackTitle: "Duration",
+            animation: "slide_from_right",
+            animationDuration: 300,
+            gestureEnabled: true,
+            gestureDirection: "horizontal",
+          }}
         />
       </Stack>
     </SetupGuard>
