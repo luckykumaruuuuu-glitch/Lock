@@ -17,8 +17,10 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { FirebaseSyncProvider } from "@/context/FirebaseSyncContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 import { LockProvider } from "@/context/LockContext";
 import { usePermissionStatus } from "@/hooks/usePermissionStatus";
+import "@/lib/i18n";
 import { ONBOARDING_DONE_KEY } from "./onboarding";
 
 SplashScreen.preventAutoHideAsync();
@@ -128,6 +130,26 @@ function RootLayoutNav() {
             gestureDirection: "horizontal",
           }}
         />
+        <Stack.Screen
+          name="settings/feedback"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            animationDuration: 300,
+            gestureEnabled: true,
+            gestureDirection: "horizontal",
+          }}
+        />
+        <Stack.Screen
+          name="settings/language"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            animationDuration: 300,
+            gestureEnabled: true,
+            gestureDirection: "horizontal",
+          }}
+        />
       </Stack>
     </SetupGuard>
   );
@@ -153,15 +175,17 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <LockProvider>
-            <FirebaseSyncProvider>
-              <GestureHandlerRootView>
-                <KeyboardProvider>
-                  <RootLayoutNav />
-                </KeyboardProvider>
-              </GestureHandlerRootView>
-            </FirebaseSyncProvider>
-          </LockProvider>
+          <LanguageProvider>
+            <LockProvider>
+              <FirebaseSyncProvider>
+                <GestureHandlerRootView>
+                  <KeyboardProvider>
+                    <RootLayoutNav />
+                  </KeyboardProvider>
+                </GestureHandlerRootView>
+              </FirebaseSyncProvider>
+            </LockProvider>
+          </LanguageProvider>
         </QueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>

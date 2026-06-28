@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Toast } from "@/components/ui/Toast";
 import { GradientBackground } from "@/components/ui/GradientBackground";
+import { useLanguage } from "@/context/LanguageContext";
 import { useLock } from "@/context/LockContext";
 import {
   ActiveLockDisplayItem,
@@ -48,6 +49,7 @@ function StatCard({ value, label, color }: { value: string | number; label: stri
 }
 
 function LockCard({ item, index }: { item: ActiveLockDisplayItem; index: number }) {
+  const { t } = useLanguage();
   const progress = getLockProgress(item.startTime, item.endTime);
   const remaining = formatTimeRemaining(item.endTime);
   const expiry = formatExpiryDate(item.endTime);
@@ -84,7 +86,7 @@ function LockCard({ item, index }: { item: ActiveLockDisplayItem; index: number 
                 style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]}
               />
             </View>
-            <Text style={styles.lockExpiry}>Unlocks {expiry}</Text>
+            <Text style={styles.lockExpiry}>{t("unlocksAt")} {expiry}</Text>
           </View>
 
           <View style={styles.lockBadge}>
@@ -97,6 +99,7 @@ function LockCard({ item, index }: { item: ActiveLockDisplayItem; index: number 
 }
 
 function EmptyState() {
+  const { t } = useLanguage();
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -119,10 +122,8 @@ function EmptyState() {
           <Feather name="unlock" size={32} color="#C47B2B" />
         </LinearGradient>
       </Animated.View>
-      <Text style={styles.emptyTitle}>No Active Locks</Text>
-      <Text style={styles.emptyBody}>
-        Tap "Lock Apps Now" to commit to a distraction-free session.
-      </Text>
+      <Text style={styles.emptyTitle}>{t("noActiveLocks")}</Text>
+      <Text style={styles.emptyBody}>{t("noActiveLocksBody")}</Text>
     </GlassCard>
   );
 }
@@ -131,6 +132,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { resetSelection } = useLock();
   const { displayItems, locks, loading } = useActiveLocks(30_000);
+  const { t } = useLanguage();
   const [toast, setToast] = React.useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -167,8 +169,8 @@ export default function HomeScreen() {
         {/* Header */}
         <Animated.View style={[styles.header, { transform: [{ translateY: headerY }], opacity: headerOpacity }]}>
           <View>
-            <Text style={styles.greeting}>Stay focused,</Text>
-            <Text style={styles.appTitle}>FocusLock</Text>
+            <Text style={styles.greeting}>{t("stayFocused")}</Text>
+            <Text style={styles.appTitle}>{t("appTitle")}</Text>
           </View>
           <View style={styles.shieldBadge}>
             <LinearGradient
@@ -182,9 +184,9 @@ export default function HomeScreen() {
 
         {/* Stats */}
         <View style={styles.statsRow}>
-          <StatCard value={locks.length} label="Locks" color="#C47B2B" />
-          <StatCard value={displayItems.length} label="Blocked" color="#FF6B35" />
-          <StatCard value={avgDays > 0 ? `${avgDays}d` : "—"} label="Avg" color="#4CAF50" />
+          <StatCard value={locks.length} label={t("locks")} color="#C47B2B" />
+          <StatCard value={displayItems.length} label={t("blocked")} color="#FF6B35" />
+          <StatCard value={avgDays > 0 ? `${avgDays}d` : "—"} label={t("avg")} color="#4CAF50" />
         </View>
 
         {/* CTA */}
@@ -196,14 +198,14 @@ export default function HomeScreen() {
             style={styles.ctaBtn}
           >
             <Feather name="plus-circle" size={22} color="#FFF8F0" />
-            <Text style={styles.ctaBtnText}>Lock Apps Now</Text>
+            <Text style={styles.ctaBtnText}>{t("lockAppsNow")}</Text>
           </LinearGradient>
         </Pressable>
 
         {/* Active locks section */}
         <View style={styles.sectionRow}>
           <Feather name="lock" size={15} color="#D4A574" />
-          <Text style={styles.sectionTitle}>Active Locks</Text>
+          <Text style={styles.sectionTitle}>{t("activeLocks")}</Text>
           {!loading && displayItems.length > 0 && (
             <LinearGradient colors={["#C47B2B", "#E8943A"]} style={styles.countBadge}>
               <Text style={styles.countText}>{displayItems.length}</Text>
@@ -213,7 +215,7 @@ export default function HomeScreen() {
 
         {loading ? (
           <GlassCard style={styles.loadingCard} padding={24}>
-            <Text style={styles.loadingText}>Loading locks…</Text>
+            <Text style={styles.loadingText}>{t("loadingLocks")}</Text>
           </GlassCard>
         ) : displayItems.length === 0 ? (
           <EmptyState />
@@ -233,14 +235,12 @@ export default function HomeScreen() {
             padding={14}
           >
             <Feather name="alert-triangle" size={14} color="#FF6B35" />
-            <Text style={styles.warningText}>
-              Active locks cannot be removed until the timer expires. No exceptions.
-            </Text>
+            <Text style={styles.warningText}>{t("warningText")}</Text>
           </GlassCard>
         )}
       </ScrollView>
 
-      <Toast visible={toast} message="✓ Lock activated successfully!" type="success" onHide={() => setToast(false)} />
+      <Toast visible={toast} message={t("lockActivated")} type="success" onHide={() => setToast(false)} />
     </GradientBackground>
   );
 }

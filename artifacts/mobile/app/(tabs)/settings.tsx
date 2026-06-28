@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
   Animated,
@@ -16,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientBackground } from "@/components/ui/GradientBackground";
+import { useLanguage, LANGUAGES } from "@/context/LanguageContext";
 import { useSounds } from "@/hooks/useSounds";
 
 const APP_VERSION = "1.0.0";
@@ -88,16 +90,18 @@ function SettingRow({
   );
 }
 
-/* ── Sound toggle (switch only, no description) ── */
+/* ── Sound toggle ── */
 function SoundToggleRow({
   muted,
   setMuted,
   playPreview,
+  label,
   last = false,
 }: {
   muted: boolean;
   setMuted: (v: boolean) => void;
   playPreview: () => void;
+  label: string;
   last?: boolean;
 }) {
   const toggleAnim = useRef(new Animated.Value(muted ? 0 : 1)).current;
@@ -129,7 +133,7 @@ function SoundToggleRow({
         >
           <Feather name={muted ? "volume-x" : "volume-2"} size={14} color={muted ? "#D4A574" : "#FFF8F0"} />
         </LinearGradient>
-        <Text style={styles.settingLabel}>Sound Effects</Text>
+        <Text style={styles.settingLabel}>{label}</Text>
         <Animated.View style={[styles.track, { backgroundColor: trackColor }]}>
           <Animated.View style={[styles.dot, { transform: [{ translateX: dotPos }] }]} />
         </Animated.View>
@@ -142,12 +146,13 @@ function SoundToggleRow({
 /* ── Privacy Policy modal ── */
 function PrivacyModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[modalStyles.root, { paddingTop: insets.top + 16 }]}>
         <LinearGradient colors={["#0D0500", "#1A0A00", "#2C1503"]} style={StyleSheet.absoluteFill} />
         <View style={modalStyles.header}>
-          <Text style={modalStyles.title}>Privacy Policy</Text>
+          <Text style={modalStyles.title}>{t("privacyPolicy")}</Text>
           <Pressable onPress={onClose} style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}>
             <GlassCard radius={20} padding={8}>
               <Feather name="x" size={18} color="#FFF8F0" />
@@ -178,9 +183,12 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const [privacyVisible, setPrivacyVisible] = useState(false);
   const { muted, setMuted, playPreview } = useSounds();
+  const { t, currentLanguage } = useLanguage();
 
   const topPad    = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 + 84 : 84;
+
+  const currentLangName = LANGUAGES.find((l) => l.code === currentLanguage)?.name ?? "English";
 
   return (
     <GradientBackground>
@@ -188,34 +196,53 @@ export default function SettingsScreen() {
         contentContainerStyle={[styles.content, { paddingTop: topPad + 16, paddingBottom: bottomPad + 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.pageTitle}>Settings</Text>
+        <Text style={styles.pageTitle}>{t("settings")}</Text>
 
-        {/* Sound Effects */}
-        <Text style={styles.sectionLabel}>PREFERENCES</Text>
+        {/* Preferences */}
+        <Text style={styles.sectionLabel}>{t("preferences")}</Text>
         <GlassCard>
-          <SoundToggleRow muted={muted} setMuted={setMuted} playPreview={playPreview} last />
+          <SoundToggleRow muted={muted} setMuted={setMuted} playPreview={playPreview} label={t("soundEffects")} last />
         </GlassCard>
 
-        {/* App info — version only */}
-        <Text style={styles.sectionLabel}>APPLICATION</Text>
+        {/* App info */}
+        <Text style={styles.sectionLabel}>{t("application")}</Text>
         <GlassCard>
-          <SettingRow icon="info" label="Version" value={APP_VERSION} last />
+          <SettingRow icon="info" label={t("version")} value={APP_VERSION} last />
+        </GlassCard>
+
+        {/* Support */}
+        <Text style={styles.sectionLabel}>{t("support")}</Text>
+        <GlassCard>
+          <SettingRow
+            icon="message-circle"
+            label={t("feedback")}
+            onPress={() => router.push("/settings/feedback")}
+            iconColors={["#8B4513", "#C47B2B"]}
+          />
+          <SettingRow
+            icon="globe"
+            label={t("language")}
+            value={currentLangName}
+            onPress={() => router.push("/settings/language")}
+            iconColors={["#1A6B8A", "#2196B5"]}
+            last
+          />
         </GlassCard>
 
         {/* Legal */}
-        <Text style={styles.sectionLabel}>LEGAL</Text>
+        <Text style={styles.sectionLabel}>{t("legal")}</Text>
         <GlassCard>
-          <SettingRow icon="file-text" label="Privacy Policy" onPress={() => setPrivacyVisible(true)} />
+          <SettingRow icon="file-text" label={t("privacyPolicy")} onPress={() => setPrivacyVisible(true)} />
           <SettingRow
             icon="book"
-            label="Terms of Service"
+            label={t("termsOfService")}
             last
             onPress={() => Linking.openURL("https://focuslock.app/terms").catch(() => {})}
           />
         </GlassCard>
 
-        {/* About — logo + name only */}
-        <Text style={styles.sectionLabel}>ABOUT</Text>
+        {/* About */}
+        <Text style={styles.sectionLabel}>{t("about")}</Text>
         <GlassCard padding={28} style={styles.aboutCard}>
           <LinearGradient colors={["#C47B2B", "#E8943A"]} style={styles.aboutIcon}>
             <Feather name="shield" size={32} color="#FFF8F0" />
