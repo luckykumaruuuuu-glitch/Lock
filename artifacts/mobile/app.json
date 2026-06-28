@@ -17,12 +17,20 @@
       "supportsTablet": false
     },
     "android": {
+      "package": "com.focuslock.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#0F172A"
       },
       "minSdkVersion": 26,
-      "targetSdkVersion": 34
+      "targetSdkVersion": 34,
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_SPECIAL_USE",
+        "android.permission.PACKAGE_USAGE_STATS"
+      ]
     },
     "web": {
       "favicon": "./assets/images/icon.png"
@@ -35,7 +43,8 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "./plugins/withFocusLockAndroid"
     ],
     "experiments": {
       "typedRoutes": true,
