@@ -1,8 +1,10 @@
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React from "react";
 import {
+  Animated,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,34 +16,57 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { GlassCard } from "@/components/ui/GlassCard";
+import { GradientBackground } from "@/components/ui/GradientBackground";
 import { DurationPreset, useLock } from "@/context/LockContext";
-import { useColors } from "@/hooks/useColors";
+import { useSounds } from "@/hooks/useSounds";
 
-interface DurationOption {
-  id: DurationPreset;
-  label: string;
-  sublabel: string;
-  icon: string;
-}
-
-const DURATION_OPTIONS: DurationOption[] = [
-  { id: "1d", label: "1 Day", sublabel: "24 hours of focus", icon: "sun" },
-  { id: "7d", label: "7 Days", sublabel: "One full week", icon: "calendar" },
-  { id: "30d", label: "30 Days", sublabel: "Build a new habit", icon: "award" },
-  { id: "custom", label: "Custom", sublabel: "Set your own duration (up to 365 days)", icon: "sliders" },
+const DURATION_OPTIONS = [
+  {
+    id: "1d" as DurationPreset,
+    label: "1 Day",
+    sublabel: "24 hours of focus",
+    icon: "sun" as const,
+    colors: ["#6366F1", "#8B5CF6"] as const,
+    glow: "#6366F1",
+  },
+  {
+    id: "7d" as DurationPreset,
+    label: "7 Days",
+    sublabel: "One full week",
+    icon: "calendar" as const,
+    colors: ["#FF006E", "#FF4444"] as const,
+    glow: "#FF006E",
+  },
+  {
+    id: "30d" as DurationPreset,
+    label: "30 Days",
+    sublabel: "Build a new habit",
+    icon: "award" as const,
+    colors: ["#FF9500", "#FF6B00"] as const,
+    glow: "#FF9500",
+  },
+  {
+    id: "custom" as DurationPreset,
+    label: "Custom",
+    sublabel: "Up to 365 days",
+    icon: "sliders" as const,
+    colors: ["#00CC6A", "#00FF88"] as const,
+    glow: "#00FF88",
+  },
 ];
 
 const MAX_DAYS = 365;
 
 export default function DurationScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { selection, setDurationPreset, setCustomDays, setCustomHours } =
-    useLock();
+  const { selection, setDurationPreset, setCustomDays, setCustomHours } = useLock();
+  const { playClick } = useSounds();
 
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   function handleSelect(preset: DurationPreset) {
+    playClick();
     Haptics.selectionAsync();
     setDurationPreset(preset);
   }
@@ -53,23 +78,15 @@ export default function DurationScreen() {
 
   function handleCustomDays(val: string) {
     const n = parseInt(val) || 0;
-    if (n > MAX_DAYS) {
-      setCustomDays(String(MAX_DAYS));
-    } else {
-      setCustomDays(val);
-    }
+    setCustomDays(n > MAX_DAYS ? String(MAX_DAYS) : val);
   }
 
   function handleCustomHours(val: string) {
     const n = parseInt(val) || 0;
-    if (n > 23) {
-      setCustomHours("23");
-    } else {
-      setCustomHours(val);
-    }
+    setCustomHours(n > 23 ? "23" : val);
   }
 
-  function getDurationSummary(): string {
+  function getSummary(): string {
     if (selection.durationPreset === "custom") {
       const d = Math.min(parseInt(selection.customDays) || 0, MAX_DAYS);
       const h = Math.min(parseInt(selection.customHours) || 0, 23);
@@ -79,370 +96,318 @@ export default function DurationScreen() {
       if (h > 0) parts.push(`${h} hour${h !== 1 ? "s" : ""}`);
       return parts.join(" and ");
     }
-    const opt = DURATION_OPTIONS.find((o) => o.id === selection.durationPreset);
-    return opt?.label ?? "";
+    return DURATION_OPTIONS.find((o) => o.id === selection.durationPreset)?.label ?? "";
   }
 
   const customDays = parseInt(selection.customDays) || 0;
   const customHours = parseInt(selection.customHours) || 0;
-
   const canProceed =
-    selection.durationPreset !== "custom" ||
-    customDays > 0 ||
-    customHours > 0;
+    selection.durationPreset !== "custom" || customDays > 0 || customHours > 0;
+
+  const selectedOpt = DURATION_OPTIONS.find((o) => o.id === selection.durationPreset);
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
-        style={[styles.container, { backgroundColor: colors.background }]}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+    <GradientBackground>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Text style={[styles.heading, { color: colors.foreground }]}>
-          How long should the lock last?
-        </Text>
-        <Text style={[styles.subheading, { color: colors.mutedForeground }]}>
-          Once set, this duration cannot be changed or cancelled.
-        </Text>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 120 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.heading}>How long?</Text>
+          <Text style={styles.subheading}>
+            This duration is final — you can't change it after confirming.
+          </Text>
 
-        <View style={styles.options}>
-          {DURATION_OPTIONS.map((option) => {
-            const selected = selection.durationPreset === option.id;
-            return (
-              <Pressable
-                key={option.id}
-                onPress={() => handleSelect(option.id)}
-                style={({ pressed }) => [
-                  styles.optionCard,
-                  {
-                    backgroundColor: selected
-                      ? colors.primary + "12"
-                      : colors.card,
-                    borderColor: selected ? colors.primary : colors.border,
-                    opacity: pressed ? 0.8 : 1,
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.optionIcon,
-                    {
-                      backgroundColor: selected
-                        ? colors.primary + "20"
-                        : colors.muted,
-                    },
-                  ]}
+          <View style={styles.optionsGrid}>
+            {DURATION_OPTIONS.map((opt) => {
+              const selected = selection.durationPreset === opt.id;
+              return (
+                <Pressable
+                  key={opt.id}
+                  onPress={() => handleSelect(opt.id)}
+                  style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1, flex: 1 }]}
                 >
-                  <Feather
-                    name={option.icon as any}
-                    size={20}
-                    color={selected ? colors.primary : colors.mutedForeground}
-                  />
-                </View>
-                <View style={styles.optionText}>
-                  <Text
+                  <GlassCard
                     style={[
-                      styles.optionLabel,
-                      {
-                        color: selected ? colors.primary : colors.foreground,
-                        fontFamily: selected ? "Inter_700Bold" : "Inter_500Medium",
+                      styles.optCard,
+                      selected && {
+                        borderColor: opt.colors[0] + "66",
+                        shadowColor: opt.glow,
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowOpacity: 0.5,
+                        shadowRadius: 12,
+                        elevation: 8,
                       },
                     ]}
+                    borderColor={selected ? opt.colors[0] + "66" : "rgba(255,255,255,0.12)"}
+                    backgroundColor={
+                      selected ? opt.colors[0] + "18" : "rgba(255,255,255,0.07)"
+                    }
+                    padding={16}
                   >
-                    {option.label}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.optionSublabel,
-                      { color: colors.mutedForeground },
-                    ]}
-                  >
-                    {option.sublabel}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.radio,
-                    {
-                      borderColor: selected ? colors.primary : colors.border,
-                      backgroundColor: selected ? colors.primary : "transparent",
-                    },
-                  ]}
-                >
-                  {selected && (
-                    <View
-                      style={[styles.radioDot, { backgroundColor: "#fff" }]}
-                    />
-                  )}
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
+                    <LinearGradient
+                      colors={selected ? opt.colors : ["rgba(255,255,255,0.08)", "rgba(255,255,255,0.04)"]}
+                      style={styles.optIcon}
+                    >
+                      <Feather
+                        name={opt.icon}
+                        size={20}
+                        color={selected ? "#fff" : "rgba(255,255,255,0.4)"}
+                      />
+                    </LinearGradient>
+                    <Text
+                      style={[
+                        styles.optLabel,
+                        { color: selected ? "#fff" : "rgba(255,255,255,0.7)" },
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                    <Text style={styles.optSublabel}>{opt.sublabel}</Text>
+                    {selected && (
+                      <View style={[styles.selectedDot, { backgroundColor: opt.colors[0] }]} />
+                    )}
+                  </GlassCard>
+                </Pressable>
+              );
+            })}
+          </View>
 
-        {selection.durationPreset === "custom" && (
-          <View
-            style={[
-              styles.customBox,
-              { backgroundColor: colors.card, borderColor: colors.border },
+          {/* Custom inputs */}
+          {selection.durationPreset === "custom" && (
+            <GlassCard padding={20} style={styles.customBox}>
+              <Text style={styles.customTitle}>Custom Duration</Text>
+              <View style={styles.customRow}>
+                <View style={styles.customGroup}>
+                  <GlassCard
+                    backgroundColor="rgba(255,255,255,0.06)"
+                    borderColor="rgba(99,102,241,0.3)"
+                    radius={14}
+                  >
+                    <TextInput
+                      style={styles.customInput}
+                      keyboardType="number-pad"
+                      value={selection.customDays}
+                      onChangeText={handleCustomDays}
+                      maxLength={3}
+                      placeholder="0"
+                      placeholderTextColor="rgba(255,255,255,0.2)"
+                    />
+                  </GlassCard>
+                  <Text style={styles.customUnit}>days</Text>
+                </View>
+                <Text style={styles.customPlus}>+</Text>
+                <View style={styles.customGroup}>
+                  <GlassCard
+                    backgroundColor="rgba(255,255,255,0.06)"
+                    borderColor="rgba(99,102,241,0.3)"
+                    radius={14}
+                  >
+                    <TextInput
+                      style={styles.customInput}
+                      keyboardType="number-pad"
+                      value={selection.customHours}
+                      onChangeText={handleCustomHours}
+                      maxLength={2}
+                      placeholder="0"
+                      placeholderTextColor="rgba(255,255,255,0.2)"
+                    />
+                  </GlassCard>
+                  <Text style={styles.customUnit}>hours (0–23)</Text>
+                </View>
+              </View>
+              <Text style={styles.maxNote}>Max: {MAX_DAYS} days</Text>
+            </GlassCard>
+          )}
+
+          {/* Summary */}
+          <LinearGradient
+            colors={
+              selectedOpt
+                ? [selectedOpt.colors[0] + "20", selectedOpt.colors[1] + "10"]
+                : ["rgba(99,102,241,0.15)", "rgba(139,92,246,0.08)"]
+            }
+            style={styles.summary}
+          >
+            <Feather name="clock" size={15} color={selectedOpt?.colors[0] ?? "#6366F1"} />
+            <Text style={styles.summaryText}>
+              Duration:{" "}
+              <Text
+                style={[
+                  styles.summaryBold,
+                  { color: selectedOpt?.colors[0] ?? "#A5B4FC" },
+                ]}
+              >
+                {getSummary()}
+              </Text>
+            </Text>
+          </LinearGradient>
+        </ScrollView>
+
+        {/* Footer */}
+        <View style={[styles.footer, { paddingBottom: bottomPad + 20 }]}>
+          <Pressable
+            onPress={handleNext}
+            disabled={!canProceed}
+            style={({ pressed }) => [
+              { opacity: !canProceed ? 0.35 : pressed ? 0.85 : 1 },
             ]}
           >
-            <Text style={[styles.customLabel, { color: colors.foreground }]}>
-              Custom Duration
-            </Text>
-            <View style={styles.customInputRow}>
-              <View style={styles.customInputGroup}>
-                <TextInput
-                  style={[
-                    styles.customInput,
-                    {
-                      backgroundColor: colors.muted,
-                      color: colors.foreground,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                  keyboardType="number-pad"
-                  value={selection.customDays}
-                  onChangeText={handleCustomDays}
-                  maxLength={3}
-                  placeholder="0"
-                  placeholderTextColor={colors.mutedForeground}
-                />
-                <Text
-                  style={[
-                    styles.customInputLabel,
-                    { color: colors.mutedForeground },
-                  ]}
-                >
-                  days
-                </Text>
-              </View>
-              <Text
-                style={[styles.customSep, { color: colors.mutedForeground }]}
-              >
-                +
-              </Text>
-              <View style={styles.customInputGroup}>
-                <TextInput
-                  style={[
-                    styles.customInput,
-                    {
-                      backgroundColor: colors.muted,
-                      color: colors.foreground,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                  keyboardType="number-pad"
-                  value={selection.customHours}
-                  onChangeText={handleCustomHours}
-                  maxLength={2}
-                  placeholder="0"
-                  placeholderTextColor={colors.mutedForeground}
-                />
-                <Text
-                  style={[
-                    styles.customInputLabel,
-                    { color: colors.mutedForeground },
-                  ]}
-                >
-                  hours (0–23)
-                </Text>
-              </View>
-            </View>
-            <Text
-              style={[styles.maxNote, { color: colors.mutedForeground }]}
+            <LinearGradient
+              colors={["#6366F1", "#8B5CF6"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.nextBtn}
             >
-              Maximum: {MAX_DAYS} days
-            </Text>
-          </View>
-        )}
-
-        <View
-          style={[
-            styles.summaryBanner,
-            { backgroundColor: colors.primary + "10" },
-          ]}
-        >
-          <Feather name="clock" size={14} color={colors.primary} />
-          <Text style={[styles.summaryText, { color: colors.primary }]}>
-            Lock duration:{" "}
-            <Text style={styles.summaryBold}>{getDurationSummary()}</Text>
-          </Text>
+              <Text style={styles.nextBtnText}>Next — Review & Confirm</Text>
+              <Feather name="arrow-right" size={18} color="#fff" />
+            </LinearGradient>
+          </Pressable>
         </View>
-
-        <View style={{ height: bottomPad + 100 }} />
-      </ScrollView>
-
-      <View
-        style={[
-          styles.footer,
-          {
-            paddingBottom: bottomPad + 20,
-            backgroundColor: colors.background,
-            borderTopColor: colors.border,
-          },
-        ]}
-      >
-        <Pressable
-          onPress={handleNext}
-          disabled={!canProceed}
-          style={({ pressed }) => [
-            styles.nextButton,
-            {
-              backgroundColor: colors.primary,
-              opacity: !canProceed ? 0.4 : pressed ? 0.85 : 1,
-            },
-          ]}
-        >
-          <Text style={styles.nextButtonText}>Next — Review & Confirm</Text>
-          <Feather name="arrow-right" size={18} color="#fff" />
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
   content: {
     paddingHorizontal: 20,
     paddingTop: 24,
-    gap: 12,
+    gap: 16,
   },
   heading: {
-    fontSize: 22,
+    fontSize: 32,
     fontFamily: "Inter_700Bold",
-    letterSpacing: -0.3,
-    marginBottom: 4,
+    color: "#fff",
+    letterSpacing: -1,
   },
   subheading: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.45)",
     lineHeight: 20,
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  options: { gap: 8 },
-  optionCard: {
+  optionsGrid: {
     flexDirection: "row",
-    alignItems: "center",
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    gap: 12,
+    flexWrap: "wrap",
+    gap: 10,
   },
-  optionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  optCard: {
+    alignItems: "center",
+    gap: 8,
+    minHeight: 120,
+    justifyContent: "center",
+    position: "relative",
+  },
+  optIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
-  optionText: { flex: 1 },
-  optionLabel: {
-    fontSize: 16,
-    marginBottom: 2,
+  optLabel: {
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
   },
-  optionSublabel: {
-    fontSize: 12,
+  optSublabel: {
+    fontSize: 11,
     fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.3)",
+    textAlign: "center",
   },
-  radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  radioDot: {
+  selectedDot: {
+    position: "absolute",
+    top: 10,
+    right: 10,
     width: 8,
     height: 8,
     borderRadius: 4,
   },
-  customBox: {
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    gap: 12,
-  },
-  customLabel: {
+  customBox: { gap: 16 },
+  customTitle: {
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
+    color: "#fff",
   },
-  customInputRow: {
+  customRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
-  customInputGroup: {
+  customGroup: {
     flex: 1,
     alignItems: "center",
-    gap: 6,
+    gap: 8,
   },
   customInput: {
-    width: "100%",
-    height: 52,
-    borderRadius: 10,
-    borderWidth: 1,
+    height: 64,
     textAlign: "center",
-    fontSize: 22,
+    fontSize: 28,
     fontFamily: "Inter_700Bold",
+    color: "#fff",
+    paddingHorizontal: 16,
   },
-  customInputLabel: {
+  customUnit: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.35)",
     textAlign: "center",
   },
-  customSep: {
-    fontSize: 20,
+  customPlus: {
+    fontSize: 24,
+    color: "rgba(255,255,255,0.3)",
     fontFamily: "Inter_400Regular",
-    marginTop: -16,
+    marginBottom: 20,
   },
   maxNote: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.25)",
     textAlign: "center",
-    marginTop: -4,
   },
-  summaryBanner: {
+  summary: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    padding: 12,
-    borderRadius: 10,
+    padding: 14,
+    borderRadius: 14,
     marginTop: 4,
   },
   summaryText: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.55)",
   },
-  summaryBold: {
-    fontFamily: "Inter_600SemiBold",
-  },
+  summaryBold: { fontFamily: "Inter_700Bold" },
   footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
     paddingHorizontal: 20,
     paddingTop: 12,
     borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(8,0,20,0.85)",
   },
-  nextButton: {
+  nextBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 16,
-    borderRadius: 14,
+    paddingVertical: 17,
+    borderRadius: 18,
+    shadowColor: "#6366F1",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 14,
+    elevation: 10,
   },
-  nextButtonText: {
+  nextBtnText: {
     color: "#fff",
     fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_700Bold",
   },
 });

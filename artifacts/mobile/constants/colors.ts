@@ -1,75 +1,35 @@
+const glassDark = {
+  text: "#FFFFFF",
+  tint: "#6366F1",
+  background: "#080014",
+  foreground: "#FFFFFF",
+  card: "rgba(255,255,255,0.06)",
+  cardForeground: "#FFFFFF",
+  primary: "#6366F1",
+  primaryForeground: "#FFFFFF",
+  secondary: "rgba(99,102,241,0.18)",
+  secondaryForeground: "#A5B4FC",
+  muted: "rgba(255,255,255,0.06)",
+  mutedForeground: "rgba(255,255,255,0.45)",
+  accent: "#FF006E",
+  accentForeground: "#FFFFFF",
+  destructive: "#FF0055",
+  destructiveForeground: "#FFFFFF",
+  warning: "#FF9500",
+  warningForeground: "#FFFFFF",
+  success: "#00FF88",
+  successForeground: "#000000",
+  border: "rgba(255,255,255,0.12)",
+  input: "rgba(255,255,255,0.10)",
+  tabBar: "rgba(8,0,20,0.90)",
+  header: "rgba(8,0,20,0.90)",
+  gradientColors: ["#080014", "#16082E", "#0D1535"] as const,
+};
+
 const colors = {
-  light: {
-    text: "#0F172A",
-    tint: "#1E40AF",
-
-    background: "#F8FAFC",
-    foreground: "#0F172A",
-
-    card: "#FFFFFF",
-    cardForeground: "#0F172A",
-
-    primary: "#1E40AF",
-    primaryForeground: "#FFFFFF",
-
-    secondary: "#EFF6FF",
-    secondaryForeground: "#1E3A8A",
-
-    muted: "#F1F5F9",
-    mutedForeground: "#64748B",
-
-    accent: "#DBEAFE",
-    accentForeground: "#1E40AF",
-
-    destructive: "#DC2626",
-    destructiveForeground: "#FFFFFF",
-
-    warning: "#F59E0B",
-    warningForeground: "#FFFFFF",
-
-    border: "#E2E8F0",
-    input: "#E2E8F0",
-
-    tabBar: "#FFFFFF",
-    header: "#FFFFFF",
-  },
-
-  dark: {
-    text: "#F1F5F9",
-    tint: "#60A5FA",
-
-    background: "#0F172A",
-    foreground: "#F1F5F9",
-
-    card: "#1E293B",
-    cardForeground: "#F1F5F9",
-
-    primary: "#3B82F6",
-    primaryForeground: "#FFFFFF",
-
-    secondary: "#1E3A5F",
-    secondaryForeground: "#BFDBFE",
-
-    muted: "#1E293B",
-    mutedForeground: "#94A3B8",
-
-    accent: "#1E3A5F",
-    accentForeground: "#60A5FA",
-
-    destructive: "#EF4444",
-    destructiveForeground: "#FFFFFF",
-
-    warning: "#F59E0B",
-    warningForeground: "#0F172A",
-
-    border: "#334155",
-    input: "#334155",
-
-    tabBar: "#1E293B",
-    header: "#1E293B",
-  },
-
-  radius: 12,
+  light: glassDark,
+  dark: glassDark,
+  radius: 24,
 };
 
 export default colors;

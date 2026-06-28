@@ -6,18 +6,18 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { FirebaseSyncProvider } from "@/context/FirebaseSyncContext";
 import { LockProvider } from "@/context/LockContext";
-import { useColors } from "@/hooks/useColors";
 import { usePermissionStatus } from "@/hooks/usePermissionStatus";
 import { ONBOARDING_DONE_KEY } from "./onboarding";
 
@@ -25,9 +25,6 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
-/* ───────────────────────────────────────────────
-   First-launch redirect guard
-─────────────────────────────────────────────── */
 function SetupGuard({ children }: { children: React.ReactNode }) {
   const { setupComplete, loading } = usePermissionStatus();
   const segments = useSegments();
@@ -38,7 +35,6 @@ function SetupGuard({ children }: { children: React.ReactNode }) {
 
     const inSetup = segments[0] === "setup";
     const inOnboarding = segments[0] === "onboarding";
-    const inTabs = segments[0] === "(tabs)";
 
     (async () => {
       const onboardingDone = await AsyncStorage.getItem(ONBOARDING_DONE_KEY);
@@ -59,24 +55,21 @@ function SetupGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/* ───────────────────────────────────────────────
-   Root nav
-─────────────────────────────────────────────── */
 function RootLayoutNav() {
-  const colors = useColors();
-
   return (
     <SetupGuard>
+      <StatusBar style="light" />
       <Stack
         screenOptions={{
-          headerBackTitle: "Back",
-          headerStyle: { backgroundColor: colors.header },
-          headerTintColor: colors.primary,
+          headerStyle: { backgroundColor: "rgba(8,0,20,0.95)" },
+          headerTintColor: "#A5B4FC",
           headerTitleStyle: {
-            fontFamily: "Inter_600SemiBold",
-            color: colors.foreground,
+            fontFamily: "Inter_700Bold",
+            color: "#FFFFFF",
+            fontSize: 17,
           },
-          contentStyle: { backgroundColor: colors.background },
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: "transparent" },
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -110,9 +103,6 @@ function RootLayoutNav() {
   );
 }
 
-/* ───────────────────────────────────────────────
-   Root layout
-─────────────────────────────────────────────── */
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,

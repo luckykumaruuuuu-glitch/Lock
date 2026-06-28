@@ -1,8 +1,10 @@
 import { FontAwesome5, Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Animated,
   FlatList,
   Platform,
   Pressable,
@@ -13,126 +15,177 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { GlassCard } from "@/components/ui/GlassCard";
+import { GradientBackground } from "@/components/ui/GradientBackground";
 import { DUMMY_APPS, AppItem, useLock } from "@/context/LockContext";
-import { useColors } from "@/hooks/useColors";
 import { getActiveLocks } from "@/hooks/useLockStorage";
+import { useSounds } from "@/hooks/useSounds";
 
-function AppRow({
+function AppCard({
   app,
   selected,
   alreadyLocked,
   onToggle,
-  colors,
+  index,
 }: {
   app: AppItem;
   selected: boolean;
   alreadyLocked: boolean;
   onToggle: () => void;
-  colors: ReturnType<typeof useColors>;
+  index: number;
 }) {
-  const disabled = alreadyLocked;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const checkScale = useRef(new Animated.Value(selected ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 200,
+        friction: 10,
+        delay: index * 40,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 300,
+        delay: index * 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [scaleAnim, opacityAnim, index]);
+
+  useEffect(() => {
+    Animated.spring(checkScale, {
+      toValue: selected ? 1 : 0,
+      useNativeDriver: true,
+      tension: 250,
+      friction: 8,
+    }).start();
+  }, [selected, checkScale]);
 
   return (
-    <Pressable
-      onPress={disabled ? undefined : onToggle}
-      style={({ pressed }) => [
-        styles.appRow,
-        {
-          backgroundColor: alreadyLocked
-            ? colors.muted
-            : selected
-            ? colors.primary + "10"
-            : colors.card,
-          borderColor: alreadyLocked
-            ? colors.border
-            : selected
-            ? colors.primary + "40"
-            : colors.border,
-          opacity: pressed && !disabled ? 0.8 : 1,
-        },
+    <Animated.View
+      style={[
+        styles.cardWrapper,
+        { transform: [{ scale: scaleAnim }], opacity: opacityAnim },
       ]}
     >
-      <View
-        style={[
-          styles.appIconBg,
-          {
-            backgroundColor: alreadyLocked
-              ? colors.border
-              : app.iconColor + "18",
-          },
-        ]}
-      >
-        <FontAwesome5
-          name={app.iconName as any}
-          size={18}
-          color={alreadyLocked ? colors.mutedForeground : app.iconColor}
-        />
-      </View>
-      <View style={styles.appInfo}>
-        <Text
-          style={[
-            styles.appName,
-            {
-              color: alreadyLocked ? colors.mutedForeground : colors.foreground,
-            },
-          ]}
+      <Pressable onPress={alreadyLocked ? undefined : onToggle}>
+        <GlassCard
+          style={styles.appCard}
+          borderColor={
+            alreadyLocked
+              ? "rgba(255,255,255,0.06)"
+              : selected
+              ? "rgba(99,102,241,0.5)"
+              : "rgba(255,255,255,0.12)"
+          }
+          backgroundColor={
+            alreadyLocked
+              ? "rgba(255,255,255,0.03)"
+              : selected
+              ? "rgba(99,102,241,0.12)"
+              : "rgba(255,255,255,0.07)"
+          }
+          padding={14}
         >
-          {app.name}
-        </Text>
-        <Text style={[styles.appCategory, { color: colors.mutedForeground }]}>
-          {alreadyLocked ? "Already locked" : app.category}
-        </Text>
-      </View>
-      {alreadyLocked ? (
-        <View style={[styles.lockedBadge, { backgroundColor: colors.border }]}>
-          <Feather name="lock" size={12} color={colors.mutedForeground} />
-        </View>
-      ) : (
-        <View
-          style={[
-            styles.checkbox,
-            {
-              backgroundColor: selected ? colors.primary : "transparent",
-              borderColor: selected ? colors.primary : colors.border,
-            },
-          ]}
-        >
-          {selected && <Feather name="check" size={14} color="#fff" />}
-        </View>
-      )}
-    </Pressable>
+          {/* Icon */}
+          <LinearGradient
+            colors={
+              alreadyLocked
+                ? ["rgba(255,255,255,0.05)", "rgba(255,255,255,0.02)"]
+                : [app.iconColor + "33", app.iconColor + "15"]
+            }
+            style={styles.appIconBg}
+          >
+            <FontAwesome5
+              name={app.iconName as any}
+              size={20}
+              color={alreadyLocked ? "rgba(255,255,255,0.2)" : app.iconColor}
+            />
+          </LinearGradient>
+
+          {/* Info */}
+          <View style={styles.appInfo}>
+            <Text
+              style={[
+                styles.appName,
+                { color: alreadyLocked ? "rgba(255,255,255,0.25)" : "#fff" },
+              ]}
+            >
+              {app.name}
+            </Text>
+            <Text style={styles.appCategory}>
+              {alreadyLocked ? "Already locked" : app.category}
+            </Text>
+          </View>
+
+          {/* Checkbox / Lock badge */}
+          {alreadyLocked ? (
+            <View style={styles.lockedBadge}>
+              <Feather name="lock" size={12} color="rgba(255,255,255,0.2)" />
+            </View>
+          ) : (
+            <Animated.View
+              style={[
+                styles.checkbox,
+                {
+                  borderColor: selected
+                    ? "#6366F1"
+                    : "rgba(255,255,255,0.2)",
+                  transform: [{ scale: checkScale.interpolate({ inputRange: [0, 1], outputRange: [1, 1] }) }],
+                },
+              ]}
+            >
+              <Animated.View style={{ transform: [{ scale: checkScale }] }}>
+                {selected && (
+                  <LinearGradient
+                    colors={["#6366F1", "#8B5CF6"]}
+                    style={styles.checkFill}
+                  >
+                    <Feather name="check" size={12} color="#fff" />
+                  </LinearGradient>
+                )}
+              </Animated.View>
+            </Animated.View>
+          )}
+        </GlassCard>
+      </Pressable>
+    </Animated.View>
   );
 }
 
 export default function SelectAppsScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { selection, setSelectedApps } = useLock();
+  const { playClick } = useSounds();
   const [search, setSearch] = useState("");
-  const [alreadyLockedPkgs, setAlreadyLockedPkgs] = useState<Set<string>>(
-    new Set()
-  );
+  const [alreadyLockedPkgs, setAlreadyLockedPkgs] = useState<Set<string>>(new Set());
 
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   useEffect(() => {
     getActiveLocks().then((active) => {
-      const pkgs = new Set<string>(
-        active.flatMap((l) => l.apps.map((a) => a.packageName))
+      setAlreadyLockedPkgs(
+        new Set(active.flatMap((l) => l.apps.map((a) => a.packageName)))
       );
-      setAlreadyLockedPkgs(pkgs);
     });
   }, []);
 
   const filtered = DUMMY_APPS.filter((a) =>
     a.name.toLowerCase().includes(search.toLowerCase())
   );
-
   const selectedIds = new Set(selection.selectedApps.map((a) => a.id));
+  const alreadyLockedCount = filtered.filter((a) =>
+    alreadyLockedPkgs.has(a.packageName)
+  ).length;
 
   const toggle = useCallback(
     (app: AppItem) => {
       if (alreadyLockedPkgs.has(app.packageName)) return;
+      playClick();
       Haptics.selectionAsync();
       if (selectedIds.has(app.id)) {
         setSelectedApps(selection.selectedApps.filter((a) => a.id !== app.id));
@@ -140,7 +193,7 @@ export default function SelectAppsScreen() {
         setSelectedApps([...selection.selectedApps, app]);
       }
     },
-    [alreadyLockedPkgs, selectedIds, selection.selectedApps, setSelectedApps]
+    [alreadyLockedPkgs, selectedIds, selection.selectedApps, setSelectedApps, playClick]
   );
 
   function handleNext() {
@@ -149,60 +202,50 @@ export default function SelectAppsScreen() {
     router.push("/lock/duration");
   }
 
-  const alreadyLockedCount = filtered.filter((a) =>
-    alreadyLockedPkgs.has(a.packageName)
-  ).length;
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View
-        style={[
-          styles.searchBar,
-          { backgroundColor: colors.muted, borderColor: colors.border },
-        ]}
+    <GradientBackground>
+      {/* Search bar */}
+      <GlassCard
+        style={styles.searchBar}
+        borderColor="rgba(255,255,255,0.12)"
+        radius={16}
       >
-        <Feather name="search" size={16} color={colors.mutedForeground} />
-        <TextInput
-          style={[styles.searchInput, { color: colors.foreground }]}
-          placeholder="Search apps..."
-          placeholderTextColor={colors.mutedForeground}
-          value={search}
-          onChangeText={setSearch}
-        />
-        {search.length > 0 && (
-          <Pressable onPress={() => setSearch("")}>
-            <Feather name="x" size={16} color={colors.mutedForeground} />
-          </Pressable>
-        )}
-      </View>
+        <View style={styles.searchInner}>
+          <Feather name="search" size={16} color="rgba(255,255,255,0.4)" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search apps…"
+            placeholderTextColor="rgba(255,255,255,0.3)"
+            value={search}
+            onChangeText={setSearch}
+          />
+          {search.length > 0 && (
+            <Pressable onPress={() => setSearch("")}>
+              <Feather name="x" size={16} color="rgba(255,255,255,0.4)" />
+            </Pressable>
+          )}
+        </View>
+      </GlassCard>
 
+      {/* Selection banner */}
       {selection.selectedApps.length > 0 && (
-        <View
-          style={[
-            styles.selectionBanner,
-            { backgroundColor: colors.primary + "12" },
-          ]}
+        <LinearGradient
+          colors={["rgba(99,102,241,0.2)", "rgba(139,92,246,0.1)"]}
+          style={styles.selBanner}
         >
-          <Feather name="check-circle" size={14} color={colors.primary} />
-          <Text style={[styles.selectionText, { color: colors.primary }]}>
+          <Feather name="check-circle" size={14} color="#A5B4FC" />
+          <Text style={styles.selText}>
             {selection.selectedApps.length} app
             {selection.selectedApps.length !== 1 ? "s" : ""} selected
           </Text>
-        </View>
+        </LinearGradient>
       )}
 
       {alreadyLockedCount > 0 && (
-        <View
-          style={[
-            styles.infoBanner,
-            { backgroundColor: colors.muted, borderColor: colors.border },
-          ]}
-        >
-          <Feather name="info" size={13} color={colors.mutedForeground} />
-          <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
-            {alreadyLockedCount} app
-            {alreadyLockedCount !== 1 ? "s are" : " is"} already locked and
-            cannot be selected again.
+        <View style={styles.infoBanner}>
+          <Feather name="info" size={12} color="rgba(255,255,255,0.35)" />
+          <Text style={styles.infoText}>
+            {alreadyLockedCount} app{alreadyLockedCount !== 1 ? "s are" : " is"} already locked
           </Text>
         </View>
       )}
@@ -210,85 +253,76 @@ export default function SelectAppsScreen() {
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <AppRow
+        renderItem={({ item, index }) => (
+          <AppCard
             app={item}
             selected={selectedIds.has(item.id)}
             alreadyLocked={alreadyLockedPkgs.has(item.packageName)}
             onToggle={() => toggle(item)}
-            colors={colors}
+            index={index}
           />
         )}
-        ItemSeparatorComponent={() => (
-          <View style={[styles.separator, { backgroundColor: colors.border }]} />
-        )}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
-        scrollEnabled={filtered.length > 0}
+        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
       />
 
-      <View
-        style={[
-          styles.footer,
-          {
-            paddingBottom: bottomPad + 20,
-            backgroundColor: colors.background,
-            borderTopColor: colors.border,
-          },
-        ]}
-      >
+      {/* Footer */}
+      <View style={[styles.footer, { paddingBottom: bottomPad + 20 }]}>
         <Pressable
           onPress={handleNext}
           disabled={selection.selectedApps.length === 0}
           style={({ pressed }) => [
-            styles.nextButton,
-            {
-              backgroundColor: colors.primary,
-              opacity:
-                selection.selectedApps.length === 0 ? 0.4 : pressed ? 0.85 : 1,
-            },
+            { opacity: selection.selectedApps.length === 0 ? 0.35 : pressed ? 0.85 : 1 },
           ]}
         >
-          <Text style={styles.nextButtonText}>Next — Set Duration</Text>
-          <Feather name="arrow-right" size={18} color="#fff" />
+          <LinearGradient
+            colors={["#6366F1", "#8B5CF6"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.nextBtn}
+          >
+            <Text style={styles.nextBtnText}>Next — Set Duration</Text>
+            <Feather name="arrow-right" size={18} color="#fff" />
+          </LinearGradient>
         </Pressable>
       </View>
-    </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
   searchBar: {
+    margin: 16,
+    marginBottom: 8,
+  },
+  searchInner: {
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 8,
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
     fontFamily: "Inter_400Regular",
+    color: "#fff",
   },
-  selectionBanner: {
+  selBanner: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
     marginHorizontal: 16,
     marginBottom: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
-  selectionText: {
+  selText: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_600SemiBold",
+    color: "#A5B4FC",
   },
   infoBanner: {
     flexDirection: "row",
@@ -298,77 +332,83 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
   },
   infoText: {
-    flex: 1,
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    lineHeight: 18,
+    color: "rgba(255,255,255,0.35)",
   },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-  },
-  appRow: {
+  list: { paddingHorizontal: 16, paddingBottom: 8 },
+  cardWrapper: {},
+  appCard: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
     gap: 12,
-    marginVertical: 3,
   },
   appIconBg: {
-    width: 42,
-    height: 42,
-    borderRadius: 11,
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
   appInfo: { flex: 1 },
   appName: {
     fontSize: 15,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_600SemiBold",
     marginBottom: 2,
   },
   appCategory: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.35)",
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 7,
-    borderWidth: 2,
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  checkFill: {
+    width: 26,
+    height: 26,
     alignItems: "center",
     justifyContent: "center",
   },
   lockedBadge: {
-    width: 28,
-    height: 28,
+    width: 30,
+    height: 30,
     borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.04)",
     alignItems: "center",
     justifyContent: "center",
   },
-  separator: { height: 1, marginVertical: 1 },
   footer: {
     paddingHorizontal: 16,
     paddingTop: 12,
     borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(8,0,20,0.85)",
   },
-  nextButton: {
+  nextBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 16,
-    borderRadius: 14,
+    paddingVertical: 17,
+    borderRadius: 18,
+    shadowColor: "#6366F1",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 14,
+    elevation: 10,
   },
-  nextButtonText: {
+  nextBtnText: {
     color: "#fff",
     fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_700Bold",
   },
 });

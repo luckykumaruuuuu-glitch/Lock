@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
   Linking,
@@ -12,7 +13,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useColors } from "@/hooks/useColors";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { GradientBackground } from "@/components/ui/GradientBackground";
+import { useSounds } from "@/hooks/useSounds";
 
 const APP_VERSION = "1.0.0";
 const BUILD_NUMBER = "2026.06.28";
@@ -24,19 +27,15 @@ Last updated: June 28, 2026
 FocusLock does not collect any personal information. The app operates primarily on your device. If Firebase is configured, a random device UUID (not linked to any personal identity) is used as a database path to sync lock states.
 
 2. DATA STORED ON DEVICE
-FocusLock stores the following data locally on your device:
+FocusLock stores the following data locally:
 • Active lock entries (which apps are locked and until when)
 • Permission grant status for Accessibility Service and Device Admin
 • Onboarding completion flag
 
 3. FIREBASE REALTIME DATABASE (OPTIONAL)
-If Firebase credentials are configured, FocusLock syncs lock data to Firebase Realtime Database using a randomly generated device UUID as the path. This data includes:
-• Lock identifiers and expiry timestamps
-• App package names that are locked
-No personal information, name, email, or device identifiers are stored.
+If Firebase credentials are configured, FocusLock syncs lock data using a randomly generated device UUID. This includes lock identifiers, expiry timestamps, and app package names. No personal information is stored.
 
 4. ANDROID PERMISSIONS
-FocusLock requires the following Android permissions:
 • Accessibility Service: To detect and block locked apps in the foreground
 • Device Administrator: To prevent uninstallation while locks are active
 • Usage Access: To identify which app is currently open
@@ -45,95 +44,65 @@ FocusLock requires the following Android permissions:
 • Internet: For optional Firebase time verification
 
 5. DATA SHARING
-FocusLock does not share, sell, or transmit your data to any third parties. Lock data in Firebase (if used) is stored under your anonymous device UUID and is not accessible to us.
+FocusLock does not share, sell, or transmit your data to any third parties.
 
 6. CHILDREN'S PRIVACY
-FocusLock does not knowingly collect data from children under 13. The app does not have accounts, sign-ups, or user profiles.
+FocusLock does not knowingly collect data from children under 13.
 
 7. SECURITY
-Lock data is stored locally using AsyncStorage and optionally in Firebase under an anonymous UUID. The app is designed to prevent tampering via Device Admin and Accessibility Service enforcement.
+Lock data is stored locally via AsyncStorage and optionally in Firebase under an anonymous UUID.
 
-8. CHANGES TO THIS POLICY
-We may update this Privacy Policy. Continued use of FocusLock after changes constitutes acceptance of the updated policy.
+8. CONTACT
+For privacy concerns, contact the developer through the app's Google Play listing.`;
 
-9. CONTACT
-For privacy concerns, contact the developer through the app's listing on Google Play.`;
-
-interface SettingsRowProps {
-  icon: string;
-  label: string;
-  value?: string;
-  onPress?: () => void;
-  colors: ReturnType<typeof useColors>;
-  showChevron?: boolean;
-  destructive?: boolean;
-}
-
-function SettingsRow({
+function SettingRow({
   icon,
   label,
   value,
   onPress,
-  colors,
-  showChevron = false,
-  destructive = false,
-}: SettingsRowProps) {
-  const iconBg = destructive ? colors.destructive + "18" : colors.primary + "18";
-  const iconColor = destructive ? colors.destructive : colors.primary;
-  const labelColor = destructive ? colors.destructive : colors.foreground;
-
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={!onPress}
-      style={({ pressed }) => [
-        styles.row,
-        {
-          backgroundColor: colors.card,
-          opacity: pressed ? 0.75 : 1,
-        },
-      ]}
-    >
-      <View style={[styles.rowIcon, { backgroundColor: iconBg }]}>
-        <Feather name={icon as any} size={16} color={iconColor} />
-      </View>
-      <Text style={[styles.rowLabel, { color: labelColor }]}>{label}</Text>
-      {value ? (
-        <Text style={[styles.rowValue, { color: colors.mutedForeground }]}>
-          {value}
-        </Text>
-      ) : null}
-      {showChevron && (
-        <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-      )}
-    </Pressable>
-  );
-}
-
-function SectionHeader({
-  title,
-  colors,
+  iconColors = ["#6366F1", "#8B5CF6"] as const,
+  last = false,
 }: {
-  title: string;
-  colors: ReturnType<typeof useColors>;
+  icon: string;
+  label: string;
+  value?: string;
+  onPress?: () => void;
+  iconColors?: readonly [string, string];
+  last?: boolean;
 }) {
   return (
-    <Text style={[styles.sectionHeader, { color: colors.mutedForeground }]}>
-      {title}
-    </Text>
+    <>
+      <Pressable
+        onPress={onPress}
+        disabled={!onPress}
+        style={({ pressed }) => [
+          styles.settingRow,
+          { opacity: pressed ? 0.7 : 1 },
+        ]}
+      >
+        <LinearGradient colors={iconColors} style={styles.settingIcon}>
+          <Feather name={icon as any} size={14} color="#fff" />
+        </LinearGradient>
+        <Text style={styles.settingLabel}>{label}</Text>
+        {value && <Text style={styles.settingValue}>{value}</Text>}
+        {onPress && (
+          <Feather name="chevron-right" size={15} color="rgba(255,255,255,0.25)" />
+        )}
+      </Pressable>
+      {!last && <View style={styles.rowDivider} />}
+    </>
   );
 }
 
 function PrivacyModal({
   visible,
   onClose,
-  colors,
 }: {
   visible: boolean;
   onClose: () => void;
-  colors: ReturnType<typeof useColors>;
 }) {
   const insets = useSafeAreaInsets();
+
   return (
     <Modal
       visible={visible}
@@ -141,243 +110,222 @@ function PrivacyModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View
-        style={[
-          styles.modalContainer,
-          { backgroundColor: colors.background, paddingTop: insets.top + 16 },
-        ]}
-      >
-        <View style={styles.modalHeader}>
-          <Text style={[styles.modalTitle, { color: colors.foreground }]}>
-            Privacy Policy
-          </Text>
+      <View style={[modalStyles.root, { paddingTop: insets.top + 16 }]}>
+        <LinearGradient
+          colors={["#080014", "#16082E", "#0D1535"]}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={modalStyles.header}>
+          <Text style={modalStyles.title}>Privacy Policy</Text>
           <Pressable
             onPress={onClose}
-            style={[styles.modalClose, { backgroundColor: colors.muted }]}
+            style={({ pressed }) => [modalStyles.closeBtn, { opacity: pressed ? 0.7 : 1 }]}
           >
-            <Feather name="x" size={18} color={colors.foreground} />
+            <GlassCard radius={20} padding={8}>
+              <Feather name="x" size={18} color="#fff" />
+            </GlassCard>
           </Pressable>
         </View>
         <ScrollView
-          style={styles.modalScroll}
-          contentContainerStyle={[
-            styles.modalContent,
-            { paddingBottom: insets.bottom + 24 },
-          ]}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={[modalStyles.content, { paddingBottom: insets.bottom + 24 }]}
         >
-          <Text style={[styles.privacyText, { color: colors.foreground }]}>
-            {PRIVACY_POLICY}
-          </Text>
+          <Text style={modalStyles.text}>{PRIVACY_POLICY}</Text>
         </ScrollView>
       </View>
     </Modal>
   );
 }
 
+const modalStyles = StyleSheet.create({
+  root: { flex: 1, paddingHorizontal: 20 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  title: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#fff" },
+  closeBtn: {},
+  content: { paddingBottom: 24 },
+  text: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.55)",
+    lineHeight: 22,
+  },
+});
+
 export default function SettingsScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const [privacyVisible, setPrivacyVisible] = useState(false);
+  const { muted, setMuted, playClick } = useSounds();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 + 84 : 84;
 
   return (
-    <>
+    <GradientBackground>
       <ScrollView
-        style={[styles.container, { backgroundColor: colors.background }]}
         contentContainerStyle={[
           styles.content,
           { paddingTop: topPad + 16, paddingBottom: bottomPad + 24 },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.foreground }]}>
-          Settings
-        </Text>
+        <Text style={styles.pageTitle}>Settings</Text>
 
-        <SectionHeader title="APPLICATION" colors={colors} />
-        <View style={[styles.section, { borderColor: colors.border }]}>
-          <SettingsRow
-            icon="info"
-            label="Version"
-            value={APP_VERSION}
-            colors={colors}
-          />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <SettingsRow
-            icon="cpu"
-            label="Build"
-            value={BUILD_NUMBER}
-            colors={colors}
-          />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <SettingsRow
-            icon="target"
-            label="Target SDK"
-            value="API 34 (Android 14)"
-            colors={colors}
-          />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <SettingsRow
-            icon="smartphone"
-            label="Min SDK"
-            value="API 26 (Android 8.0)"
-            colors={colors}
-          />
-        </View>
+        {/* App section */}
+        <Text style={styles.sectionLabel}>APPLICATION</Text>
+        <GlassCard>
+          <SettingRow icon="info" label="Version" value={APP_VERSION} iconColors={["#6366F1", "#8B5CF6"]} />
+          <SettingRow icon="cpu" label="Build" value={BUILD_NUMBER} iconColors={["#6366F1", "#8B5CF6"]} />
+          <SettingRow icon="target" label="Target SDK" value="API 34 (Android 14)" iconColors={["#6366F1", "#8B5CF6"]} />
+          <SettingRow icon="smartphone" label="Min SDK" value="API 26 (Android 8.0)" iconColors={["#6366F1", "#8B5CF6"]} last />
+        </GlassCard>
 
-        <SectionHeader title="HOW IT WORKS" colors={colors} />
-        <View
-          style={[
-            styles.howBox,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
+        {/* Sound section */}
+        <Text style={styles.sectionLabel}>AUDIO & FEEDBACK</Text>
+        <GlassCard>
+          <Pressable
+            onPress={() => {
+              const next = !muted;
+              setMuted(next);
+              if (!next) playClick();
+            }}
+            style={({ pressed }) => [styles.settingRow, { opacity: pressed ? 0.7 : 1 }]}
+          >
+            <LinearGradient
+              colors={muted ? ["rgba(255,255,255,0.08)", "rgba(255,255,255,0.04)"] : ["#FF006E", "#FF4444"]}
+              style={styles.settingIcon}
+            >
+              <Feather name={muted ? "volume-x" : "volume-2"} size={14} color={muted ? "rgba(255,255,255,0.3)" : "#fff"} />
+            </LinearGradient>
+            <Text style={styles.settingLabel}>Sound Effects</Text>
+            <View
+              style={[
+                styles.toggle,
+                { backgroundColor: muted ? "rgba(255,255,255,0.1)" : "#FF006E" },
+              ]}
+            >
+              <View
+                style={[
+                  styles.toggleDot,
+                  { alignSelf: muted ? "flex-start" : "flex-end" },
+                ]}
+              />
+            </View>
+          </Pressable>
+          <View style={styles.rowDivider} />
+          <View style={styles.settingRow}>
+            <LinearGradient colors={["#FF9500", "#FF6B00"]} style={styles.settingIcon}>
+              <Feather name="zap" size={14} color="#fff" />
+            </LinearGradient>
+            <Text style={styles.settingLabel}>Haptic Feedback</Text>
+            <Text style={styles.settingValue}>Always on</Text>
+          </View>
+        </GlassCard>
+
+        {/* How it works */}
+        <Text style={styles.sectionLabel}>HOW IT WORKS</Text>
+        <GlassCard>
           {[
             {
               icon: "lock",
-              color: "#1E40AF",
               text: "Select apps to block and set a duration. Once confirmed, the lock cannot be removed.",
+              colors: ["#6366F1", "#8B5CF6"] as const,
             },
             {
               icon: "eye",
-              color: "#7C3AED",
-              text: "The Accessibility Service monitors which app is in the foreground and blocks locked apps immediately.",
+              text: "The Accessibility Service monitors the foreground app and redirects away from locked apps.",
+              colors: ["#FF006E", "#FF4444"] as const,
             },
             {
               icon: "shield",
-              color: "#059669",
               text: "Device Admin prevents FocusLock from being uninstalled while any lock is active.",
+              colors: ["#00CC6A", "#00FF88"] as const,
             },
             {
               icon: "cloud",
-              color: "#0284C7",
-              text: "Firebase server time (when configured) is used to verify lock expiry — changing your phone's clock has no effect.",
+              text: "Firebase server time (when configured) verifies lock expiry — changing your clock has no effect.",
+              colors: ["#FF9500", "#FF6B00"] as const,
             },
           ].map((item, i, arr) => (
             <View key={i}>
               <View style={styles.howRow}>
-                <View
-                  style={[
-                    styles.howIconBg,
-                    { backgroundColor: item.color + "18" },
-                  ]}
-                >
-                  <Feather name={item.icon as any} size={14} color={item.color} />
-                </View>
-                <Text
-                  style={[styles.howText, { color: colors.mutedForeground }]}
-                >
-                  {item.text}
-                </Text>
+                <LinearGradient colors={item.colors} style={styles.howIcon}>
+                  <Feather name={item.icon as any} size={13} color="#fff" />
+                </LinearGradient>
+                <Text style={styles.howText}>{item.text}</Text>
               </View>
-              {i < arr.length - 1 && (
-                <View
-                  style={[styles.divider, { backgroundColor: colors.border }]}
-                />
-              )}
+              {i < arr.length - 1 && <View style={styles.rowDivider} />}
             </View>
           ))}
-        </View>
+        </GlassCard>
 
-        <SectionHeader title="LEGAL" colors={colors} />
-        <View style={[styles.section, { borderColor: colors.border }]}>
-          <SettingsRow
+        {/* Legal */}
+        <Text style={styles.sectionLabel}>LEGAL</Text>
+        <GlassCard>
+          <SettingRow
             icon="file-text"
             label="Privacy Policy"
-            colors={colors}
-            showChevron
+            iconColors={["#6366F1", "#8B5CF6"]}
             onPress={() => setPrivacyVisible(true)}
           />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <SettingsRow
+          <SettingRow
             icon="book"
             label="Terms of Service"
-            colors={colors}
-            showChevron
-            onPress={() =>
-              Linking.openURL("https://focuslock.app/terms").catch(() => {})
-            }
+            iconColors={["#6366F1", "#8B5CF6"]}
+            onPress={() => Linking.openURL("https://focuslock.app/terms").catch(() => {})}
           />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <SettingsRow
+          <SettingRow
             icon="alert-circle"
             label="Open Source Licenses"
-            colors={colors}
-            showChevron
+            iconColors={["#6366F1", "#8B5CF6"]}
+            last
             onPress={() =>
-              Linking.openURL(
-                "https://github.com/expo/expo/blob/main/LICENSE"
-              ).catch(() => {})
+              Linking.openURL("https://github.com/expo/expo/blob/main/LICENSE").catch(() => {})
             }
           />
-        </View>
+        </GlassCard>
 
-        <SectionHeader title="ABOUT" colors={colors} />
-        <View
-          style={[
-            styles.aboutCard,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <View
-            style={[
-              styles.aboutIcon,
-              { backgroundColor: colors.primary + "18" },
-            ]}
+        {/* About */}
+        <Text style={styles.sectionLabel}>ABOUT</Text>
+        <GlassCard padding={24} style={styles.aboutCard}>
+          <LinearGradient
+            colors={["#6366F1", "#8B5CF6"]}
+            style={styles.aboutIcon}
           >
-            <Feather name="shield" size={28} color={colors.primary} />
-          </View>
-          <Text style={[styles.aboutTitle, { color: colors.foreground }]}>
-            FocusLock
-          </Text>
-          <Text
-            style={[styles.aboutSubtitle, { color: colors.mutedForeground }]}
-          >
-            v{APP_VERSION} — Social Media Addiction Blocker
-          </Text>
-          <Text style={[styles.aboutDesc, { color: colors.mutedForeground }]}>
+            <Feather name="shield" size={32} color="#fff" />
+          </LinearGradient>
+          <Text style={styles.aboutTitle}>FocusLock</Text>
+          <Text style={styles.aboutVersion}>v{APP_VERSION} · Social Media Blocker</Text>
+          <Text style={styles.aboutDesc}>
             FocusLock helps you take back control of your digital life by
-            blocking distracting apps for a set period. Once a lock is set, it
-            cannot be removed until the timer expires — keeping you accountable
-            to yourself.
+            blocking distracting apps for a set period. Once set, there's no
+            going back — only the timer unlocks you.
           </Text>
-          <View
-            style={[
-              styles.aboutBadge,
-              {
-                backgroundColor: colors.primary + "12",
-                borderColor: colors.primary + "30",
-              },
-            ]}
+          <LinearGradient
+            colors={["rgba(99,102,241,0.2)", "rgba(139,92,246,0.1)"]}
+            style={styles.aboutBadge}
           >
-            <Text style={[styles.aboutBadgeText, { color: colors.primary }]}>
-              Compatible with Android 8.0+
-            </Text>
-          </View>
-        </View>
+            <Text style={styles.aboutBadgeText}>Android 8.0+ compatible</Text>
+          </LinearGradient>
+        </GlassCard>
 
-        <View
-          style={[
-            styles.warningBox,
-            {
-              backgroundColor: colors.destructive + "10",
-              borderColor: colors.destructive + "25",
-            },
-          ]}
+        <GlassCard
+          padding={14}
+          borderColor="rgba(255,0,85,0.25)"
+          style={styles.dangerCard}
         >
-          <Feather name="alert-triangle" size={14} color={colors.destructive} />
-          <Text style={[styles.warningText, { color: colors.destructive }]}>
+          <Feather name="alert-triangle" size={14} color="#FF0055" />
+          <Text style={styles.dangerText}>
             Locks are permanent until the timer expires. There is no override or
             bypass — not even for the developer.
           </Text>
-        </View>
+        </GlassCard>
 
-        <Text
-          style={[styles.footerText, { color: colors.mutedForeground }]}
-        >
+        <Text style={styles.footer}>
           FocusLock {APP_VERSION} · Made with ❤️ for focus
         </Text>
       </ScrollView>
@@ -385,80 +333,83 @@ export default function SettingsScreen() {
       <PrivacyModal
         visible={privacyVisible}
         onClose={() => setPrivacyVisible(false)}
-        colors={colors}
       />
-    </>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: {
-    paddingHorizontal: 20,
-    gap: 8,
-  },
+  content: { paddingHorizontal: 20, gap: 8 },
   pageTitle: {
-    fontSize: 28,
+    fontSize: 30,
     fontFamily: "Inter_700Bold",
-    letterSpacing: -0.5,
-    marginBottom: 16,
+    color: "#fff",
+    letterSpacing: -0.8,
+    marginBottom: 12,
   },
-  sectionHeader: {
+  sectionLabel: {
     fontSize: 11,
     fontFamily: "Inter_500Medium",
     letterSpacing: 1,
+    color: "rgba(255,255,255,0.3)",
     marginTop: 12,
     marginBottom: 4,
-    marginLeft: 4,
+    marginLeft: 2,
   },
-  section: {
-    borderRadius: 14,
-    borderWidth: 1,
-    overflow: "hidden",
-  },
-  row: {
+  settingRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 13,
     paddingHorizontal: 16,
+    paddingVertical: 14,
     gap: 12,
   },
-  rowIcon: {
+  settingIcon: {
     width: 30,
     height: 30,
-    borderRadius: 8,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
   },
-  rowLabel: {
+  settingLabel: {
     flex: 1,
     fontSize: 15,
     fontFamily: "Inter_400Regular",
+    color: "#fff",
   },
-  rowValue: {
-    fontSize: 14,
+  settingValue: {
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.35)",
   },
-  divider: {
+  rowDivider: {
     height: 1,
+    backgroundColor: "rgba(255,255,255,0.06)",
     marginLeft: 58,
   },
-  howBox: {
-    borderRadius: 14,
-    borderWidth: 1,
-    overflow: "hidden",
+  toggle: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    padding: 2,
+    justifyContent: "center",
+  },
+  toggleDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#fff",
   },
   howRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 13,
     gap: 12,
   },
-  howIconBg: {
+  howIcon: {
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 1,
@@ -467,98 +418,71 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.5)",
     lineHeight: 20,
   },
-  aboutCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 20,
-    alignItems: "center",
-    gap: 8,
-    marginTop: 4,
-  },
+  aboutCard: { alignItems: "center", gap: 10 },
   aboutIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
+    width: 64,
+    height: 64,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#6366F1",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 12,
     marginBottom: 4,
   },
   aboutTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: "Inter_700Bold",
+    color: "#fff",
   },
-  aboutSubtitle: {
-    fontSize: 13,
+  aboutVersion: {
+    fontSize: 12,
     fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.35)",
   },
   aboutDesc: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.45)",
     textAlign: "center",
     lineHeight: 20,
     marginTop: 4,
   },
   aboutBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     borderRadius: 20,
-    borderWidth: 1,
-    marginTop: 8,
+    marginTop: 4,
   },
   aboutBadgeText: {
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_600SemiBold",
+    color: "#A5B4FC",
   },
-  warningBox: {
+  dangerCard: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 8,
+    marginTop: 4,
   },
-  warningText: {
+  dangerText: {
     flex: 1,
     fontSize: 12,
     fontFamily: "Inter_400Regular",
+    color: "#FF0055",
     lineHeight: 18,
   },
-  footerText: {
+  footer: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.2)",
     textAlign: "center",
     marginTop: 8,
     marginBottom: 4,
-  },
-  modalContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-  },
-  modalClose: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  modalScroll: { flex: 1 },
-  modalContent: { paddingBottom: 24 },
-  privacyText: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    lineHeight: 22,
   },
 });

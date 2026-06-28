@@ -1,254 +1,273 @@
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
+  Animated,
   Dimensions,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useColors } from "@/hooks/useColors";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { useSounds } from "@/hooks/useSounds";
 
 const { width } = Dimensions.get("window");
 
 export const ONBOARDING_DONE_KEY = "focuslock_onboarding_done";
 
-interface OnboardingSlide {
-  icon: string;
-  iconColor: string;
-  title: string;
-  body: string;
-  accent: string;
-}
-
-const SLIDES: OnboardingSlide[] = [
+const SLIDES = [
   {
-    icon: "shield",
-    iconColor: "#1E40AF",
-    title: "Take Back Control",
-    body: "FocusLock lets you lock distracting apps for a set period — with no way to bypass it early. Your commitment, enforced.",
-    accent: "#1E40AF",
+    icon: "shield" as const,
+    gradient: ["#6366F1", "#8B5CF6"] as const,
+    glowColor: "#6366F1",
+    title: "Take Back\nControl",
+    body: "FocusLock lets you lock distracting apps for a set period — with absolutely no way to bypass it early. Your commitment, enforced.",
+    accent: "#6366F1",
   },
   {
-    icon: "lock",
-    iconColor: "#7C3AED",
-    title: "Unbreakable Locks",
-    body: "Once you set a lock, it's permanent until the timer expires. No PIN bypass, no override — only the clock can unlock you.",
-    accent: "#7C3AED",
+    icon: "lock" as const,
+    gradient: ["#FF006E", "#FF4444"] as const,
+    glowColor: "#FF006E",
+    title: "Unbreakable\nLocks",
+    body: "Once set, a lock is permanent until the timer expires. No PIN override, no settings bypass — only the clock unlocks you.",
+    accent: "#FF006E",
   },
   {
-    icon: "clock",
-    iconColor: "#059669",
-    title: "Server-Verified Time",
-    body: "FocusLock uses Firebase server time, not your phone's clock. Changing the date or time won't unlock early.",
-    accent: "#059669",
+    icon: "clock" as const,
+    gradient: ["#00CC6A", "#00FF88"] as const,
+    glowColor: "#00FF88",
+    title: "Server-Verified\nTime",
+    body: "FocusLock uses Firebase server time, not your device clock. Changing the date or time on your phone won't unlock a single app.",
+    accent: "#00FF88",
   },
   {
-    icon: "alert-triangle",
-    iconColor: "#DC2626",
-    title: "True Enforcement",
-    body: "Device Administrator access prevents uninstalling FocusLock while locks are active. The Accessibility Service blocks apps in real time.",
-    accent: "#DC2626",
+    icon: "alert-triangle" as const,
+    gradient: ["#FF9500", "#FF6B00"] as const,
+    glowColor: "#FF9500",
+    title: "True\nEnforcement",
+    body: "Device Administrator prevents uninstalling FocusLock while active. The Accessibility Service blocks apps in real-time.",
+    accent: "#FF9500",
   },
 ];
 
 export default function OnboardingScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
-  const scrollRef = useRef<ScrollView>(null);
+  const { playClick, playSuccess } = useSounds();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const slideRef = useRef<any>(null);
+  const iconScale = useRef(new Animated.Value(1)).current;
 
   const topPad = Platform.OS === "web" ? 60 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  function goToSlide(index: number) {
-    scrollRef.current?.scrollTo({ x: index * width, animated: true });
+  const slide = SLIDES[currentIndex];
+
+  function animateIcon() {
+    iconScale.setValue(0.6);
+    Animated.spring(iconScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 250,
+      friction: 8,
+    }).start();
+  }
+
+  function goTo(index: number) {
+    playClick();
+    animateIcon();
     setCurrentIndex(index);
-    Haptics.selectionAsync();
+    slideRef.current?.scrollTo({ x: index * width, animated: true });
   }
 
   function handleNext() {
     if (currentIndex < SLIDES.length - 1) {
-      goToSlide(currentIndex + 1);
+      goTo(currentIndex + 1);
     } else {
       handleFinish();
     }
   }
 
   async function handleFinish() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    playSuccess();
     await AsyncStorage.setItem(ONBOARDING_DONE_KEY, "true");
     router.replace("/setup");
   }
 
-  const slide = SLIDES[currentIndex];
-
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.background, paddingTop: topPad },
-      ]}
-    >
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        scrollEnabled={false}
-        style={styles.slideScroll}
-      >
-        {SLIDES.map((s, i) => (
-          <View key={i} style={[styles.slide, { width }]}>
-            <View
-              style={[
-                styles.iconCircle,
-                { backgroundColor: s.iconColor + "18" },
-              ]}
-            >
-              <Feather name={s.icon as any} size={56} color={s.iconColor} />
-            </View>
-            <Text style={[styles.slideTitle, { color: colors.foreground }]}>
-              {s.title}
-            </Text>
-            <Text
-              style={[styles.slideBody, { color: colors.mutedForeground }]}
-            >
-              {s.body}
-            </Text>
-          </View>
-        ))}
-      </ScrollView>
+    <View style={styles.root}>
+      <LinearGradient
+        colors={["#080014", "#16082E", "#0D1535"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
 
-      <View style={styles.dotsRow}>
-        {SLIDES.map((_, i) => (
-          <Pressable key={i} onPress={() => goToSlide(i)}>
-            <View
-              style={[
-                styles.dot,
-                {
-                  backgroundColor:
-                    i === currentIndex ? slide.accent : colors.border,
-                  width: i === currentIndex ? 24 : 8,
-                },
-              ]}
-            />
-          </Pressable>
-        ))}
-      </View>
-
-      <View
-        style={[
-          styles.footer,
-          { paddingBottom: bottomPad + 24 },
-        ]}
-      >
-        <Pressable
-          onPress={handleNext}
-          style={({ pressed }) => [
-            styles.nextBtn,
+      <View style={[styles.container, { paddingTop: topPad + 20 }]}>
+        {/* Icon */}
+        <Animated.View
+          style={[
+            styles.iconWrap,
             {
-              backgroundColor: slide.accent,
-              opacity: pressed ? 0.88 : 1,
+              transform: [{ scale: iconScale }],
+              shadowColor: slide.glowColor,
             },
           ]}
         >
-          <Text style={styles.nextBtnText}>
-            {currentIndex < SLIDES.length - 1 ? "Next" : "Get Started"}
-          </Text>
-          <Feather
-            name={
-              currentIndex < SLIDES.length - 1 ? "arrow-right" : "check"
-            }
-            size={18}
-            color="#fff"
-          />
-        </Pressable>
+          <LinearGradient
+            colors={slide.gradient}
+            style={styles.iconCircle}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Feather name={slide.icon} size={60} color="#fff" />
+          </LinearGradient>
+        </Animated.View>
 
-        {currentIndex < SLIDES.length - 1 && (
-          <Pressable onPress={handleFinish} style={styles.skipBtn}>
-            <Text style={[styles.skipText, { color: colors.mutedForeground }]}>
-              Skip
-            </Text>
+        {/* Slide content */}
+        <GlassCard style={styles.slideCard} padding={28}>
+          <Text style={[styles.slideTitle, { color: "#fff" }]}>
+            {slide.title}
+          </Text>
+          <Text style={[styles.slideBody, { color: "rgba(255,255,255,0.65)" }]}>
+            {slide.body}
+          </Text>
+        </GlassCard>
+
+        {/* Dots */}
+        <View style={styles.dotsRow}>
+          {SLIDES.map((s, i) => (
+            <Pressable key={i} onPress={() => goTo(i)}>
+              <View
+                style={[
+                  styles.dot,
+                  {
+                    backgroundColor:
+                      i === currentIndex
+                        ? slide.accent
+                        : "rgba(255,255,255,0.2)",
+                    width: i === currentIndex ? 28 : 8,
+                    shadowColor: i === currentIndex ? slide.accent : "transparent",
+                  },
+                ]}
+              />
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Buttons */}
+        <View style={[styles.footer, { paddingBottom: bottomPad + 16 }]}>
+          <Pressable
+            onPress={handleNext}
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+          >
+            <LinearGradient
+              colors={slide.gradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[styles.nextBtn, { shadowColor: slide.glowColor }]}
+            >
+              <Text style={styles.nextBtnText}>
+                {currentIndex < SLIDES.length - 1 ? "Next" : "Get Started"}
+              </Text>
+              <Feather
+                name={currentIndex < SLIDES.length - 1 ? "arrow-right" : "check"}
+                size={20}
+                color="#fff"
+              />
+            </LinearGradient>
           </Pressable>
-        )}
+
+          {currentIndex < SLIDES.length - 1 && (
+            <Pressable onPress={handleFinish} style={styles.skipBtn}>
+              <Text style={styles.skipText}>Skip intro</Text>
+            </Pressable>
+          )}
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  slideScroll: { flex: 1 },
-  slide: {
+  root: { flex: 1 },
+  container: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 32,
-    gap: 24,
+    paddingHorizontal: 24,
+    gap: 28,
+  },
+  iconWrap: {
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 30,
+    elevation: 20,
   },
   iconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 36,
+    width: 140,
+    height: 140,
+    borderRadius: 40,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 8,
   },
+  slideCard: { width: "100%", maxWidth: 380 },
   slideTitle: {
-    fontSize: 28,
+    fontSize: 34,
     fontFamily: "Inter_700Bold",
-    letterSpacing: -0.5,
-    textAlign: "center",
+    letterSpacing: -1,
+    marginBottom: 14,
+    lineHeight: 40,
   },
   slideBody: {
     fontSize: 16,
     fontFamily: "Inter_400Regular",
-    textAlign: "center",
     lineHeight: 26,
-    maxWidth: 320,
   },
   dotsRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 8,
-    paddingVertical: 16,
   },
   dot: {
     height: 8,
     borderRadius: 4,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
   },
   footer: {
-    paddingHorizontal: 24,
-    gap: 12,
+    width: "100%",
+    gap: 14,
     alignItems: "center",
   },
   nextBtn: {
+    width: width - 48,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    paddingVertical: 16,
-    borderRadius: 14,
-    width: "100%",
+    paddingVertical: 18,
+    borderRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 10,
   },
   nextBtnText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: "Inter_700Bold",
   },
-  skipBtn: {
-    paddingVertical: 8,
-  },
+  skipBtn: { paddingVertical: 8 },
   skipText: {
+    color: "rgba(255,255,255,0.4)",
     fontSize: 13,
     fontFamily: "Inter_400Regular",
     textDecorationLine: "underline",

@@ -1,69 +1,47 @@
 import { BlurView } from "expo-blur";
-import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
-import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
-import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 
-import { useColors } from "@/hooks/useColors";
-
-function NativeTabLayout() {
-  return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>Home</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="settings">
-        <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
-        <Label>Settings</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
-  );
-}
-
-function ClassicTabLayout() {
-  const colors = useColors();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const isIOS = Platform.OS === "ios";
-  const isWeb = Platform.OS === "web";
-
+export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedForeground,
+        tabBarActiveTintColor: "#6366F1",
+        tabBarInactiveTintColor: "rgba(255,255,255,0.3)",
         headerShown: false,
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.tabBar,
-          borderTopWidth: isWeb ? 1 : 0.5,
-          borderTopColor: colors.border,
+          backgroundColor: "transparent",
+          borderTopWidth: 0,
           elevation: 0,
-          height: isWeb ? 84 : 60,
+          height: Platform.OS === "web" ? 84 : 70,
         },
-        tabBarBackground: () =>
-          isIOS ? (
+        tabBarBackground: () => (
+          <View style={StyleSheet.absoluteFill}>
             <BlurView
-              intensity={100}
-              tint={isDark ? "dark" : "light"}
+              intensity={40}
+              tint="dark"
               style={StyleSheet.absoluteFill}
             />
-          ) : isWeb ? (
-            <View
+            <LinearGradient
+              colors={["rgba(8,0,20,0.7)", "rgba(22,8,46,0.85)"]}
               style={[
                 StyleSheet.absoluteFill,
-                { backgroundColor: colors.tabBar },
+                {
+                  borderTopWidth: 1,
+                  borderTopColor: "rgba(255,255,255,0.08)",
+                },
               ]}
             />
-          ) : null,
+          </View>
+        ),
         tabBarLabelStyle: {
           fontFamily: "Inter_500Medium",
           fontSize: 11,
-          marginBottom: isWeb ? 8 : 0,
+          marginBottom: Platform.OS === "web" ? 8 : 0,
         },
       }}
     >
@@ -71,33 +49,47 @@ function ClassicTabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
-            ) : (
+          tabBarIcon: ({ color, focused }) => (
+            <View style={focused ? styles.activeIconWrap : null}>
+              {focused && (
+                <LinearGradient
+                  colors={["#6366F1", "#8B5CF6"]}
+                  style={StyleSheet.absoluteFill}
+                />
+              )}
               <Feather name="home" size={22} color={color} />
-            ),
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: "Settings",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="gearshape" tintColor={color} size={24} />
-            ) : (
+          tabBarIcon: ({ color, focused }) => (
+            <View style={focused ? styles.activeIconWrap : null}>
+              {focused && (
+                <LinearGradient
+                  colors={["#6366F1", "#8B5CF6"]}
+                  style={StyleSheet.absoluteFill}
+                />
+              )}
               <Feather name="settings" size={22} color={color} />
-            ),
+            </View>
+          ),
         }}
       />
     </Tabs>
   );
 }
 
-export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
-  return <ClassicTabLayout />;
-}
+const styles = StyleSheet.create({
+  activeIconWrap: {
+    width: 44,
+    height: 30,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+});
