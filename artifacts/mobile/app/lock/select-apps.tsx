@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import { FontAwesome5, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
@@ -13,6 +13,30 @@ import { GradientBackground } from "@/components/ui/GradientBackground";
 import { DUMMY_APPS, AppItem, useLock } from "@/context/LockContext";
 import { getActiveLocks } from "@/hooks/useLockStorage";
 import { useSounds } from "@/hooks/useSounds";
+
+function AppIcon({ app, dimmed }: { app: AppItem; dimmed: boolean }) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed || !app.iconUrl) {
+    return (
+      <View style={[styles.iconFallback, { backgroundColor: app.iconColor + "22" }]}>
+        <FontAwesome5
+          name={app.iconName as any}
+          size={26}
+          color={dimmed ? "#3A3A3C" : app.iconColor}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      source={{ uri: app.iconUrl }}
+      style={[styles.appIcon, { opacity: dimmed ? 0.3 : 1 }]}
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 function AppCard({ app, selected, alreadyLocked, onToggle, index }: {
   app: AppItem; selected: boolean; alreadyLocked: boolean; onToggle: () => void; index: number;
@@ -41,10 +65,7 @@ function AppCard({ app, selected, alreadyLocked, onToggle, index }: {
           padding={14}
         >
           <View style={styles.appRow}>
-            <Image
-              source={{ uri: app.iconUrl }}
-              style={[styles.appIcon, { opacity: alreadyLocked ? 0.25 : 1 }]}
-            />
+            <AppIcon app={app} dimmed={alreadyLocked} />
             <View style={styles.appInfo}>
               <Text style={[styles.appName, { color: alreadyLocked ? "#3A3A3C" : "#FFFFFF" }]}>{app.name}</Text>
               <Text style={styles.appCategory}>{alreadyLocked ? "Already locked" : app.category}</Text>
@@ -165,7 +186,8 @@ const styles = StyleSheet.create({
   infoText: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   list: { paddingHorizontal: 16, paddingBottom: 8 },
   appRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  appIcon: { width: 56, height: 56, borderRadius: 16 },
+  appIcon: { width: 52, height: 52, borderRadius: 12 },
+  iconFallback: { width: 52, height: 52, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   appInfo: { flex: 1 },
   appName: { fontSize: 15, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
   appCategory: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
