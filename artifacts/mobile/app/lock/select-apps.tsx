@@ -41,12 +41,10 @@ function AppCard({ app, selected, alreadyLocked, onToggle, index }: {
           padding={14}
         >
           <View style={styles.appRow}>
-            <View style={styles.appIconContainer}>
-              <Image
-                source={{ uri: `https://www.google.com/s2/favicons?domain=${app.domain}&sz=64` }}
-                style={[styles.appIcon, { opacity: alreadyLocked ? 0.25 : 1 }]}
-              />
-            </View>
+            <Image
+              source={{ uri: app.iconUrl }}
+              style={[styles.appIcon, { opacity: alreadyLocked ? 0.25 : 1 }]}
+            />
             <View style={styles.appInfo}>
               <Text style={[styles.appName, { color: alreadyLocked ? "#3A3A3C" : "#FFFFFF" }]}>{app.name}</Text>
               <Text style={styles.appCategory}>{alreadyLocked ? "Already locked" : app.category}</Text>
@@ -167,8 +165,7 @@ const styles = StyleSheet.create({
   infoText: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   list: { paddingHorizontal: 16, paddingBottom: 8 },
   appRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  appIconContainer: { width: 48, height: 48, borderRadius: 12, overflow: "hidden", alignItems: "center", justifyContent: "center" },
-  appIcon: { width: 48, height: 48, borderRadius: 12 },
+  appIcon: { width: 56, height: 56, borderRadius: 16 },
   appInfo: { flex: 1 },
   appName: { fontSize: 15, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
   appCategory: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
