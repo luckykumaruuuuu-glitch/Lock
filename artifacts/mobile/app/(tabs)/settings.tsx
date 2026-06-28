@@ -22,32 +22,47 @@ import { useSounds } from "@/hooks/useSounds";
 const APP_VERSION = "1.0.0";
 const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.focuslock.app";
 
-const TERMS_OF_SERVICE = `Terms of Service — FocusLock
-Last updated: June 28, 2026
+const TERMS_OF_SERVICE = `Terms of Service
+Last updated: June 2026
 
-1. ACCEPTANCE OF TERMS
-By using FocusLock, you agree to these terms. If you do not agree, do not use this app.
+1. Agreement to Terms
+By downloading, installing, or using FocusLock, you confirm that you have read, understood, and agreed to these Terms of Service in their entirety. If you do not agree, you must not use this application.
 
-2. HOW THE APP WORKS
-FocusLock allows you to voluntarily lock selected apps for a chosen duration. Once confirmed, locks cannot be removed until the timer expires.
+2. Nature of the App
+FocusLock is a voluntary self-discipline tool that allows users to block selected applications on their device for a self-chosen duration. The lock is intentionally irreversible until the timer expires — this is a core feature, not a bug.
 
-3. USER RESPONSIBILITY
-You are fully responsible for the locks you set. The app will not unlock apps before the timer expires under any circumstances — no exceptions.
+3. Informed Consent
+Before any lock is activated, users are shown a clear confirmation screen outlining the lock duration and consequences. By proceeding, the user accepts full responsibility for the lock they have set.
 
-4. NO REFUNDS FOR LOCK PERIOD
-If you lock an app and change your mind, the lock remains active. This is by design and you agreed to it at the time of confirmation.
+4. No Early Unlock
+Under no circumstances will FocusLock remove an active lock before the timer expires. This includes requests from the user, technical issues, change of mind, or emergencies. No exceptions exist by design.
 
-5. DATA & PRIVACY
-We use Firebase to sync your lock timers. No personal data is sold or shared with third parties. For full details, refer to our Privacy Policy.
+5. User Responsibility
+You are solely responsible for the apps you choose to lock and the duration you select.
 
-6. LIMITATION OF LIABILITY
-FocusLock is not responsible for any loss or inconvenience caused by locked apps during the lock period. You use this app voluntarily and accept all consequences of the locks you set.
+You must grant all required device permissions for the app to function correctly. FocusLock is not responsible for incomplete functionality due to denied permissions.
 
-7. CHANGES TO TERMS
-We may update these terms at any time. Continued use of the app after changes are posted means you accept the updated terms.
+If Device Admin permission is not granted, uninstall protection will not work. This is the user's responsibility.
 
-8. CONTACT
-For any questions or concerns, please contact us at: support@focuslock.app`;
+Factory reset, Android system updates, or manufacturer restrictions may affect lock functionality. FocusLock is not liable for such cases.
+
+6. No Warranty
+FocusLock is provided as-is. We do not guarantee that the app will work identically on all Android devices due to manufacturer-level restrictions and Android version differences.
+
+7. Limitation of Liability
+FocusLock and its developers shall not be held liable for any direct, indirect, or consequential damages arising from the use or inability to use this app, including but not limited to missed notifications, inaccessible apps, or lost productivity during a lock period.
+
+8. Complaints & Disputes
+By using this app, you acknowledge that you were clearly informed of all restrictions before activating any lock. Any complaint regarding locked apps or inability to access them during an active lock period will not be considered valid, as the user voluntarily initiated the lock after reading all warnings.
+
+9. Eligibility
+You must be at least 18 years of age to use FocusLock. By using the app, you confirm you meet this requirement.
+
+10. Changes to Terms
+We reserve the right to update these Terms at any time. Continued use of the app after changes constitutes acceptance of the new Terms.
+
+11. Contact
+For support or feedback, use the in-app Feedback option.`;
 
 const PRIVACY_POLICY = `FocusLock Privacy Policy
 Last updated: June 28, 2026

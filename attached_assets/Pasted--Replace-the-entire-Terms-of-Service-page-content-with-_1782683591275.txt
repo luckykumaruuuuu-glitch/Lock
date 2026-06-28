@@ -1,0 +1,29 @@
+"Replace the entire Terms of Service page content with this properly written English version:
+Terms of Service
+Last updated: June 2026
+1. Agreement to Terms
+By downloading, installing, or using FocusLock, you confirm that you have read, understood, and agreed to these Terms of Service in their entirety. If you do not agree, you must not use this application.
+2. Nature of the App
+FocusLock is a voluntary self-discipline tool that allows users to block selected applications on their device for a self-chosen duration. The lock is intentionally irreversible until the timer expires — this is a core feature, not a bug.
+3. Informed Consent
+Before any lock is activated, users are shown a clear confirmation screen outlining the lock duration and consequences. By proceeding, the user accepts full responsibility for the lock they have set.
+4. No Early Unlock
+Under no circumstances will FocusLock remove an active lock before the timer expires. This includes requests from the user, technical issues, change of mind, or emergencies. No exceptions exist by design.
+5. User Responsibility
+You are solely responsible for the apps you choose to lock and the duration you select.
+You must grant all required device permissions for the app to function correctly. FocusLock is not responsible for incomplete functionality due to denied permissions.
+If Device Admin permission is not granted, uninstall protection will not work. This is the user's responsibility.
+Factory reset, Android system updates, or manufacturer restrictions may affect lock functionality. FocusLock is not liable for such cases.
+6. No Warranty
+FocusLock is provided as-is. We do not guarantee that the app will work identically on all Android devices due to manufacturer-level restrictions and Android version differences.
+7. Limitation of Liability
+FocusLock and its developers shall not be held liable for any direct, indirect, or consequential damages arising from the use or inability to use this app, including but not limited to missed notifications, inaccessible apps, or lost productivity during a lock period.
+8. Complaints & Disputes
+By using this app, you acknowledge that you were clearly informed of all restrictions before activating any lock. Any complaint regarding locked apps or inability to access them during an active lock period will not be considered valid, as the user voluntarily initiated the lock after reading all warnings.
+9. Eligibility
+You must be at least 18 years of age to use FocusLock. By using the app, you confirm you meet this requirement.
+10. Changes to Terms
+We reserve the right to update these Terms at any time. Continued use of the app after changes constitutes acceptance of the new Terms.
+11. Contact
+For support or feedback, use the in-app Feedback option.
+Format this in the app's dark theme — white headings, light grey body text, black background. Each section clearly separated."
