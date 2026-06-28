@@ -1,10 +1,10 @@
-import { FontAwesome5, Feather } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Animated, FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View,
+  Animated, FlatList, Image, Platform, Pressable, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -41,8 +41,11 @@ function AppCard({ app, selected, alreadyLocked, onToggle, index }: {
           padding={14}
         >
           <View style={styles.appRow}>
-            <View style={[styles.appIconBg, { backgroundColor: "#2C2C2E" }]}>
-              <FontAwesome5 name={app.iconName as any} size={20} color={alreadyLocked ? "#3A3A3C" : "#FFD60A"} />
+            <View style={styles.appIconContainer}>
+              <Image
+                source={{ uri: `https://www.google.com/s2/favicons?domain=${app.domain}&sz=64` }}
+                style={[styles.appIcon, { opacity: alreadyLocked ? 0.25 : 1 }]}
+              />
             </View>
             <View style={styles.appInfo}>
               <Text style={[styles.appName, { color: alreadyLocked ? "#3A3A3C" : "#FFFFFF" }]}>{app.name}</Text>
@@ -164,7 +167,8 @@ const styles = StyleSheet.create({
   infoText: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   list: { paddingHorizontal: 16, paddingBottom: 8 },
   appRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  appIconBg: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  appIconContainer: { width: 48, height: 48, borderRadius: 12, overflow: "hidden", alignItems: "center", justifyContent: "center" },
+  appIcon: { width: 48, height: 48, borderRadius: 12 },
   appInfo: { flex: 1 },
   appName: { fontSize: 15, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
   appCategory: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
