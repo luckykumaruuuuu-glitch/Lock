@@ -1,47 +1,61 @@
-import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import React from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import React, { useRef, useEffect } from "react";
+import { Animated, Platform } from "react-native";
+
+function AnimatedTabIcon({
+  name,
+  color,
+  focused,
+}: {
+  name: React.ComponentProps<typeof Feather>["name"];
+  color: string;
+  focused: boolean;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (focused) {
+      Animated.sequence([
+        Animated.timing(scale, {
+          toValue: 1.1,
+          duration: 120,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [focused]);
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Feather name={name} size={22} color={color} />
+    </Animated.View>
+  );
+}
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: "#E8A030",
-        tabBarInactiveTintColor: "rgba(255,255,255,0.25)",
+        tabBarInactiveTintColor: "#6B6B6B",
         headerShown: false,
         tabBarStyle: {
-          position: "absolute",
-          backgroundColor: "transparent",
+          backgroundColor: "#000000",
           borderTopWidth: 0,
           elevation: 0,
+          shadowOpacity: 0,
           height: Platform.OS === "web" ? 84 : 70,
         },
-        tabBarBackground: () => (
-          <View style={StyleSheet.absoluteFill}>
-            <BlurView
-              intensity={40}
-              tint="dark"
-              style={StyleSheet.absoluteFill}
-            />
-            <LinearGradient
-              colors={["rgba(0,0,0,0.85)", "rgba(10,5,0,0.95)"]}
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  borderTopWidth: 1,
-                  borderTopColor: "rgba(232,160,48,0.12)",
-                },
-              ]}
-            />
-          </View>
-        ),
         tabBarLabelStyle: {
           fontFamily: "Inter_500Medium",
           fontSize: 11,
-          marginBottom: Platform.OS === "web" ? 8 : 0,
+          marginBottom: Platform.OS === "web" ? 8 : 4,
         },
       }}
     >
@@ -50,15 +64,7 @@ export default function TabLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
-            <View style={focused ? styles.activeIconWrap : null}>
-              {focused && (
-                <LinearGradient
-                  colors={["#E8A030", "#C47B2B"]}
-                  style={StyleSheet.absoluteFill}
-                />
-              )}
-              <Feather name="home" size={22} color={color} />
-            </View>
+            <AnimatedTabIcon name="home" color={color} focused={focused} />
           ),
         }}
       />
@@ -67,29 +73,10 @@ export default function TabLayout() {
         options={{
           title: "Settings",
           tabBarIcon: ({ color, focused }) => (
-            <View style={focused ? styles.activeIconWrap : null}>
-              {focused && (
-                <LinearGradient
-                  colors={["#E8A030", "#C47B2B"]}
-                  style={StyleSheet.absoluteFill}
-                />
-              )}
-              <Feather name="settings" size={22} color={color} />
-            </View>
+            <AnimatedTabIcon name="settings" color={color} focused={focused} />
           ),
         }}
       />
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  activeIconWrap: {
-    width: 44,
-    height: 30,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-});
