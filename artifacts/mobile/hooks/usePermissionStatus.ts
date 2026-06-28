@@ -5,7 +5,10 @@ import { AppState, AppStateStatus, Platform } from "react-native";
 export type PermissionId =
   | "usageAccess"
   | "deviceAdmin"
-  | "accessibility";
+  | "accessibility"
+  | "overlay"
+  | "notification"
+  | "battery";
 
 export interface PermissionState {
   granted: boolean;
@@ -14,13 +17,16 @@ export interface PermissionState {
 
 export type PermissionsMap = Record<PermissionId, PermissionState>;
 
-const STORAGE_KEY = "focuslock_permissions_v1";
+const STORAGE_KEY = "focuslock_permissions_v2";
 const SETUP_DONE_KEY = "focuslock_setup_complete";
 
 const DEFAULT_STATE: PermissionsMap = {
-  usageAccess: { granted: false, openedSettings: false },
-  deviceAdmin: { granted: false, openedSettings: false },
-  accessibility: { granted: false, openedSettings: false },
+  usageAccess:  { granted: false, openedSettings: false },
+  deviceAdmin:  { granted: false, openedSettings: false },
+  accessibility:{ granted: false, openedSettings: false },
+  overlay:      { granted: false, openedSettings: false },
+  notification: { granted: false, openedSettings: false },
+  battery:      { granted: false, openedSettings: false },
 };
 
 export function usePermissionStatus() {
@@ -36,9 +42,9 @@ export function usePermissionStatus() {
           AsyncStorage.getItem(STORAGE_KEY),
           AsyncStorage.getItem(SETUP_DONE_KEY),
         ]);
-
         if (savedPerms) {
-          setPermissions(JSON.parse(savedPerms));
+          const parsed = JSON.parse(savedPerms) as Partial<PermissionsMap>;
+          setPermissions({ ...DEFAULT_STATE, ...parsed });
         }
         setSetupComplete(done === "true");
       } catch {
