@@ -41,7 +41,7 @@ function AppCard({ app, selected, alreadyLocked, onToggle, index }: {
           padding={14}
         >
           <View style={styles.appRow}>
-            <View style={[styles.appIconBg, { backgroundColor: alreadyLocked ? "#2C2C2E" : "rgba(255,214,10,0.1)" }]}>
+            <View style={[styles.appIconBg, { backgroundColor: "#2C2C2E" }]}>
               <FontAwesome5 name={app.iconName as any} size={20} color={alreadyLocked ? "#3A3A3C" : "#FFD60A"} />
             </View>
             <View style={styles.appInfo}>
