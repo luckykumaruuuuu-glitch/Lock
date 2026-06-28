@@ -452,11 +452,11 @@ export default function ConfirmScreen() {
           style={({ pressed }) => [{ flex: 1, opacity: saving ? 0.7 : pressed ? 0.88 : 1 }]}
         >
           <LinearGradient
-            colors={["#C47B2B", "#FF2255"]}
+            colors={["#FFD580", "#FF2255"]}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={styles.lockBtn}
           >
-            <Feather name="lock" size={18} color="#fff" />
+            <Feather name="lock" size={18} color="#1A1A1A" />
             <Text style={styles.lockBtnText}>{saving ? "Locking…" : "Lock Forever"}</Text>
           </LinearGradient>
         </Pressable>
@@ -509,5 +509,5 @@ const styles = StyleSheet.create({
   cancelBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "rgba(255,255,255,0.55)" },
 
   lockBtn:     { height: 56, borderRadius: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, shadowColor: "#FF0055", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 14, elevation: 10 },
-  lockBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
+  lockBtnText: { color: "#1A1A1A", fontSize: 16, fontFamily: "Inter_700Bold" },
 });

@@ -111,7 +111,7 @@ function DarkCalendar({
         <View style={calStyles.sheet}>
 
           {/* Header — month/year + arrows */}
-          <LinearGradient colors={["#1C0A00", "#2A1200"]} style={calStyles.header}>
+          <LinearGradient colors={["#0D0D0D", "#1A1A1A"]} style={calStyles.header}>
             <Pressable
               onPress={prevMonth}
               disabled={!canGoPrev}
@@ -337,14 +337,14 @@ export default function DurationScreen() {
               activeOpacity={0.75}
             >
               <LinearGradient
-                colors={pickedDate ? ["rgba(76,175,80,0.25)", "rgba(61,143,50,0.15)"] : ["rgba(61,31,10,0.5)", "rgba(40,18,4,0.35)"]}
+                colors={pickedDate ? ["rgba(76,175,80,0.25)", "rgba(61,143,50,0.15)"] : ["rgba(255,213,128,0.08)", "rgba(255,165,0,0.04)"]}
                 style={styles.dateButtonInner}
               >
-                <Feather name="calendar" size={18} color={pickedDate ? "#4CAF60" : "#C47B2B"} />
-                <Text style={[styles.dateButtonText, { color: pickedDate ? "#7ED96A" : "rgba(212,165,116,0.55)" }]}>
+                <Feather name="calendar" size={18} color={pickedDate ? "#4CAF60" : "#FFD580"} />
+                <Text style={[styles.dateButtonText, { color: pickedDate ? "#7ED96A" : "rgba(255,213,128,0.55)" }]}>
                   {getPickerLabel()}
                 </Text>
-                <Feather name="chevron-right" size={16} color={pickedDate ? "#4CAF60" : "rgba(196,123,43,0.4)"} />
+                <Feather name="chevron-right" size={16} color={pickedDate ? "#4CAF60" : "rgba(255,213,128,0.4)"} />
               </LinearGradient>
             </TouchableOpacity>
 

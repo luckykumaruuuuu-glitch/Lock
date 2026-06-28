@@ -23,15 +23,15 @@ interface AnimatedButtonProps {
 }
 
 const GRADIENTS = {
-  primary: ["#C47B2B", "#E8943A"] as const,
+  primary: ["#FFD580", "#FFA500"] as const,
   accent: ["#FF6B35", "#E85A20"] as const,
-  ghost: ["rgba(61,31,10,0.5)", "rgba(61,31,10,0.3)"] as const,
+  ghost: ["rgba(255,213,128,0.08)", "rgba(255,165,0,0.04)"] as const,
   danger: ["#CC4400", "#FF6B35"] as const,
   success: ["#3D9142", "#4CAF50"] as const,
 };
 
 const GLOW_COLORS = {
-  primary: "#C47B2B",
+  primary: "#FFD580",
   accent: "#FF6B35",
   ghost: "transparent",
   danger: "#CC4400",
@@ -125,7 +125,7 @@ export function AnimatedButton({
               paddingVertical: sizeStyle.paddingVertical,
               paddingHorizontal: sizeStyle.paddingHorizontal,
               borderWidth: isGhost ? 1 : 0,
-              borderColor: isGhost ? "rgba(196,123,43,0.3)" : undefined,
+              borderColor: isGhost ? "rgba(255,213,128,0.3)" : undefined,
             },
           ]}
         >
@@ -139,7 +139,7 @@ export function AnimatedButton({
                   styles.label,
                   {
                     fontSize: sizeStyle.fontSize,
-                    color: isGhost ? "#D4A574" : "#FFF8F0",
+                    color: isGhost ? "#FFD580" : "#1A1A1A",
                   },
                 ]}
               >

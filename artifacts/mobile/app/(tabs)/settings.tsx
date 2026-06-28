@@ -58,7 +58,7 @@ For privacy concerns, contact the developer through the app's Google Play listin
 /* ─── Flat icon (no background box) ─── */
 function FlatIcon({ name }: { name: string }) {
   return (
-    <Feather name={name as any} size={20} color="#6B6B6B" />
+    <Feather name={name as any} size={20} color="#FFD580" />
   );
 }
 
@@ -140,7 +140,7 @@ function SoundToggleRow({
       <Feather
         name={muted ? "volume-x" : "volume-2"}
         size={20}
-        color="#6B6B6B"
+        color="#FFD580"
       />
       <Text style={styles.rowLabel}>{label}</Text>
       <Animated.View style={[styles.track, { backgroundColor: trackColor }]}>
@@ -263,7 +263,7 @@ export default function SettingsScreen() {
         <SectionLabel label={t("about")} />
         <GlassCard padding={0}>
           <View style={styles.aboutRow}>
-            <Feather name="shield" size={32} color="#6B6B6B" />
+            <Feather name="shield" size={32} color="#FFD580" />
             <View>
               <Text style={styles.aboutName}>FocusLock</Text>
               <Text style={styles.aboutVersion}>Version {APP_VERSION}</Text>
