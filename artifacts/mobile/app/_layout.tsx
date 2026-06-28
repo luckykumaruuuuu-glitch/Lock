@@ -14,6 +14,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { FirebaseSyncProvider } from "@/context/FirebaseSyncContext";
 import { LockProvider } from "@/context/LockContext";
 import { useColors } from "@/hooks/useColors";
 import { usePermissionStatus } from "@/hooks/usePermissionStatus";
@@ -118,11 +119,14 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <LockProvider>
-            <GestureHandlerRootView>
-              <KeyboardProvider>
-                <RootLayoutNav />
-              </KeyboardProvider>
-            </GestureHandlerRootView>
+            {/* FirebaseSyncProvider must wrap everything that needs Firebase data */}
+            <FirebaseSyncProvider>
+              <GestureHandlerRootView>
+                <KeyboardProvider>
+                  <RootLayoutNav />
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </FirebaseSyncProvider>
           </LockProvider>
         </QueryClientProvider>
       </ErrorBoundary>

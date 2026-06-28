@@ -1,0 +1,1 @@
+- [Firebase device-UUID approach](firebase-device-uuid.md) — Firebase 12.x removed getReactNativePersistence; use device UUID in AsyncStorage as RTDB path instead of auth.

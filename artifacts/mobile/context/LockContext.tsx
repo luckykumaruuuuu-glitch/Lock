@@ -31,7 +31,11 @@ interface LockContextType {
   setCustomDays: (v: string) => void;
   setCustomHours: (v: string) => void;
   resetSelection: () => void;
-  confirmLock: () => Promise<void>;
+  /**
+   * Persists the current selection to local storage and returns the
+   * created LockEntry so the caller can also sync it to Firebase.
+   */
+  confirmLock: () => Promise<LockEntry | null>;
 }
 
 const defaultSelection: LockSelection = {
@@ -48,7 +52,7 @@ const LockContext = createContext<LockContextType>({
   setCustomDays: () => {},
   setCustomHours: () => {},
   resetSelection: () => {},
-  confirmLock: async () => {},
+  confirmLock: async () => null,
 });
 
 export function LockProvider({ children }: { children: React.ReactNode }) {
@@ -68,9 +72,9 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
 
   const resetSelection = () => setSelection(defaultSelection);
 
-  const confirmLock = async () => {
+  const confirmLock = async (): Promise<LockEntry | null> => {
     const { selectedApps, durationPreset, customDays, customHours } = selection;
-    if (selectedApps.length === 0) return;
+    if (selectedApps.length === 0) return null;
 
     const now = Date.now();
     const durationMs = getDurationMs(durationPreset, customDays, customHours);
@@ -94,6 +98,7 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
     };
 
     await saveLock(entry);
+    return entry;
   };
 
   return (
@@ -135,7 +140,4 @@ export const DUMMY_APPS: AppItem[] = [
   { id: "linkedin", name: "LinkedIn", category: "Professional", iconName: "linkedin", iconFamily: "FontAwesome5", iconColor: "#0A66C2", packageName: "com.linkedin.android" },
 ];
 
-/* ───────────────────────────────────────────────
-   Re-export LockEntry type for screens
-─────────────────────────────────────────────── */
 export type { LockEntry, LockedAppEntry };

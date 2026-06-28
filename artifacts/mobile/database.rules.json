@@ -1,0 +1,52 @@
+{
+  "rules": {
+    "devices": {
+      "$deviceId": {
+        ".read": true,
+        ".write": true,
+
+        "locks": {
+          "$lockId": {
+            ".validate": "newData.hasChildren(['apps', 'startTime', 'endTime', 'status', 'durationLabel'])",
+
+            "apps": {
+              ".validate": "newData.isString() && newData.val().length > 2"
+            },
+
+            "startTime": {
+              ".validate": "newData.isNumber() && newData.val() > 0"
+            },
+
+            "endTime": {
+              ".validate": "newData.isNumber() && newData.val() > newData.parent().child('startTime').val()",
+              "$other": {
+                ".validate": "!data.exists() || newData.val() === data.val()"
+              }
+            },
+
+            "status": {
+              ".validate": "newData.val() === 'ACTIVE' || (newData.val() === 'EXPIRED' && (data.val() === 'ACTIVE' || !data.exists()))"
+            },
+
+            "durationLabel": {
+              ".validate": "newData.isString()"
+            },
+
+            "createdAt": {
+              ".validate": "newData.isNumber()"
+            },
+
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    },
+
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}
