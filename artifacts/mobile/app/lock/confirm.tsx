@@ -4,7 +4,6 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   Platform,
   Pressable,
@@ -17,12 +16,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientBackground } from "@/components/ui/GradientBackground";
-import { Particles } from "@/components/ui/Particles";
 import { useFirebaseSyncContext } from "@/context/FirebaseSyncContext";
 import { useLock } from "@/context/LockContext";
 import { formatExpiryDate, getDurationMs } from "@/hooks/useLockStorage";
-import { usePermissionStatus } from "@/hooks/usePermissionStatus";
-import { useSounds } from "@/hooks/useSounds";
 import { isFirebaseConfigured } from "@/lib/firebase";
 
 function getDisplayDuration(
@@ -41,92 +37,8 @@ function getDisplayDuration(
   return parts.join(" and ") || "No duration";
 }
 
-/* ── Countdown overlay ── */
-function CountdownOverlay({
-  count,
-  visible,
-}: {
-  count: number;
-  visible: boolean;
-}) {
-  const scaleAnim = useRef(new Animated.Value(0.3)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (visible) {
-      scaleAnim.setValue(2);
-      opacityAnim.setValue(0);
-      Animated.parallel([
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 300,
-          friction: 8,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [count, visible, scaleAnim, opacityAnim]);
-
-  if (!visible) return null;
-
-  return (
-    <View style={cdStyles.overlay} pointerEvents="none">
-      <Animated.View
-        style={[
-          cdStyles.numWrap,
-          {
-            transform: [{ scale: scaleAnim }],
-            opacity: opacityAnim,
-          },
-        ]}
-      >
-        <LinearGradient
-          colors={["#FF0055", "#FF006E"]}
-          style={cdStyles.numCircle}
-        >
-          <Text style={cdStyles.num}>{count}</Text>
-        </LinearGradient>
-      </Animated.View>
-    </View>
-  );
-}
-
-const cdStyles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.6)",
-    zIndex: 50,
-  },
-  numWrap: {
-    shadowColor: "#FF006E",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 40,
-    elevation: 30,
-  },
-  numCircle: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  num: {
-    fontSize: 80,
-    fontFamily: "Inter_700Bold",
-    color: "#fff",
-  },
-});
-
-/* ── Success state ── */
-function SuccessState({
+/* ── Success Screen ── */
+function SuccessScreen({
   lockedExpiry,
   lockedAppCount,
   skippedApps,
@@ -139,133 +51,230 @@ function SuccessState({
   configured: boolean;
   online: boolean;
 }) {
-  const checkScale = useRef(new Animated.Value(0)).current;
-  const checkOpacity = useRef(new Animated.Value(0)).current;
+  const insets = useSafeAreaInsets();
+  const shieldScale = useRef(new Animated.Value(0)).current;
+  const shieldOpacity = useRef(new Animated.Value(0)).current;
+  const textOpacity = useRef(new Animated.Value(0)).current;
+  const cardOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.sequence([
-      Animated.delay(200),
       Animated.parallel([
-        Animated.spring(checkScale, {
+        Animated.spring(shieldScale, {
           toValue: 1,
           useNativeDriver: true,
-          tension: 200,
-          friction: 6,
+          tension: 160,
+          friction: 7,
         }),
-        Animated.timing(checkOpacity, {
+        Animated.timing(shieldOpacity, {
+          toValue: 1,
+          duration: 350,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(textOpacity, {
           toValue: 1,
           duration: 300,
           useNativeDriver: true,
         }),
+        Animated.timing(cardOpacity, {
+          toValue: 1,
+          duration: 350,
+          useNativeDriver: true,
+        }),
       ]),
     ]).start();
-  }, [checkScale, checkOpacity]);
+  }, [shieldScale, shieldOpacity, textOpacity, cardOpacity]);
 
   return (
-    <View style={sStyles.container}>
+    <View
+      style={[
+        successStyles.root,
+        {
+          paddingTop: insets.top + 24,
+          paddingBottom: insets.bottom + 32,
+        },
+      ]}
+    >
       <Animated.View
         style={[
-          sStyles.iconWrap,
-          { transform: [{ scale: checkScale }], opacity: checkOpacity },
+          successStyles.iconWrap,
+          { transform: [{ scale: shieldScale }], opacity: shieldOpacity },
         ]}
       >
-        <LinearGradient colors={["#00CC6A", "#00FF88"]} style={sStyles.iconCircle}>
-          <Feather name="shield" size={56} color="#000" />
+        <LinearGradient
+          colors={["#00CC6A", "#00FF88"]}
+          style={successStyles.iconCircle}
+        >
+          <Feather name="shield" size={52} color="#000" />
         </LinearGradient>
       </Animated.View>
 
-      <Text style={sStyles.title}>Lock Active! 🔒</Text>
-      <Text style={sStyles.sub}>
-        {lockedAppCount} app{lockedAppCount !== 1 ? "s" : ""} locked until{" "}
-        {lockedExpiry}
-      </Text>
+      <Animated.View
+        style={{ opacity: textOpacity, alignItems: "center", gap: 8 }}
+      >
+        <Text style={successStyles.title}>Lock Active</Text>
+        <Text style={successStyles.subtitle}>
+          {lockedAppCount} app{lockedAppCount !== 1 ? "s" : ""} are now blocked
+        </Text>
+      </Animated.View>
 
-      {skippedApps.length > 0 && (
-        <GlassCard
-          style={sStyles.skipCard}
-          borderColor="rgba(255,149,0,0.3)"
-          padding={12}
-        >
-          <Feather name="info" size={14} color="#FF9500" />
-          <Text style={sStyles.skipText}>
-            {skippedApps.join(", ")} already locked — skipped
+      <Animated.View style={{ opacity: cardOpacity, width: "100%", gap: 12 }}>
+        <GlassCard padding={20} borderColor="rgba(0,255,136,0.12)">
+          <View style={successStyles.infoRow}>
+            <View style={successStyles.infoIcon}>
+              <Feather name="clock" size={15} color="#A5B4FC" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={successStyles.infoLabel}>UNLOCKS AT</Text>
+              <Text style={successStyles.infoValue}>{lockedExpiry}</Text>
+            </View>
+          </View>
+
+          <View style={successStyles.divider} />
+
+          <View style={successStyles.infoRow}>
+            <View style={successStyles.infoIcon}>
+              <Feather name="slash" size={15} color="#FF6B6B" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={successStyles.infoLabel}>EARLY UNLOCK</Text>
+              <Text style={[successStyles.infoValue, { color: "#FF6B6B" }]}>
+                Not possible
+              </Text>
+            </View>
+          </View>
+
+          {configured && (
+            <>
+              <View style={successStyles.divider} />
+              <View style={successStyles.infoRow}>
+                <View style={successStyles.infoIcon}>
+                  <Feather
+                    name={online ? "cloud" : "cloud-off"}
+                    size={15}
+                    color={online ? "#00FF88" : "rgba(255,255,255,0.35)"}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={successStyles.infoLabel}>CLOUD SYNC</Text>
+                  <Text
+                    style={[
+                      successStyles.infoValue,
+                      {
+                        color: online
+                          ? "#00FF88"
+                          : "rgba(255,255,255,0.45)",
+                      },
+                    ]}
+                  >
+                    {online ? "Synced to Firebase" : "Will sync when online"}
+                  </Text>
+                </View>
+              </View>
+            </>
+          )}
+        </GlassCard>
+
+        {skippedApps.length > 0 && (
+          <GlassCard padding={14} borderColor="rgba(255,149,0,0.2)">
+            <View style={successStyles.infoRow}>
+              <Feather name="info" size={14} color="#FF9500" />
+              <Text style={successStyles.skipText}>
+                {skippedApps.join(", ")} already locked — skipped
+              </Text>
+            </View>
+          </GlassCard>
+        )}
+
+        <GlassCard padding={18} borderColor="rgba(255,255,255,0.05)">
+          <Text style={successStyles.tipText}>
+            Stay committed. Your future self will thank you. 💪
           </Text>
         </GlassCard>
-      )}
-
-      {configured && (
-        <View style={sStyles.syncRow}>
-          <Feather
-            name={online ? "cloud" : "cloud-off"}
-            size={13}
-            color="rgba(255,255,255,0.45)"
-          />
-          <Text style={sStyles.syncText}>
-            {online ? "Synced to Firebase" : "Will sync when online"}
-          </Text>
-        </View>
-      )}
+      </Animated.View>
     </View>
   );
 }
 
-const sStyles = StyleSheet.create({
-  container: {
+const successStyles = StyleSheet.create({
+  root: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
-    padding: 32,
-    gap: 20,
+    paddingHorizontal: 24,
+    gap: 28,
   },
   iconWrap: {
     shadowColor: "#00FF88",
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
-    shadowRadius: 30,
-    elevation: 20,
+    shadowOpacity: 0.55,
+    shadowRadius: 32,
+    elevation: 18,
   },
   iconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 40,
+    width: 110,
+    height: 110,
+    borderRadius: 36,
     alignItems: "center",
     justifyContent: "center",
   },
   title: {
-    fontSize: 32,
+    fontSize: 34,
     fontFamily: "Inter_700Bold",
-    color: "#fff",
+    color: "#FFFFFF",
     letterSpacing: -0.5,
   },
-  sub: {
+  subtitle: {
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.55)",
+    color: "rgba(255,255,255,0.45)",
     textAlign: "center",
-    lineHeight: 22,
   },
-  skipCard: {
+  infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 12,
+  },
+  infoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  infoLabel: {
+    fontSize: 10,
+    fontFamily: "Inter_500Medium",
+    color: "rgba(255,255,255,0.35)",
+    marginBottom: 3,
+    letterSpacing: 0.8,
+  },
+  infoValue: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    marginVertical: 14,
   },
   skipText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
     color: "#FF9500",
     lineHeight: 18,
+    marginLeft: 8,
   },
-  syncRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 4,
-  },
-  syncText: {
-    fontSize: 12,
+  tipText: {
+    fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.35)",
+    color: "rgba(255,255,255,0.38)",
+    textAlign: "center",
+    lineHeight: 21,
   },
 });
 
@@ -274,17 +283,12 @@ export default function ConfirmScreen() {
   const insets = useSafeAreaInsets();
   const { selection, confirmLock, resetSelection } = useLock();
   const { saveToFirebase, online, configured } = useFirebaseSyncContext();
-  const { permissions } = usePermissionStatus();
-  const { playWarning, playLock } = useSounds();
 
   const [saving, setSaving] = useState(false);
   const [locked, setLocked] = useState(false);
-  const [confetti, setConfetti] = useState(false);
   const [lockedExpiry, setLockedExpiry] = useState("");
   const [lockedAppCount, setLockedAppCount] = useState(0);
   const [skippedApps, setSkippedApps] = useState<string[]>([]);
-  const [countdown, setCountdown] = useState(0);
-  const [countdownVisible, setCountdownVisible] = useState(false);
 
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -301,7 +305,10 @@ export default function ConfirmScreen() {
   const expiryDate = formatExpiryDate(Date.now() + durationMs);
 
   async function doLock() {
+    if (saving) return;
     setSaving(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
     try {
       const result = await confirmLock();
       if (!result) {
@@ -310,80 +317,26 @@ export default function ConfirmScreen() {
       }
       const { entry, duplicatesSkipped } = result;
 
-      if (duplicatesSkipped.length > 0 && (!entry.apps || entry.apps.length === 0)) {
-        setSaving(false);
-        Alert.alert(
-          "Already Locked",
-          `${duplicatesSkipped.join(", ")} ${
-            duplicatesSkipped.length === 1 ? "is" : "are"
-          } already locked.`,
-          [{ text: "OK" }]
-        );
-        return;
-      }
-
       if (configured && entry.id) saveToFirebase(entry).catch(() => {});
+
       setSkippedApps(duplicatesSkipped);
       setLockedExpiry(formatExpiryDate(entry.endTime));
       setLockedAppCount(entry.apps?.length ?? 0);
       setLocked(true);
-      setConfetti(true);
-      playLock();
 
       setTimeout(() => {
-        setConfetti(false);
         resetSelection();
-        setTimeout(() => router.replace("/(tabs)"), 1800);
-      }, 3500);
+        setTimeout(() => router.replace("/(tabs)"), 2500);
+      }, 4000);
     } catch {
       setSaving(false);
-      Alert.alert("Error", "Failed to save lock. Please try again.");
     }
-  }
-
-  function startCountdown() {
-    playWarning();
-    setCountdownVisible(true);
-    let count = 3;
-    setCountdown(3);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-    const tick = () => {
-      if (count > 1) {
-        count--;
-        setTimeout(() => {
-          setCountdown(count);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          tick();
-        }, 1000);
-      } else {
-        setTimeout(() => {
-          setCountdownVisible(false);
-          doLock();
-        }, 1000);
-      }
-    };
-    tick();
-  }
-
-  function handleConfirm() {
-    Alert.alert(
-      "Final Confirmation",
-      `Lock ${selection.selectedApps.length} app${
-        selection.selectedApps.length !== 1 ? "s" : ""
-      } for ${durationText}.\n\nUnlocks: ${expiryDate}\n\nThis CANNOT be undone.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Lock Forever", style: "destructive", onPress: startCountdown },
-      ]
-    );
   }
 
   if (locked) {
     return (
       <GradientBackground>
-        <Particles active={confetti} />
-        <SuccessState
+        <SuccessScreen
           lockedExpiry={lockedExpiry}
           lockedAppCount={lockedAppCount}
           skippedApps={skippedApps}
@@ -396,27 +349,21 @@ export default function ConfirmScreen() {
 
   return (
     <GradientBackground>
-      <CountdownOverlay count={countdown} visible={countdownVisible} />
-
       <ScrollView
-        style={styles.container}
+        style={styles.scroll}
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: bottomPad + 120 },
+          { paddingTop: 16, paddingBottom: bottomPad + 130 },
         ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Warning banner */}
-        <GlassCard
-          style={styles.warningBanner}
-          borderColor="rgba(255,0,85,0.4)"
-          padding={18}
-        >
+        <View style={styles.warningBanner}>
           <LinearGradient
-            colors={["rgba(255,0,85,0.25)", "rgba(255,0,85,0.1)"]}
-            style={styles.warningIcon}
+            colors={["rgba(255,0,85,0.22)", "rgba(255,0,85,0.08)"]}
+            style={styles.warningIconBox}
           >
-            <Feather name="alert-octagon" size={24} color="#FF0055" />
+            <Feather name="alert-octagon" size={21} color="#FF0055" />
           </LinearGradient>
           <View style={{ flex: 1 }}>
             <Text style={styles.warningTitle}>No Going Back</Text>
@@ -424,9 +371,9 @@ export default function ConfirmScreen() {
               This lock CANNOT be removed until the timer expires.
             </Text>
           </View>
-        </GlassCard>
+        </View>
 
-        {/* Apps section */}
+        {/* Apps */}
         <Text style={styles.sectionLabel}>APPS TO LOCK</Text>
         <GlassCard>
           {selection.selectedApps.map((app, idx) => (
@@ -438,7 +385,7 @@ export default function ConfirmScreen() {
                 >
                   <FontAwesome5
                     name={app.iconName as any}
-                    size={18}
+                    size={17}
                     color={app.iconColor}
                   />
                 </LinearGradient>
@@ -446,16 +393,16 @@ export default function ConfirmScreen() {
                   <Text style={styles.appName}>{app.name}</Text>
                   <Text style={styles.appPkg}>{app.packageName}</Text>
                 </View>
-                <Feather name="lock" size={14} color="rgba(255,255,255,0.35)" />
+                <Feather name="lock" size={13} color="rgba(255,255,255,0.28)" />
               </View>
               {idx < selection.selectedApps.length - 1 && (
-                <View style={styles.divider} />
+                <View style={styles.rowDivider} />
               )}
             </View>
           ))}
         </GlassCard>
 
-        {/* Duration card */}
+        {/* Duration */}
         <Text style={styles.sectionLabel}>DURATION & EXPIRY</Text>
         <GlassCard padding={18}>
           <View style={styles.durationRow}>
@@ -463,7 +410,7 @@ export default function ConfirmScreen() {
               colors={["#6366F1", "#8B5CF6"]}
               style={styles.durationIcon}
             >
-              <Feather name="clock" size={24} color="#fff" />
+              <Feather name="clock" size={22} color="#fff" />
             </LinearGradient>
             <View style={{ flex: 1 }}>
               <Text style={styles.durationValue}>{durationText}</Text>
@@ -472,16 +419,27 @@ export default function ConfirmScreen() {
           </View>
         </GlassCard>
 
-        {/* Details table */}
+        {/* Summary table */}
         <GlassCard>
           {[
-            { label: "Apps blocked", value: `${selection.selectedApps.length}`, color: "#fff" },
+            {
+              label: "Apps blocked",
+              value: `${selection.selectedApps.length}`,
+              color: "#fff",
+            },
             { label: "Duration", value: durationText, color: "#fff" },
             { label: "Unlocks at", value: expiryDate, color: "#A5B4FC" },
             {
-              label: "Verification",
-              value: configured ? (online ? "Firebase ☁️" : "Offline") : "Local only",
-              color: configured && online ? "#00FF88" : "rgba(255,255,255,0.45)",
+              label: "Cloud sync",
+              value: configured
+                ? online
+                  ? "Firebase ☁️"
+                  : "Offline"
+                : "Local only",
+              color:
+                configured && online
+                  ? "#00FF88"
+                  : "rgba(255,255,255,0.45)",
             },
             { label: "Early unlock", value: "Impossible ✗", color: "#FF0055" },
           ].map((row, i, arr) => (
@@ -496,79 +454,90 @@ export default function ConfirmScreen() {
             </View>
           ))}
         </GlassCard>
-
-        <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* Footer */}
-      <View
-        style={[
-          styles.footer,
-          { paddingBottom: bottomPad + 20 },
-        ]}
-      >
+      <View style={[styles.footer, { paddingBottom: bottomPad + 16 }]}>
         <Pressable
-          onPress={handleConfirm}
+          onPress={() => router.back()}
           disabled={saving}
-          style={({ pressed }) => [{ opacity: saving ? 0.6 : pressed ? 0.88 : 1 }]}
+          style={({ pressed }) => [
+            styles.cancelBtn,
+            { opacity: saving ? 0.4 : pressed ? 0.65 : 1 },
+          ]}
+        >
+          <Text style={styles.cancelBtnText}>Cancel</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={doLock}
+          disabled={saving}
+          style={({ pressed }) => [
+            { flex: 1, opacity: saving ? 0.7 : pressed ? 0.88 : 1 },
+          ]}
         >
           <LinearGradient
             colors={["#FF0055", "#CC0044"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={styles.confirmBtn}
+            style={styles.lockBtn}
           >
-            <Feather name="lock" size={20} color="#fff" />
-            <Text style={styles.confirmBtnText}>
-              {saving ? "Locking…" : "Confirm — Lock Forever"}
+            <Feather name="lock" size={18} color="#fff" />
+            <Text style={styles.lockBtnText}>
+              {saving ? "Locking…" : "Lock Forever"}
             </Text>
           </LinearGradient>
         </Pressable>
-        <Text style={styles.confirmCaveat}>
-          3-second countdown confirms. No PIN bypass.
-        </Text>
       </View>
     </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingTop: 20, gap: 12 },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 20, gap: 10 },
+
   warningBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    marginBottom: 8,
-  },
-  warningIcon: {
-    width: 52,
-    height: 52,
+    backgroundColor: "rgba(255,0,85,0.09)",
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,0,85,0.22)",
+    padding: 16,
+    marginBottom: 4,
+  },
+  warningIconBox: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
   warningTitle: {
-    fontSize: 17,
+    fontSize: 15,
     fontFamily: "Inter_700Bold",
     color: "#FF0055",
     marginBottom: 3,
   },
   warningBody: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,0,85,0.7)",
-    lineHeight: 18,
+    color: "rgba(255,0,85,0.6)",
+    lineHeight: 17,
   },
+
   sectionLabel: {
     fontSize: 11,
     fontFamily: "Inter_500Medium",
     letterSpacing: 1,
-    color: "rgba(255,255,255,0.35)",
-    marginTop: 4,
+    color: "rgba(255,255,255,0.28)",
+    marginTop: 6,
     marginLeft: 2,
-    marginBottom: 4,
+    marginBottom: 2,
   },
+
   appRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -576,15 +545,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   appIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
   },
   appInfo: { flex: 1 },
   appName: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Inter_600SemiBold",
     color: "#fff",
     marginBottom: 2,
@@ -592,50 +561,48 @@ const styles = StyleSheet.create({
   appPkg: {
     fontSize: 11,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.35)",
+    color: "rgba(255,255,255,0.28)",
   },
-  divider: {
+  rowDivider: {
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    marginLeft: 66,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    marginLeft: 64,
   },
-  durationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
+
+  durationRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   durationIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+    width: 50,
+    height: 50,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
   durationValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: "Inter_700Bold",
     color: "#fff",
-    marginBottom: 4,
+    marginBottom: 3,
   },
   durationExpiry: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.45)",
+    color: "rgba(255,255,255,0.38)",
   },
+
   tableRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 13,
+    paddingVertical: 12,
   },
   tableLabel: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.45)",
+    color: "rgba(255,255,255,0.38)",
   },
   tableValue: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Inter_700Bold",
   },
   tableDivider: {
@@ -643,40 +610,53 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.06)",
     marginHorizontal: 16,
   },
+
   footer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     paddingHorizontal: 20,
-    paddingTop: 16,
-    gap: 10,
+    paddingTop: 14,
+    flexDirection: "row",
+    gap: 12,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.08)",
-    backgroundColor: "rgba(8,0,20,0.85)",
+    borderTopColor: "rgba(255,255,255,0.07)",
+    backgroundColor: "rgba(8,0,20,0.94)",
   },
-  confirmBtn: {
+
+  cancelBtn: {
+    height: 56,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.13)",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 22,
+  },
+  cancelBtnText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "rgba(255,255,255,0.55)",
+  },
+
+  lockBtn: {
+    height: 56,
+    borderRadius: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    paddingVertical: 18,
-    borderRadius: 18,
+    gap: 8,
     shadowColor: "#FF0055",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 14,
     elevation: 10,
   },
-  confirmBtnText: {
+  lockBtnText: {
     color: "#fff",
-    fontSize: 17,
+    fontSize: 16,
     fontFamily: "Inter_700Bold",
-  },
-  confirmCaveat: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.3)",
-    textAlign: "center",
   },
 });

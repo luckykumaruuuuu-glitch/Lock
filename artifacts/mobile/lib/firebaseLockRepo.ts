@@ -63,10 +63,10 @@ export async function getServerTime(): Promise<number> {
 
   return new Promise((resolve) => {
     const offsetRef = ref(db, ".info/serverTimeOffset");
-    const unsub = onValue(
+    // onlyOnce:true auto-unsubscribes — no manual unsub() needed
+    onValue(
       offsetRef,
       (snap) => {
-        unsub();
         const offset: number = snap.val() ?? 0;
         resolve(Date.now() + offset);
       },
