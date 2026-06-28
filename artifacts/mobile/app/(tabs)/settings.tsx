@@ -22,6 +22,33 @@ import { useSounds } from "@/hooks/useSounds";
 const APP_VERSION = "1.0.0";
 const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.focuslock.app";
 
+const TERMS_OF_SERVICE = `Terms of Service — FocusLock
+Last updated: June 28, 2026
+
+1. ACCEPTANCE OF TERMS
+By using FocusLock, you agree to these terms. If you do not agree, do not use this app.
+
+2. HOW THE APP WORKS
+FocusLock allows you to voluntarily lock selected apps for a chosen duration. Once confirmed, locks cannot be removed until the timer expires.
+
+3. USER RESPONSIBILITY
+You are fully responsible for the locks you set. The app will not unlock apps before the timer expires under any circumstances — no exceptions.
+
+4. NO REFUNDS FOR LOCK PERIOD
+If you lock an app and change your mind, the lock remains active. This is by design and you agreed to it at the time of confirmation.
+
+5. DATA & PRIVACY
+We use Firebase to sync your lock timers. No personal data is sold or shared with third parties. For full details, refer to our Privacy Policy.
+
+6. LIMITATION OF LIABILITY
+FocusLock is not responsible for any loss or inconvenience caused by locked apps during the lock period. You use this app voluntarily and accept all consequences of the locks you set.
+
+7. CHANGES TO TERMS
+We may update these terms at any time. Continued use of the app after changes are posted means you accept the updated terms.
+
+8. CONTACT
+For any questions or concerns, please contact us at: support@focuslock.app`;
+
 const PRIVACY_POLICY = `FocusLock Privacy Policy
 Last updated: June 28, 2026
 
@@ -148,15 +175,24 @@ function SoundToggleRow({
   );
 }
 
-/* ─── Privacy modal ─── */
-function PrivacyModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+/* ─── Reusable text modal ─── */
+function TextModal({
+  visible,
+  title,
+  body,
+  onClose,
+}: {
+  visible: boolean;
+  title: string;
+  body: string;
+  onClose: () => void;
+}) {
   const insets = useSafeAreaInsets();
-  const { t } = useLanguage();
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[modalSt.root, { paddingTop: insets.top + 16 }]}>
         <View style={modalSt.header}>
-          <Text style={modalSt.title}>{t("privacyPolicy")}</Text>
+          <Text style={modalSt.title}>{title}</Text>
           <Pressable onPress={onClose} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
             <View style={modalSt.closeBtn}>
               <Feather name="x" size={18} color="#FFFFFF" />
@@ -167,7 +203,7 @@ function PrivacyModal({ visible, onClose }: { visible: boolean; onClose: () => v
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         >
-          <Text style={modalSt.text}>{PRIVACY_POLICY}</Text>
+          <Text style={modalSt.text}>{body}</Text>
         </ScrollView>
       </View>
     </Modal>
@@ -191,6 +227,7 @@ function SectionLabel({ label }: { label: string }) {
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const [privacyVisible, setPrivacyVisible] = useState(false);
+  const [tosVisible, setTosVisible] = useState(false);
   const { muted, setMuted, playPreview } = useSounds();
   const { t, currentLanguage } = useLanguage();
 
@@ -258,7 +295,7 @@ export default function SettingsScreen() {
           <SettingRow
             icon="book"
             label={t("termsOfService")}
-            onPress={() => Linking.openURL("https://focuslock.app/terms").catch(() => {})}
+            onPress={() => setTosVisible(true)}
             last
           />
         </GlassCard>
@@ -280,7 +317,18 @@ export default function SettingsScreen() {
         <Text style={styles.footer}>FocusLock {APP_VERSION}</Text>
       </ScrollView>
 
-      <PrivacyModal visible={privacyVisible} onClose={() => setPrivacyVisible(false)} />
+      <TextModal
+        visible={privacyVisible}
+        title="Privacy Policy"
+        body={PRIVACY_POLICY}
+        onClose={() => setPrivacyVisible(false)}
+      />
+      <TextModal
+        visible={tosVisible}
+        title="Terms of Service"
+        body={TERMS_OF_SERVICE}
+        onClose={() => setTosVisible(false)}
+      />
     </GradientBackground>
   );
 }
