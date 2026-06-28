@@ -190,6 +190,52 @@ function SoundToggleRow({
   );
 }
 
+/* ─── Parse & render rich document content ─── */
+function DocContent({ body }: { body: string }) {
+  const lines = body.split("\n");
+  const elements: React.ReactNode[] = [];
+  let key = 0;
+
+  const sectionHeadingRe = /^(\d{1,2})\.\s+(.+)$/;
+  const lastUpdatedRe    = /^Last updated/i;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (line.trim() === "") {
+      elements.push(<View key={key++} style={{ height: 10 }} />);
+      continue;
+    }
+
+    if (lastUpdatedRe.test(line.trim())) {
+      elements.push(
+        <Text key={key++} style={modalSt.dateText}>{line.trim()}</Text>
+      );
+      continue;
+    }
+
+    const sectionMatch = line.trim().match(sectionHeadingRe);
+    if (sectionMatch) {
+      if (elements.length > 0) {
+        elements.push(<View key={key++} style={modalSt.sectionGap} />);
+      }
+      elements.push(
+        <View key={key++} style={modalSt.sectionHeadingRow}>
+          <Text style={modalSt.sectionNumber}>{sectionMatch[1]}.</Text>
+          <Text style={modalSt.sectionHeading}>{sectionMatch[2]}</Text>
+        </View>
+      );
+      continue;
+    }
+
+    elements.push(
+      <Text key={key++} style={modalSt.bodyText}>{line.trim()}</Text>
+    );
+  }
+
+  return <>{elements}</>;
+}
+
 /* ─── Reusable text modal ─── */
 function TextModal({
   visible,
@@ -205,20 +251,27 @@ function TextModal({
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[modalSt.root, { paddingTop: insets.top + 16 }]}>
-        <View style={modalSt.header}>
-          <Text style={modalSt.title}>{title}</Text>
-          <Pressable onPress={onClose} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
-            <View style={modalSt.closeBtn}>
-              <Feather name="x" size={18} color="#FFFFFF" />
-            </View>
+      <View style={[modalSt.root, { paddingTop: insets.top + 12 }]}>
+        {/* Back button + title */}
+        <View style={modalSt.topBar}>
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) => [modalSt.backBtn, { opacity: pressed ? 0.7 : 1 }]}
+          >
+            <Feather name="arrow-left" size={20} color="#FFFFFF" />
           </Pressable>
+          <Text style={modalSt.pageTitle}>{title}</Text>
+          <View style={{ width: 36 }} />
         </View>
+
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+          contentContainerStyle={[modalSt.scrollContent, { paddingBottom: insets.bottom + 32 }]}
         >
-          <Text style={modalSt.text}>{body}</Text>
+          {/* Content card */}
+          <View style={modalSt.card}>
+            <DocContent body={body} />
+          </View>
         </ScrollView>
       </View>
     </Modal>
@@ -226,11 +279,79 @@ function TextModal({
 }
 
 const modalSt = StyleSheet.create({
-  root:     { flex: 1, paddingHorizontal: 20, backgroundColor: "#000000" },
-  header:   { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
-  title:    { fontSize: 22, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
-  closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#2C2C2E", alignItems: "center", justifyContent: "center" },
-  text:     { fontSize: 13, fontFamily: "Inter_400Regular", color: "#8E8E93", lineHeight: 22 },
+  root: {
+    flex: 1,
+    backgroundColor: "#000000",
+    paddingHorizontal: 16,
+  },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingBottom: 16,
+    paddingHorizontal: 4,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#1C1C1E",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pageTitle: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+    letterSpacing: -0.3,
+  },
+  scrollContent: {
+    gap: 0,
+  },
+  card: {
+    backgroundColor: "#1C1C1E",
+    borderRadius: 18,
+    padding: 22,
+    gap: 0,
+  },
+  dateText: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#8E8E93",
+    marginBottom: 18,
+    marginTop: 2,
+  },
+  sectionGap: {
+    height: 22,
+  },
+  sectionHeadingRow: {
+    flexDirection: "row",
+    gap: 6,
+    alignItems: "flex-start",
+    marginBottom: 8,
+  },
+  sectionNumber: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+    color: "#FFD60A",
+    lineHeight: 22,
+    minWidth: 24,
+  },
+  sectionHeading: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+    color: "#FFD60A",
+    lineHeight: 22,
+    letterSpacing: -0.2,
+  },
+  bodyText: {
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    color: "#FFFFFF",
+    lineHeight: 24,
+    marginBottom: 4,
+  },
 });
 
 /* ─── Section label ─── */
