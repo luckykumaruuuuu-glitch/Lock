@@ -23,11 +23,19 @@ interface AnimatedButtonProps {
 }
 
 const GRADIENTS = {
-  primary: ["#6366F1", "#8B5CF6"] as const,
-  accent: ["#FF006E", "#FF4444"] as const,
-  ghost: ["rgba(255,255,255,0.08)", "rgba(255,255,255,0.05)"] as const,
-  danger: ["#FF0055", "#CC0044"] as const,
-  success: ["#00CC6A", "#00FF88"] as const,
+  primary: ["#C47B2B", "#E8943A"] as const,
+  accent: ["#FF6B35", "#E85A20"] as const,
+  ghost: ["rgba(61,31,10,0.5)", "rgba(61,31,10,0.3)"] as const,
+  danger: ["#CC4400", "#FF6B35"] as const,
+  success: ["#3D9142", "#4CAF50"] as const,
+};
+
+const GLOW_COLORS = {
+  primary: "#C47B2B",
+  accent: "#FF6B35",
+  ghost: "transparent",
+  danger: "#CC4400",
+  success: "#4CAF50",
 };
 
 const SIZES = {
@@ -84,12 +92,17 @@ export function AnimatedButton({
   const sizeStyle = SIZES[size];
   const gradient = GRADIENTS[variant];
   const isGhost = variant === "ghost";
+  const glowColor = GLOW_COLORS[variant];
 
   return (
     <Animated.View
       style={[
         styles.wrapper,
-        { transform: [{ scale: scaleAnim }], opacity: opacityAnim },
+        {
+          transform: [{ scale: scaleAnim }],
+          opacity: opacityAnim,
+          shadowColor: glowColor,
+        },
         disabled && styles.disabled,
         style,
       ]}
@@ -112,7 +125,7 @@ export function AnimatedButton({
               paddingVertical: sizeStyle.paddingVertical,
               paddingHorizontal: sizeStyle.paddingHorizontal,
               borderWidth: isGhost ? 1 : 0,
-              borderColor: isGhost ? "rgba(255,255,255,0.2)" : undefined,
+              borderColor: isGhost ? "rgba(196,123,43,0.3)" : undefined,
             },
           ]}
         >
@@ -126,7 +139,7 @@ export function AnimatedButton({
                   styles.label,
                   {
                     fontSize: sizeStyle.fontSize,
-                    color: isGhost ? "rgba(255,255,255,0.85)" : "#fff",
+                    color: isGhost ? "#D4A574" : "#FFF8F0",
                   },
                 ]}
               >
@@ -168,9 +181,8 @@ const styles = StyleSheet.create({
   wrapper: {
     borderRadius: 16,
     overflow: Platform.OS === "android" ? "hidden" : "visible",
-    shadowColor: "#6366F1",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.35,
     shadowRadius: 12,
     elevation: 8,
   },
@@ -195,7 +207,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.3)",
-    borderTopColor: "#fff",
+    borderColor: "rgba(255,248,240,0.3)",
+    borderTopColor: "#FFF8F0",
   },
 });

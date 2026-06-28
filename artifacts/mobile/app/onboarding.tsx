@@ -24,35 +24,35 @@ export const ONBOARDING_DONE_KEY = "focuslock_onboarding_done";
 const SLIDES = [
   {
     icon: "shield" as const,
-    gradient: ["#6366F1", "#8B5CF6"] as const,
-    glowColor: "#6366F1",
+    gradient: ["#C47B2B", "#E8943A"] as const,
+    glowColor: "#C47B2B",
     title: "Take Back\nControl",
     body: "FocusLock lets you lock distracting apps for a set period — with absolutely no way to bypass it early. Your commitment, enforced.",
-    accent: "#6366F1",
+    accent: "#C47B2B",
   },
   {
     icon: "lock" as const,
-    gradient: ["#FF006E", "#FF4444"] as const,
-    glowColor: "#FF006E",
+    gradient: ["#FF6B35", "#E85A20"] as const,
+    glowColor: "#FF6B35",
     title: "Unbreakable\nLocks",
     body: "Once set, a lock is permanent until the timer expires. No PIN override, no settings bypass — only the clock unlocks you.",
-    accent: "#FF006E",
+    accent: "#FF6B35",
   },
   {
     icon: "clock" as const,
-    gradient: ["#00CC6A", "#00FF88"] as const,
-    glowColor: "#00FF88",
+    gradient: ["#3D9142", "#4CAF50"] as const,
+    glowColor: "#4CAF50",
     title: "Server-Verified\nTime",
     body: "FocusLock uses Firebase server time, not your device clock. Changing the date or time on your phone won't unlock a single app.",
-    accent: "#00FF88",
+    accent: "#4CAF50",
   },
   {
     icon: "alert-triangle" as const,
-    gradient: ["#FF9500", "#FF6B00"] as const,
-    glowColor: "#FF9500",
+    gradient: ["#A0522D", "#C47B2B"] as const,
+    glowColor: "#C47B2B",
     title: "True\nEnforcement",
     body: "Device Administrator prevents uninstalling FocusLock while active. The Accessibility Service blocks apps in real-time.",
-    accent: "#FF9500",
+    accent: "#E8943A",
   },
 ];
 
@@ -60,8 +60,6 @@ export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const { playClick, playSuccess } = useSounds();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const slideRef = useRef<any>(null);
   const iconScale = useRef(new Animated.Value(1)).current;
 
   const topPad = Platform.OS === "web" ? 60 : insets.top;
@@ -83,7 +81,6 @@ export default function OnboardingScreen() {
     playClick();
     animateIcon();
     setCurrentIndex(index);
-    slideRef.current?.scrollTo({ x: index * width, animated: true });
   }
 
   function handleNext() {
@@ -103,14 +100,14 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.root}>
       <LinearGradient
-        colors={["#080014", "#16082E", "#0D1535"]}
+        colors={["#0D0500", "#1A0A00", "#2C1503"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
 
       <View style={[styles.container, { paddingTop: topPad + 20 }]}>
-        {/* Icon */}
+        {/* Icon with glow */}
         <Animated.View
           style={[
             styles.iconWrap,
@@ -126,18 +123,14 @@ export default function OnboardingScreen() {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Feather name={slide.icon} size={60} color="#fff" />
+            <Feather name={slide.icon} size={60} color="#FFF8F0" />
           </LinearGradient>
         </Animated.View>
 
-        {/* Slide content */}
+        {/* Slide card */}
         <GlassCard style={styles.slideCard} padding={28}>
-          <Text style={[styles.slideTitle, { color: "#fff" }]}>
-            {slide.title}
-          </Text>
-          <Text style={[styles.slideBody, { color: "rgba(255,255,255,0.65)" }]}>
-            {slide.body}
-          </Text>
+          <Text style={styles.slideTitle}>{slide.title}</Text>
+          <Text style={styles.slideBody}>{slide.body}</Text>
         </GlassCard>
 
         {/* Dots */}
@@ -149,9 +142,7 @@ export default function OnboardingScreen() {
                   styles.dot,
                   {
                     backgroundColor:
-                      i === currentIndex
-                        ? slide.accent
-                        : "rgba(255,255,255,0.2)",
+                      i === currentIndex ? slide.accent : "rgba(196,123,43,0.25)",
                     width: i === currentIndex ? 28 : 8,
                     shadowColor: i === currentIndex ? slide.accent : "transparent",
                   },
@@ -179,7 +170,7 @@ export default function OnboardingScreen() {
               <Feather
                 name={currentIndex < SLIDES.length - 1 ? "arrow-right" : "check"}
                 size={20}
-                color="#fff"
+                color="#FFF8F0"
               />
             </LinearGradient>
           </Pressable>
@@ -224,11 +215,13 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
     marginBottom: 14,
     lineHeight: 40,
+    color: "#FFF8F0",
   },
   slideBody: {
     fontSize: 16,
     fontFamily: "Inter_400Regular",
     lineHeight: 26,
+    color: "#D4A574",
   },
   dotsRow: {
     flexDirection: "row",
@@ -261,13 +254,13 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   nextBtnText: {
-    color: "#fff",
+    color: "#FFF8F0",
     fontSize: 17,
     fontFamily: "Inter_700Bold",
   },
   skipBtn: { paddingVertical: 8 },
   skipText: {
-    color: "rgba(255,255,255,0.4)",
+    color: "rgba(212,165,116,0.5)",
     fontSize: 13,
     fontFamily: "Inter_400Regular",
     textDecorationLine: "underline",

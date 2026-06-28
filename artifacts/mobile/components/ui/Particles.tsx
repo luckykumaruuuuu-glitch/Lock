@@ -5,14 +5,14 @@ const { width, height } = Dimensions.get("window");
 const PARTICLE_COUNT = 26;
 
 const COLORS = [
-  "#6366F1",
-  "#FF006E",
-  "#00FF88",
-  "#FF9500",
-  "#A5B4FC",
-  "#F9A8D4",
-  "#FCD34D",
-  "#34D399",
+  "#C47B2B",
+  "#E8943A",
+  "#FF6B35",
+  "#4CAF50",
+  "#FFF8F0",
+  "#D4A574",
+  "#FFB366",
+  "#A0522D",
 ];
 
 const SHAPES = ["●", "■", "★", "◆", "▲"];

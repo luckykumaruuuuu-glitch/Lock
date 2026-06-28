@@ -1,0 +1,78 @@
+ठीक है, यह raha **updated UI prompt:**
+
+---
+
+Upgrade the entire FocusLock UI with these specific requirements:
+
+**Color Scheme - Chocolatey Brown Theme:**
+- Primary Background: Deep brown (#1A0A00)
+- Secondary Background: Dark chocolate (#2C1503)
+- Card/Glass color: Semi-transparent brown (#3D1F0A with 70% opacity)
+- Primary Accent: Warm caramel (#C47B2B)
+- Secondary Accent: Golden brown (#E8943A)
+- Success Color: Warm green (#4CAF50)
+- Warning/Lock Color: Burnt orange (#FF6B35)
+- Text Primary: Cream white (#FFF8F0)
+- Text Secondary: Light brown (#D4A574)
+- Gradient: Dark espresso to warm chocolate (#0D0500 to #3D1F0A)
+
+**Glassmorphism Design:**
+- All cards: frosted chocolate glass effect
+- backdrop-filter: blur(20px)
+- background: rgba(61, 31, 10, 0.7)
+- border: 1px solid rgba(196, 123, 43, 0.3)
+- border-radius: 24px
+- box-shadow: 0 8px 32px rgba(0,0,0,0.4)
+
+**Buttons:**
+- Caramel gradient buttons
+- Ripple animation on click
+- Smooth scale animation (0.95 on press)
+- Glow effect on hover
+
+**Animations:**
+- Slide in animations on all screens
+- Bounce animation on success
+- Smooth screen transitions (300ms ease)
+- Timer countdown smooth transitions
+- Confetti animation when lock confirmed
+
+**Sound Effects System:**
+- Add Sound Settings toggle in Settings screen
+- When Sound Effects ON:
+  - Button click: short soft click sound
+  - Lock confirmed: positive success chime
+  - App blocked: deep warning tone
+  - Permission granted: pleasant ding sound
+- When Sound Effects OFF:
+  - Complete silence, no sounds at all
+- Sound setting saves to localStorage
+- Toggle switch with smooth animation in Settings
+
+**Settings Screen:**
+- Sound Effects toggle (ON/OFF switch)
+- When toggled ON: play a short preview sound immediately
+- When toggled OFF: complete silence immediately
+- Show current status clearly: "Sound Effects: ON ✓" or "Sound Effects: OFF ✗"
+
+**Home Screen:**
+- Active locks shown as chocolate glass cards
+- App icon + name + remaining time
+- Animated progress bar in caramel color
+- Success message: "✓ Lock Activated!" in warm green
+
+**Lock Confirmation:**
+- "3... 2... 1... LOCKED!" countdown animation
+- Success checkmark with golden glow
+- Warm brown particles/confetti animation
+
+**Permissions Screen:**
+- Each permission as chocolate glass card
+- Green checkmark animation when granted
+- Smooth reveal animations
+
+Please redesign entire app with chocolatey brown theme and sound effects system as described above.
+
+---
+
+Paste karo Replit AI mein aur batao kya hua!

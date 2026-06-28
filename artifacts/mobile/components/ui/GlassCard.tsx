@@ -21,9 +21,9 @@ interface GlassCardProps {
 export function GlassCard({
   children,
   style,
-  intensity = 30,
-  borderColor = "rgba(255,255,255,0.15)",
-  backgroundColor = "rgba(255,255,255,0.07)",
+  intensity = 25,
+  borderColor = "rgba(196,123,43,0.28)",
+  backgroundColor = "rgba(61,31,10,0.65)",
   radius = 24,
   padding,
 }: GlassCardProps) {
@@ -43,8 +43,8 @@ export function GlassCard({
           {
             backgroundColor,
             // @ts-ignore — web-only CSS property
-            backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
           },
           style,
         ]}
