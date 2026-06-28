@@ -99,12 +99,6 @@ export default function OnboardingScreen() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient
-        colors={["#0D0500", "#1A0A00", "#2C1503"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
 
       <View style={[styles.container, { paddingTop: topPad + 20 }]}>
         {/* Icon with glow */}
@@ -187,7 +181,7 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, backgroundColor: "#000000" },
   container: {
     flex: 1,
     alignItems: "center",

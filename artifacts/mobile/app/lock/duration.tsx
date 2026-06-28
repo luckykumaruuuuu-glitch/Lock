@@ -208,7 +208,7 @@ function DarkCalendar({
 
 const calStyles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.72)", alignItems: "center", justifyContent: "center", paddingHorizontal: 20 },
-  sheet:   { width: "100%", maxWidth: 360, backgroundColor: "#0D0500", borderRadius: 20, overflow: "hidden", borderWidth: 1, borderColor: "rgba(196,123,43,0.3)" },
+  sheet:   { width: "100%", maxWidth: 360, backgroundColor: "#000000", borderRadius: 20, overflow: "hidden", borderWidth: 1, borderColor: "rgba(196,123,43,0.3)" },
   header:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 18 },
   navBtn:  { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   monthLabel: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#FFF8F0" },

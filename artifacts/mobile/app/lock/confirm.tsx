@@ -262,7 +262,7 @@ const agStyles = StyleSheet.create({
   sheet: {
     width: "100%",
     maxWidth: 380,
-    backgroundColor: "#0D0500",
+    backgroundColor: "#000000",
     borderRadius: 22,
     paddingVertical: 28,
     paddingHorizontal: 24,

@@ -157,7 +157,6 @@ function PrivacyModal({ visible, onClose }: { visible: boolean; onClose: () => v
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[modalSt.root, { paddingTop: insets.top + 16 }]}>
-        <LinearGradient colors={["#0D0500", "#1A0A00", "#2C1503"]} style={StyleSheet.absoluteFill} />
         <View style={modalSt.header}>
           <Text style={modalSt.title}>{t("privacyPolicy")}</Text>
           <Pressable onPress={onClose} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
@@ -178,7 +177,7 @@ function PrivacyModal({ visible, onClose }: { visible: boolean; onClose: () => v
 }
 
 const modalSt = StyleSheet.create({
-  root:   { flex: 1, paddingHorizontal: 20 },
+  root:   { flex: 1, paddingHorizontal: 20, backgroundColor: "#000000" },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
   title:  { fontSize: 22, fontFamily: "Inter_700Bold", color: "#FFF8F0" },
   text:   { fontSize: 13, fontFamily: "Inter_400Regular", color: "#D4A574", lineHeight: 22 },
