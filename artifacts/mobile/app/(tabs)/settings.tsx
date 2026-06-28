@@ -20,6 +20,7 @@ import { useLanguage, LANGUAGES } from "@/context/LanguageContext";
 import { useSounds } from "@/hooks/useSounds";
 
 const APP_VERSION = "1.0.0";
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.focuslock.app";
 
 const PRIVACY_POLICY = `FocusLock Privacy Policy
 Last updated: June 28, 2026
@@ -231,6 +232,11 @@ export default function SettingsScreen() {
             icon="message-circle"
             label={t("feedback")}
             onPress={() => router.push("/settings/feedback")}
+          />
+          <SettingRow
+            icon="star"
+            label="Rate us on Play Store"
+            onPress={() => Linking.openURL(PLAY_STORE_URL).catch(() => {})}
           />
           <SettingRow
             icon="globe"
