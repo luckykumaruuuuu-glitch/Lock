@@ -24,11 +24,11 @@ export const ONBOARDING_DONE_KEY = "focuslock_onboarding_done";
 const SLIDES = [
   {
     icon: "shield" as const,
-    gradient: ["#C47B2B", "#E8943A"] as const,
-    glowColor: "#C47B2B",
+    gradient: ["#FFD580", "#FFA500"] as const,
+    glowColor: "#FFD580",
     title: "Take Back\nControl",
     body: "FocusLock lets you lock distracting apps for a set period — with absolutely no way to bypass it early. Your commitment, enforced.",
-    accent: "#C47B2B",
+    accent: "#FFD580",
   },
   {
     icon: "lock" as const,
@@ -48,11 +48,11 @@ const SLIDES = [
   },
   {
     icon: "alert-triangle" as const,
-    gradient: ["#A0522D", "#C47B2B"] as const,
-    glowColor: "#C47B2B",
+    gradient: ["#FFD580", "#FFA500"] as const,
+    glowColor: "#FFD580",
     title: "True\nEnforcement",
     body: "Device Administrator prevents uninstalling FocusLock while active. The Accessibility Service blocks apps in real-time.",
-    accent: "#E8943A",
+    accent: "#FFD580",
   },
 ];
 
@@ -136,7 +136,7 @@ export default function OnboardingScreen() {
                   styles.dot,
                   {
                     backgroundColor:
-                      i === currentIndex ? slide.accent : "rgba(196,123,43,0.25)",
+                      i === currentIndex ? slide.accent : "rgba(255,213,128,0.2)",
                     width: i === currentIndex ? 28 : 8,
                     shadowColor: i === currentIndex ? slide.accent : "transparent",
                   },
@@ -209,13 +209,13 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
     marginBottom: 14,
     lineHeight: 40,
-    color: "#FFF8F0",
+    color: "#FFFFFF",
   },
   slideBody: {
     fontSize: 16,
     fontFamily: "Inter_400Regular",
     lineHeight: 26,
-    color: "#D4A574",
+    color: "rgba(255,255,255,0.5)",
   },
   dotsRow: {
     flexDirection: "row",
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   nextBtnText: {
-    color: "#FFF8F0",
+    color: "#1A1A1A",
     fontSize: 17,
     fontFamily: "Inter_700Bold",
   },

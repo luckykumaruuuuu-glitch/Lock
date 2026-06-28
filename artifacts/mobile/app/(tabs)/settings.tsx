@@ -92,7 +92,7 @@ function SettingRow({
         <Text style={styles.rowLabel}>{label}</Text>
         {value !== undefined && <Text style={styles.rowValue}>{value}</Text>}
         {onPress && (
-          <Feather name="chevron-right" size={15} color="rgba(212,165,116,0.35)" />
+          <Feather name="chevron-right" size={15} color="rgba(255,213,128,0.35)" />
         )}
       </Pressable>
       {!last && <RowDivider />}
@@ -129,7 +129,7 @@ function SoundToggleRow({
   const dotPos = toggleAnim.interpolate({ inputRange: [0, 1], outputRange: [2, 20] });
   const trackColor = toggleAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ["rgba(61,31,10,0.6)", "#C47B2B"],
+    outputRange: ["rgba(50,50,50,0.6)", "#FFD580"],
   });
 
   return (
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "Inter_500Medium",
     letterSpacing: 0.8,
-    color: "rgba(212,165,116,0.45)",
+    color: "rgba(255,213,128,0.45)",
     marginTop: 14,
     marginBottom: 5,
     marginLeft: 4,
@@ -318,11 +318,11 @@ const styles = StyleSheet.create({
   rowValue: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: "rgba(212,165,116,0.65)",
+    color: "rgba(255,213,128,0.6)",
   },
   rowDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(196,123,43,0.18)",
+    backgroundColor: "rgba(255,213,128,0.08)",
     marginLeft: 46,
   },
 

@@ -21,10 +21,10 @@ interface GlassCardProps {
 export function GlassCard({
   children,
   style,
-  intensity = 25,
-  borderColor = "rgba(196,123,43,0.28)",
-  backgroundColor = "rgba(61,31,10,0.65)",
-  radius = 24,
+  intensity = 20,
+  borderColor = "rgba(255,213,128,0.18)",
+  backgroundColor = "rgba(28,28,30,0.85)",
+  radius = 20,
   padding,
 }: GlassCardProps) {
   const containerStyle: ViewStyle = {

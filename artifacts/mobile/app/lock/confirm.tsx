@@ -241,12 +241,12 @@ function AgreementModal({
               style={({ pressed }) => [{ flex: 1, opacity: pressed ? 0.85 : 1 }]}
             >
               <LinearGradient
-                colors={["#C47B2B", "#FF2255"]}
+                colors={["#FFD580", "#FF2255"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={agStyles.agreeBtn}
               >
-                <Feather name="lock" size={16} color="#FFF8F0" />
+                <Feather name="lock" size={16} color="#1A1A1A" />
                 <Text style={agStyles.agreeText}>I Agree &amp; Lock</Text>
               </LinearGradient>
             </Pressable>
@@ -277,13 +277,13 @@ const agStyles = StyleSheet.create({
   },
   iconRow:    { alignItems: "center" },
   iconCircle: { width: 64, height: 64, borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,0,85,0.3)" },
-  title:      { fontSize: 22, fontFamily: "Inter_700Bold", color: "#FFF8F0", textAlign: "center" },
+  title:      { fontSize: 22, fontFamily: "Inter_700Bold", color: "#FFFFFF", textAlign: "center" },
   titleUnderline: { height: 2, backgroundColor: "rgba(255,0,85,0.3)", borderRadius: 1, marginHorizontal: 40 },
 
-  infoBlock:   { backgroundColor: "rgba(196,123,43,0.08)", borderRadius: 12, padding: 14, gap: 4, borderWidth: 1, borderColor: "rgba(196,123,43,0.15)" },
-  infoHeading: { fontSize: 10, fontFamily: "Inter_500Medium", letterSpacing: 1, color: "rgba(196,123,43,0.5)", marginBottom: 2 },
-  infoValue:   { fontSize: 14, fontFamily: "Inter_700Bold", color: "#FFF8F0", lineHeight: 20 },
-  infoSub:     { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(212,165,116,0.5)" },
+  infoBlock:   { backgroundColor: "rgba(255,213,128,0.06)", borderRadius: 12, padding: 14, gap: 4, borderWidth: 1, borderColor: "rgba(255,213,128,0.12)" },
+  infoHeading: { fontSize: 10, fontFamily: "Inter_500Medium", letterSpacing: 1, color: "rgba(255,213,128,0.45)", marginBottom: 2 },
+  infoValue:   { fontSize: 14, fontFamily: "Inter_700Bold", color: "#FFFFFF", lineHeight: 20 },
+  infoSub:     { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.4)" },
 
   divider:     { height: 1, backgroundColor: "rgba(255,255,255,0.07)" },
 
@@ -297,7 +297,7 @@ const agStyles = StyleSheet.create({
   cancelBtn:  { height: 52, borderRadius: 14, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.12)", backgroundColor: "rgba(255,255,255,0.05)", alignItems: "center", justifyContent: "center", paddingHorizontal: 20 },
   cancelText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "rgba(255,255,255,0.45)" },
   agreeBtn:   { height: 52, borderRadius: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, shadowColor: "#FF0055", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 },
-  agreeText:  { fontSize: 14, fontFamily: "Inter_700Bold", color: "#FFF8F0" },
+  agreeText:  { fontSize: 14, fontFamily: "Inter_700Bold", color: "#1A1A1A" },
 });
 
 /* ── Main Confirm Screen ── */
