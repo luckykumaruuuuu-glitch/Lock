@@ -55,18 +55,10 @@ FocusLock does not knowingly collect data from children under 13.
 7. CONTACT
 For privacy concerns, contact the developer through the app's Google Play listing.`;
 
-/* ─── Icon box ─── */
-function IconBox({
-  name,
-  colors = ["#C47B2B", "#E8943A"],
-}: {
-  name: string;
-  colors?: [string, string];
-}) {
+/* ─── Flat icon (no background box) ─── */
+function FlatIcon({ name }: { name: string }) {
   return (
-    <LinearGradient colors={colors} style={styles.iconBox}>
-      <Feather name={name as any} size={14} color="#FFF8F0" />
-    </LinearGradient>
+    <Feather name={name as any} size={20} color="#6B6B6B" />
   );
 }
 
@@ -78,14 +70,12 @@ function RowDivider() {
 /* ─── Standard tappable row ─── */
 function SettingRow({
   icon,
-  iconColors,
   label,
   value,
   onPress,
   last = false,
 }: {
   icon: string;
-  iconColors?: [string, string];
   label: string;
   value?: string;
   onPress?: () => void;
@@ -98,7 +88,7 @@ function SettingRow({
         disabled={!onPress}
         style={({ pressed }) => [styles.row, { opacity: pressed ? 0.65 : 1 }]}
       >
-        <IconBox name={icon} colors={iconColors} />
+        <FlatIcon name={icon} />
         <Text style={styles.rowLabel}>{label}</Text>
         {value !== undefined && <Text style={styles.rowValue}>{value}</Text>}
         {onPress && (
@@ -147,16 +137,11 @@ function SoundToggleRow({
       onPress={handleToggle}
       style={({ pressed }) => [styles.row, { opacity: pressed ? 0.65 : 1 }]}
     >
-      <LinearGradient
-        colors={muted ? ["rgba(61,31,10,0.5)", "rgba(61,31,10,0.3)"] : ["#C47B2B", "#E8943A"]}
-        style={styles.iconBox}
-      >
-        <Feather
-          name={muted ? "volume-x" : "volume-2"}
-          size={14}
-          color={muted ? "#D4A574" : "#FFF8F0"}
-        />
-      </LinearGradient>
+      <Feather
+        name={muted ? "volume-x" : "volume-2"}
+        size={20}
+        color="#6B6B6B"
+      />
       <Text style={styles.rowLabel}>{label}</Text>
       <Animated.View style={[styles.track, { backgroundColor: trackColor }]}>
         <Animated.View style={[styles.dot, { transform: [{ translateX: dotPos }] }]} />
@@ -247,13 +232,11 @@ export default function SettingsScreen() {
         <GlassCard padding={0}>
           <SettingRow
             icon="message-circle"
-            iconColors={["#8B4513", "#C47B2B"]}
             label={t("feedback")}
             onPress={() => router.push("/settings/feedback")}
           />
           <SettingRow
             icon="globe"
-            iconColors={["#1A6B8A", "#2196B5"]}
             label={t("language")}
             value={currentLangName}
             onPress={() => router.push("/settings/language")}
@@ -281,9 +264,7 @@ export default function SettingsScreen() {
         <SectionLabel label={t("about")} />
         <GlassCard padding={0}>
           <View style={styles.aboutRow}>
-            <LinearGradient colors={["#C47B2B", "#E8943A"]} style={styles.aboutIcon}>
-              <Feather name="shield" size={26} color="#FFF8F0" />
-            </LinearGradient>
+            <Feather name="shield" size={32} color="#6B6B6B" />
             <View>
               <Text style={styles.aboutName}>FocusLock</Text>
               <Text style={styles.aboutVersion}>Version {APP_VERSION}</Text>
@@ -329,13 +310,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 12,
   },
-  iconBox: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   rowLabel: {
     flex: 1,
     fontSize: 15,
@@ -350,7 +324,7 @@ const styles = StyleSheet.create({
   rowDivider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: "rgba(196,123,43,0.18)",
-    marginLeft: 56,
+    marginLeft: 46,
   },
 
   /* Toggle */
@@ -364,18 +338,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
     gap: 14,
-  },
-  aboutIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#C47B2B",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.45,
-    shadowRadius: 10,
-    elevation: 8,
   },
   aboutName: {
     fontSize: 16,
