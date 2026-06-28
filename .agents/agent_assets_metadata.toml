@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "qziHkKgUZO6C7dezTJJm8"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "focuslock app icon padlock navy"
