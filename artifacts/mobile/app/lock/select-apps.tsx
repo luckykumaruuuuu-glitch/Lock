@@ -36,29 +36,26 @@ function AppCard({ app, selected, alreadyLocked, onToggle, index }: {
     <Animated.View style={{ transform: [{ scale: scaleAnim }], opacity: opacityAnim }}>
       <Pressable onPress={alreadyLocked ? undefined : onToggle}>
         <GlassCard
-          borderColor={alreadyLocked ? "rgba(255,255,255,0.06)" : selected ? "rgba(255,213,128,0.5)" : "rgba(255,213,128,0.18)"}
-          backgroundColor={alreadyLocked ? "rgba(28,28,30,0.5)" : selected ? "rgba(255,213,128,0.1)" : "rgba(28,28,30,0.85)"}
+          borderColor={alreadyLocked ? "rgba(255,255,255,0.05)" : selected ? "rgba(255,214,10,0.5)" : "rgba(255,255,255,0.1)"}
+          backgroundColor={alreadyLocked ? "#1C1C1E" : selected ? "rgba(255,214,10,0.08)" : "#1C1C1E"}
           padding={14}
         >
           <View style={styles.appRow}>
-            <LinearGradient
-              colors={alreadyLocked ? ["rgba(50,50,50,0.4)", "rgba(30,30,30,0.2)"] : [app.iconColor + "33", app.iconColor + "15"]}
-              style={styles.appIconBg}
-            >
-              <FontAwesome5 name={app.iconName as any} size={20} color={alreadyLocked ? "rgba(255,255,255,0.15)" : app.iconColor} />
-            </LinearGradient>
+            <View style={[styles.appIconBg, { backgroundColor: alreadyLocked ? "#2C2C2E" : "rgba(255,214,10,0.1)" }]}>
+              <FontAwesome5 name={app.iconName as any} size={20} color={alreadyLocked ? "#3A3A3C" : "#FFD60A"} />
+            </View>
             <View style={styles.appInfo}>
-              <Text style={[styles.appName, { color: alreadyLocked ? "rgba(255,255,255,0.2)" : "#FFFFFF" }]}>{app.name}</Text>
+              <Text style={[styles.appName, { color: alreadyLocked ? "#3A3A3C" : "#FFFFFF" }]}>{app.name}</Text>
               <Text style={styles.appCategory}>{alreadyLocked ? "Already locked" : app.category}</Text>
             </View>
             {alreadyLocked ? (
-              <View style={styles.lockedBadge}><Feather name="lock" size={12} color="rgba(255,255,255,0.2)" /></View>
+              <View style={styles.lockedBadge}><Feather name="lock" size={12} color="#3A3A3C" /></View>
             ) : (
-              <View style={[styles.checkbox, { borderColor: selected ? "#FFD580" : "rgba(255,213,128,0.25)" }]}>
+              <View style={[styles.checkbox, { borderColor: selected ? "#FFD60A" : "#3A3A3C" }]}>
                 <Animated.View style={{ transform: [{ scale: checkScale }] }}>
                   {selected && (
-                    <LinearGradient colors={["#FFD580", "#FFA500"]} style={styles.checkFill}>
-                      <Feather name="check" size={12} color="#1A1A1A" />
+                    <LinearGradient colors={["#FFD60A", "#FF9F0A"]} style={styles.checkFill}>
+                      <Feather name="check" size={12} color="#000000" />
                     </LinearGradient>
                   )}
                 </Animated.View>
@@ -106,30 +103,30 @@ export default function SelectAppsScreen() {
 
   return (
     <GradientBackground>
-      <GlassCard style={styles.searchBar} borderColor="rgba(255,213,128,0.15)" radius={16}>
+      <GlassCard style={styles.searchBar} borderColor="rgba(255,255,255,0.1)" radius={16}>
         <View style={styles.searchInner}>
-          <Feather name="search" size={16} color="rgba(255,213,128,0.5)" />
+          <Feather name="search" size={16} color="#8E8E93" />
           <TextInput
             style={styles.searchInput}
             placeholder="Search apps…"
-            placeholderTextColor="rgba(255,255,255,0.25)"
+            placeholderTextColor="#3A3A3C"
             value={search}
             onChangeText={setSearch}
           />
-          {search.length > 0 && <Pressable onPress={() => setSearch("")}><Feather name="x" size={16} color="rgba(255,213,128,0.5)" /></Pressable>}
+          {search.length > 0 && <Pressable onPress={() => setSearch("")}><Feather name="x" size={16} color="#8E8E93" /></Pressable>}
         </View>
       </GlassCard>
 
       {selection.selectedApps.length > 0 && (
-        <LinearGradient colors={["rgba(255,213,128,0.12)", "rgba(255,165,0,0.06)"]} style={styles.selBanner}>
-          <Feather name="check-circle" size={14} color="#FFD580" />
+        <View style={styles.selBanner}>
+          <Feather name="check-circle" size={14} color="#FFD60A" />
           <Text style={styles.selText}>{selection.selectedApps.length} app{selection.selectedApps.length !== 1 ? "s" : ""} selected</Text>
-        </LinearGradient>
+        </View>
       )}
 
       {alreadyLockedCount > 0 && (
         <View style={styles.infoBanner}>
-          <Feather name="info" size={12} color="rgba(255,255,255,0.3)" />
+          <Feather name="info" size={12} color="#8E8E93" />
           <Text style={styles.infoText}>{alreadyLockedCount} app{alreadyLockedCount !== 1 ? "s are" : " is"} already locked</Text>
         </View>
       )}
@@ -147,9 +144,9 @@ export default function SelectAppsScreen() {
 
       <View style={[styles.footer, { paddingBottom: bottomPad + 20 }]}>
         <Pressable onPress={handleNext} disabled={selection.selectedApps.length === 0} style={({ pressed }) => [{ opacity: selection.selectedApps.length === 0 ? 0.35 : pressed ? 0.85 : 1 }]}>
-          <LinearGradient colors={["#FFD580", "#FFA500"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.nextBtn}>
+          <LinearGradient colors={["#FFD60A", "#FF9F0A"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.nextBtn}>
             <Text style={styles.nextBtnText}>Next — Set Duration</Text>
-            <Feather name="arrow-right" size={18} color="#1A1A1A" />
+            <Feather name="arrow-right" size={18} color="#000000" />
           </LinearGradient>
         </Pressable>
       </View>
@@ -161,20 +158,20 @@ const styles = StyleSheet.create({
   searchBar: { margin: 16, marginBottom: 8 },
   searchInner: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
   searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular", color: "#FFFFFF" },
-  selBanner: { flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 16, marginBottom: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12 },
-  selText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#FFD580" },
+  selBanner: { flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 16, marginBottom: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: "rgba(255,214,10,0.1)" },
+  selText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#FFD60A" },
   infoBanner: { flexDirection: "row", alignItems: "center", gap: 6, marginHorizontal: 16, marginBottom: 6, paddingHorizontal: 12, paddingVertical: 8 },
-  infoText: { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.3)" },
+  infoText: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   list: { paddingHorizontal: 16, paddingBottom: 8 },
   appRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   appIconBg: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   appInfo: { flex: 1 },
   appName: { fontSize: 15, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
-  appCategory: { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.35)" },
+  appCategory: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   checkbox: { width: 26, height: 26, borderRadius: 8, borderWidth: 1.5, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   checkFill: { width: 26, height: 26, alignItems: "center", justifyContent: "center" },
-  lockedBadge: { width: 30, height: 30, borderRadius: 8, backgroundColor: "rgba(50,50,50,0.4)", alignItems: "center", justifyContent: "center" },
-  footer: { paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: "rgba(255,213,128,0.1)", backgroundColor: "rgba(0,0,0,0.92)" },
-  nextBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 17, borderRadius: 18, shadowColor: "#FFD580", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 10 },
-  nextBtnText: { color: "#1A1A1A", fontSize: 16, fontFamily: "Inter_700Bold" },
+  lockedBadge: { width: 30, height: 30, borderRadius: 8, backgroundColor: "#2C2C2E", alignItems: "center", justifyContent: "center" },
+  footer: { paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#2C2C2E", backgroundColor: "rgba(0,0,0,0.95)" },
+  nextBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 17, borderRadius: 18, shadowColor: "#FFD60A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 14, elevation: 10 },
+  nextBtnText: { color: "#000000", fontSize: 16, fontFamily: "Inter_700Bold" },
 });

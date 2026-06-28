@@ -1,5 +1,4 @@
 import { Feather } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
@@ -55,10 +54,12 @@ FocusLock does not knowingly collect data from children under 13.
 7. CONTACT
 For privacy concerns, contact the developer through the app's Google Play listing.`;
 
-/* ─── Flat icon (no background box) ─── */
+/* ─── Flat icon ─── */
 function FlatIcon({ name }: { name: string }) {
   return (
-    <Feather name={name as any} size={20} color="#FFD580" />
+    <View style={styles.iconBox}>
+      <Feather name={name as any} size={18} color="#8E8E93" />
+    </View>
   );
 }
 
@@ -92,7 +93,7 @@ function SettingRow({
         <Text style={styles.rowLabel}>{label}</Text>
         {value !== undefined && <Text style={styles.rowValue}>{value}</Text>}
         {onPress && (
-          <Feather name="chevron-right" size={15} color="rgba(255,213,128,0.35)" />
+          <Feather name="chevron-right" size={15} color="#3A3A3C" />
         )}
       </Pressable>
       {!last && <RowDivider />}
@@ -129,7 +130,7 @@ function SoundToggleRow({
   const dotPos = toggleAnim.interpolate({ inputRange: [0, 1], outputRange: [2, 20] });
   const trackColor = toggleAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ["rgba(50,50,50,0.6)", "#FFD580"],
+    outputRange: ["#3A3A3C", "#FFD60A"],
   });
 
   return (
@@ -137,11 +138,7 @@ function SoundToggleRow({
       onPress={handleToggle}
       style={({ pressed }) => [styles.row, { opacity: pressed ? 0.65 : 1 }]}
     >
-      <Feather
-        name={muted ? "volume-x" : "volume-2"}
-        size={20}
-        color="#FFD580"
-      />
+      <FlatIcon name={muted ? "volume-x" : "volume-2"} />
       <Text style={styles.rowLabel}>{label}</Text>
       <Animated.View style={[styles.track, { backgroundColor: trackColor }]}>
         <Animated.View style={[styles.dot, { transform: [{ translateX: dotPos }] }]} />
@@ -160,9 +157,9 @@ function PrivacyModal({ visible, onClose }: { visible: boolean; onClose: () => v
         <View style={modalSt.header}>
           <Text style={modalSt.title}>{t("privacyPolicy")}</Text>
           <Pressable onPress={onClose} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
-            <GlassCard radius={20} padding={8}>
-              <Feather name="x" size={18} color="#FFF8F0" />
-            </GlassCard>
+            <View style={modalSt.closeBtn}>
+              <Feather name="x" size={18} color="#FFFFFF" />
+            </View>
           </Pressable>
         </View>
         <ScrollView
@@ -177,10 +174,11 @@ function PrivacyModal({ visible, onClose }: { visible: boolean; onClose: () => v
 }
 
 const modalSt = StyleSheet.create({
-  root:   { flex: 1, paddingHorizontal: 20, backgroundColor: "#000000" },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
-  title:  { fontSize: 22, fontFamily: "Inter_700Bold", color: "#FFF8F0" },
-  text:   { fontSize: 13, fontFamily: "Inter_400Regular", color: "#D4A574", lineHeight: 22 },
+  root:     { flex: 1, paddingHorizontal: 20, backgroundColor: "#000000" },
+  header:   { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
+  title:    { fontSize: 22, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#2C2C2E", alignItems: "center", justifyContent: "center" },
+  text:     { fontSize: 13, fontFamily: "Inter_400Regular", color: "#8E8E93", lineHeight: 22 },
 });
 
 /* ─── Section label ─── */
@@ -263,7 +261,9 @@ export default function SettingsScreen() {
         <SectionLabel label={t("about")} />
         <GlassCard padding={0}>
           <View style={styles.aboutRow}>
-            <Feather name="shield" size={32} color="#FFD580" />
+            <View style={styles.aboutIconBox}>
+              <Feather name="shield" size={22} color="#FFD60A" />
+            </View>
             <View>
               <Text style={styles.aboutName}>FocusLock</Text>
               <Text style={styles.aboutVersion}>Version {APP_VERSION}</Text>
@@ -284,53 +284,57 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 30,
     fontFamily: "Inter_700Bold",
-    color: "#FFF8F0",
+    color: "#FFFFFF",
     letterSpacing: -0.8,
     marginBottom: 10,
   },
 
-  /* Section header */
   sectionLabel: {
     fontSize: 11,
     fontFamily: "Inter_500Medium",
     letterSpacing: 0.8,
-    color: "rgba(255,213,128,0.45)",
+    color: "#8E8E93",
     marginTop: 14,
     marginBottom: 5,
     marginLeft: 4,
     textTransform: "uppercase",
   },
 
-  /* Row inside a card */
   row: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 14,
     gap: 12,
+  },
+  iconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#2C2C2E",
+    alignItems: "center",
+    justifyContent: "center",
   },
   rowLabel: {
     flex: 1,
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    color: "#FFF8F0",
+    color: "#FFFFFF",
   },
   rowValue: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,213,128,0.6)",
+    color: "#8E8E93",
   },
   rowDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(255,213,128,0.08)",
-    marginLeft: 46,
+    backgroundColor: "#2C2C2E",
+    marginLeft: 58,
   },
 
-  /* Toggle */
   track: { width: 44, height: 26, borderRadius: 13, justifyContent: "center" },
-  dot:   { width: 22, height: 22, borderRadius: 11, backgroundColor: "#FFF8F0", marginHorizontal: 1 },
+  dot:   { width: 22, height: 22, borderRadius: 11, backgroundColor: "#FFFFFF", marginHorizontal: 1 },
 
-  /* About row */
   aboutRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -338,22 +342,30 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 14,
   },
+  aboutIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,214,10,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   aboutName: {
     fontSize: 16,
     fontFamily: "Inter_700Bold",
-    color: "#FFF8F0",
+    color: "#FFFFFF",
     marginBottom: 2,
   },
   aboutVersion: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: "rgba(212,165,116,0.55)",
+    color: "#8E8E93",
   },
 
   footer: {
     fontSize: 11,
     fontFamily: "Inter_400Regular",
-    color: "rgba(212,165,116,0.2)",
+    color: "#3A3A3C",
     textAlign: "center",
     marginTop: 10,
     marginBottom: 4,

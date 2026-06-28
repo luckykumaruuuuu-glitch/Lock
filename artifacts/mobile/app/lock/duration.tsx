@@ -22,10 +22,10 @@ import { useSounds } from "@/hooks/useSounds";
 
 /* ── Duration options ── */
 const DURATION_OPTIONS = [
-  { id: "1d" as DurationPreset, label: "1 Day",   sublabel: "24 hours of focus",  icon: "sun"    as const, colors: ["#FFD580", "#FFA500"] as [string, string], glow: "#FFD580" },
-  { id: "7d" as DurationPreset, label: "7 Days",  sublabel: "One full week",       icon: "calendar" as const, colors: ["#FFD580", "#FFA500"] as [string, string], glow: "#FFD580" },
-  { id: "30d" as DurationPreset, label: "30 Days", sublabel: "Build a new habit",  icon: "award"  as const, colors: ["#FFD580", "#FFA500"] as [string, string], glow: "#FFD580" },
-  { id: "custom" as DurationPreset, label: "Custom", sublabel: "Pick any date",   icon: "edit-2" as const, colors: ["#3D7A4A", "#4CAF60"] as [string, string], glow: "#4CAF50" },
+  { id: "1d" as DurationPreset, label: "1 Day",    sublabel: "24 hours of focus",  icon: "sun"      as const, colors: ["#FFD60A", "#FF9F0A"] as [string, string], glow: "#FFD60A" },
+  { id: "7d" as DurationPreset, label: "7 Days",   sublabel: "One full week",       icon: "calendar" as const, colors: ["#FFD60A", "#FF9F0A"] as [string, string], glow: "#FFD60A" },
+  { id: "30d" as DurationPreset, label: "30 Days",  sublabel: "Build a new habit",  icon: "award"    as const, colors: ["#FFD60A", "#FF9F0A"] as [string, string], glow: "#FFD60A" },
+  { id: "custom" as DurationPreset, label: "Custom", sublabel: "Pick any date",     icon: "edit-2"   as const, colors: ["#32D74B", "#30C244"] as [string, string], glow: "#32D74B" },
 ];
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -42,7 +42,7 @@ function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-/* ── Custom dark golden calendar ── */
+/* ── Clean dark calendar ── */
 function DarkCalendar({
   visible,
   initial,
@@ -101,7 +101,6 @@ function DarkCalendar({
     setSelected(new Date(viewYear, viewMonth, day));
   }
 
-  // Check if prev/next navigation should be disabled
   const canGoPrev = !(viewYear === minDate.getFullYear() && viewMonth === minDate.getMonth());
   const canGoNext = !(viewYear === maxDateVal.getFullYear() && viewMonth === maxDateVal.getMonth());
 
@@ -110,14 +109,14 @@ function DarkCalendar({
       <View style={calStyles.overlay}>
         <View style={calStyles.sheet}>
 
-          {/* Header — month/year + arrows */}
-          <LinearGradient colors={["#0D0D0D", "#1A1A1A"]} style={calStyles.header}>
+          {/* Header */}
+          <View style={calStyles.header}>
             <Pressable
               onPress={prevMonth}
               disabled={!canGoPrev}
               style={({ pressed }) => [calStyles.navBtn, { opacity: !canGoPrev ? 0.22 : pressed ? 0.55 : 1 }]}
             >
-              <Feather name="chevron-left" size={22} color="#FFD580" />
+              <Feather name="chevron-left" size={22} color="#FFD60A" />
             </Pressable>
 
             <View style={{ alignItems: "center" }}>
@@ -130,9 +129,9 @@ function DarkCalendar({
               disabled={!canGoNext}
               style={({ pressed }) => [calStyles.navBtn, { opacity: !canGoNext ? 0.22 : pressed ? 0.55 : 1 }]}
             >
-              <Feather name="chevron-right" size={22} color="#FFD580" />
+              <Feather name="chevron-right" size={22} color="#FFD60A" />
             </Pressable>
-          </LinearGradient>
+          </View>
 
           {/* Day-of-week row */}
           <View style={calStyles.dayRow}>
@@ -153,15 +152,15 @@ function DarkCalendar({
               return (
                 <Pressable key={`${day}`} onPress={() => selectDay(day)} style={calStyles.cell} disabled={disabled}>
                   {sel ? (
-                    <LinearGradient colors={["#FFD580", "#FFA500"]} style={calStyles.selCircle}>
+                    <LinearGradient colors={["#FFD60A", "#FF9F0A"]} style={calStyles.selCircle}>
                       <Text style={calStyles.selDayText}>{day}</Text>
                     </LinearGradient>
                   ) : (
                     <View style={[calStyles.dayCircle, today && calStyles.todayRing]}>
                       <Text style={[
                         calStyles.dayText,
-                        disabled && { color: "rgba(255,248,240,0.15)" },
-                        today && !disabled && { color: "#FFD580" },
+                        disabled && { color: "#3A3A3C" },
+                        today && !disabled && { color: "#FFD60A" },
                       ]}>
                         {day}
                       </Text>
@@ -174,7 +173,7 @@ function DarkCalendar({
 
           {/* Selected date summary */}
           <View style={calStyles.selectedRow}>
-            <Feather name="calendar" size={13} color="#FFD580" />
+            <Feather name="calendar" size={13} color="#FFD60A" />
             <Text style={calStyles.selectedText}>
               {selected.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "long", year: "numeric" })}
             </Text>
@@ -195,7 +194,7 @@ function DarkCalendar({
               onPress={() => onConfirm(selected)}
               style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1 }]}
             >
-              <LinearGradient colors={["#FFD580", "#FFA500"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={calStyles.okBtn}>
+              <LinearGradient colors={["#FFD60A", "#FF9F0A"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={calStyles.okBtn}>
                 <Text style={calStyles.okBtnText}>OK</Text>
               </LinearGradient>
             </Pressable>
@@ -207,29 +206,29 @@ function DarkCalendar({
 }
 
 const calStyles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.72)", alignItems: "center", justifyContent: "center", paddingHorizontal: 20 },
-  sheet:   { width: "100%", maxWidth: 360, backgroundColor: "#000000", borderRadius: 20, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,213,128,0.2)" },
-  header:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 18 },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.78)", alignItems: "center", justifyContent: "center", paddingHorizontal: 20 },
+  sheet:   { width: "100%", maxWidth: 360, backgroundColor: "#1C1C1E", borderRadius: 20, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  header:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 18, backgroundColor: "#1C1C1E" },
   navBtn:  { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   monthLabel: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
-  yearLabel:  { fontSize: 13, fontFamily: "Inter_400Regular", color: "rgba(255,213,128,0.45)", marginTop: 2 },
+  yearLabel:  { fontSize: 13, fontFamily: "Inter_400Regular", color: "#8E8E93", marginTop: 2 },
   dayRow:  { flexDirection: "row", paddingHorizontal: 12, paddingVertical: 10 },
-  dayLabel:{ flex: 1, textAlign: "center", fontSize: 12, fontFamily: "Inter_600SemiBold", color: "rgba(255,213,128,0.45)" },
-  divider: { height: 1, backgroundColor: "rgba(255,213,128,0.08)", marginHorizontal: 16 },
+  dayLabel:{ flex: 1, textAlign: "center", fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#8E8E93" },
+  divider: { height: 1, backgroundColor: "#2C2C2E", marginHorizontal: 16 },
   grid:    { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 10, paddingVertical: 8 },
   cell:    { width: "14.28%", aspectRatio: 1, alignItems: "center", justifyContent: "center", padding: 2 },
   dayCircle: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 18 },
-  todayRing: { borderWidth: 1, borderColor: "rgba(255,213,128,0.45)" },
+  todayRing: { borderWidth: 1, borderColor: "#FFD60A" },
   dayText:   { fontSize: 14, fontFamily: "Inter_500Medium", color: "rgba(255,255,255,0.7)" },
-  selCircle: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#FFD580", shadowOpacity: 0.4, shadowRadius: 8, elevation: 4 },
-  selDayText:{ fontSize: 14, fontFamily: "Inter_700Bold", color: "#1A1A1A" },
+  selCircle: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#FFD60A", shadowOpacity: 0.4, shadowRadius: 8, elevation: 4 },
+  selDayText:{ fontSize: 14, fontFamily: "Inter_700Bold", color: "#000000" },
   selectedRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 20, paddingVertical: 12 },
-  selectedText:{ fontSize: 13, fontFamily: "Inter_500Medium", color: "rgba(255,213,128,0.7)" },
+  selectedText:{ fontSize: 13, fontFamily: "Inter_500Medium", color: "#8E8E93" },
   btnRow:  { flexDirection: "row", justifyContent: "flex-end", gap: 12, padding: 16, paddingTop: 14 },
   cancelBtn:   { paddingHorizontal: 22, paddingVertical: 12, borderRadius: 10 },
-  cancelBtnText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "rgba(255,255,255,0.4)", letterSpacing: 0.5 },
+  cancelBtnText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#8E8E93", letterSpacing: 0.5 },
   okBtn:       { paddingHorizontal: 28, paddingVertical: 12, borderRadius: 10 },
-  okBtnText:   { fontSize: 14, fontFamily: "Inter_700Bold", color: "#1A1A1A", letterSpacing: 0.5 },
+  okBtnText:   { fontSize: 14, fontFamily: "Inter_700Bold", color: "#000000", letterSpacing: 0.5 },
 });
 
 /* ── Main Duration Screen ── */
@@ -303,18 +302,15 @@ export default function DurationScreen() {
                 style={({ pressed }) => [styles.gridCell, { opacity: pressed ? 0.82 : 1 }]}
               >
                 <GlassCard
-                  style={[styles.optCard, selected && { shadowColor: opt.glow, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.55, shadowRadius: 16, elevation: 10 }]}
-                  borderColor={selected ? opt.colors[0] + "80" : "rgba(255,213,128,0.18)"}
-                  backgroundColor={selected ? opt.colors[0] + "22" : "rgba(28,28,30,0.85)"}
+                  style={[styles.optCard, selected && { shadowColor: opt.glow, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 16, elevation: 10 }]}
+                  borderColor={selected ? opt.colors[0] + "80" : "rgba(255,255,255,0.1)"}
+                  backgroundColor={selected ? "rgba(255,214,10,0.08)" : "#1C1C1E"}
                   padding={0}
                 >
-                  <LinearGradient
-                    colors={selected ? opt.colors : ["rgba(50,50,50,0.5)", "rgba(28,28,30,0.4)"]}
-                    style={styles.iconBox}
-                  >
-                    <Feather name={opt.icon} size={26} color={selected ? "#1A1A1A" : "#FFD580"} />
-                  </LinearGradient>
-                  <Text style={[styles.optLabel, { color: selected ? "#FFFFFF" : "rgba(255,255,255,0.5)" }]}>
+                  <View style={[styles.iconBox, { backgroundColor: selected ? opt.colors[0] + "22" : "#2C2C2E" }]}>
+                    <Feather name={opt.icon} size={26} color={selected ? opt.colors[0] : "#8E8E93"} />
+                  </View>
+                  <Text style={[styles.optLabel, { color: selected ? "#FFFFFF" : "#8E8E93" }]}>
                     {opt.label}
                   </Text>
                   <Text style={styles.optSublabel}>{opt.sublabel}</Text>
@@ -327,7 +323,7 @@ export default function DurationScreen() {
 
         {/* Custom date picker card */}
         {selection.durationPreset === "custom" && (
-          <GlassCard padding={20} borderColor="rgba(76,175,80,0.2)">
+          <GlassCard padding={20} borderColor="rgba(50,215,75,0.2)">
             <Text style={styles.customTitle}>Pick End Date</Text>
             <Text style={styles.customHint}>Select the date when you want your lock to expire.</Text>
 
@@ -336,21 +332,18 @@ export default function DurationScreen() {
               style={styles.dateButton}
               activeOpacity={0.75}
             >
-              <LinearGradient
-                colors={pickedDate ? ["rgba(76,175,80,0.25)", "rgba(61,143,50,0.15)"] : ["rgba(255,213,128,0.08)", "rgba(255,165,0,0.04)"]}
-                style={styles.dateButtonInner}
-              >
-                <Feather name="calendar" size={18} color={pickedDate ? "#4CAF60" : "#FFD580"} />
-                <Text style={[styles.dateButtonText, { color: pickedDate ? "#7ED96A" : "rgba(255,213,128,0.55)" }]}>
+              <View style={[styles.dateButtonInner, { backgroundColor: pickedDate ? "rgba(50,215,75,0.1)" : "#2C2C2E" }]}>
+                <Feather name="calendar" size={18} color={pickedDate ? "#32D74B" : "#8E8E93"} />
+                <Text style={[styles.dateButtonText, { color: pickedDate ? "#32D74B" : "#8E8E93" }]}>
                   {getPickerLabel()}
                 </Text>
-                <Feather name="chevron-right" size={16} color={pickedDate ? "#4CAF60" : "rgba(255,213,128,0.4)"} />
-              </LinearGradient>
+                <Feather name="chevron-right" size={16} color={pickedDate ? "#32D74B" : "#3A3A3C"} />
+              </View>
             </TouchableOpacity>
 
             {pickedDate && (
               <View style={styles.daysPreview}>
-                <Feather name="clock" size={13} color="#4CAF60" />
+                <Feather name="clock" size={13} color="#32D74B" />
                 <Text style={styles.daysPreviewText}>
                   {msToDays(pickedDate.getTime() - Date.now())} days from today
                 </Text>
@@ -359,7 +352,7 @@ export default function DurationScreen() {
           </GlassCard>
         )}
 
-        {/* Dark golden custom calendar */}
+        {/* Calendar */}
         <DarkCalendar
           visible={showPicker}
           initial={pickedDate ?? tomorrowStart()}
@@ -370,20 +363,15 @@ export default function DurationScreen() {
         />
 
         {/* Duration summary pill */}
-        <LinearGradient
-          colors={selectedOpt
-            ? [selectedOpt.colors[0] + "28", selectedOpt.colors[1] + "10"]
-            : ["rgba(255,213,128,0.12)", "rgba(255,165,0,0.06)"]}
-          style={styles.summary}
-        >
-          <Feather name="clock" size={14} color={selectedOpt?.colors[0] ?? "#FFD580"} />
+        <View style={[styles.summary, { backgroundColor: "#1C1C1E" }]}>
+          <Feather name="clock" size={14} color={selectedOpt?.colors[0] ?? "#FFD60A"} />
           <Text style={styles.summaryText}>
             Duration:{" "}
-            <Text style={[styles.summaryBold, { color: selectedOpt?.colors[0] ?? "#FFD580" }]}>
+            <Text style={[styles.summaryBold, { color: selectedOpt?.colors[0] ?? "#FFD60A" }]}>
               {getSummary()}
             </Text>
           </Text>
-        </LinearGradient>
+        </View>
       </ScrollView>
 
       {/* Footer */}
@@ -397,12 +385,12 @@ export default function DurationScreen() {
           style={({ pressed }) => [{ opacity: !canProceed ? 0.32 : pressed ? 0.82 : 1 }]}
         >
           <LinearGradient
-            colors={["#FFD580", "#FFA500"]}
+            colors={["#FFD60A", "#FF9F0A"]}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={styles.nextBtn}
           >
             <Text style={styles.nextBtnText}>Next — Review & Confirm</Text>
-            <Feather name="arrow-right" size={18} color="#1A1A1A" />
+            <Feather name="arrow-right" size={18} color="#000000" />
           </LinearGradient>
         </Pressable>
       </View>
@@ -413,29 +401,29 @@ export default function DurationScreen() {
 const styles = StyleSheet.create({
   content:   { paddingHorizontal: 20, paddingTop: 24, gap: 18 },
   heading:   { fontSize: 34, fontFamily: "Inter_700Bold", color: "#FFFFFF", letterSpacing: -1 },
-  subheading:{ fontSize: 14, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.45)", lineHeight: 20, marginTop: -4 },
+  subheading:{ fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", lineHeight: 20, marginTop: -4 },
 
   grid:      { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   gridCell:  { width: "47.5%" },
   optCard:   { alignItems: "center", minHeight: 148, justifyContent: "center", position: "relative", gap: 10, paddingVertical: 22, paddingHorizontal: 12, borderRadius: 20 },
   iconBox:   { width: 60, height: 60, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   optLabel:  { fontSize: 17, fontFamily: "Inter_700Bold", textAlign: "center" },
-  optSublabel:{ fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.3)", textAlign: "center", lineHeight: 15 },
+  optSublabel:{ fontSize: 11, fontFamily: "Inter_400Regular", color: "#3A3A3C", textAlign: "center", lineHeight: 15 },
   selectedDot:{ position: "absolute", top: 12, right: 12, width: 8, height: 8, borderRadius: 4 },
 
   customTitle:{ fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#FFFFFF", marginBottom: 4 },
-  customHint: { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.4)", lineHeight: 17, marginBottom: 14 },
+  customHint: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93", lineHeight: 17, marginBottom: 14 },
   dateButton: { borderRadius: 14, overflow: "hidden" },
-  dateButtonInner:{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 16, paddingHorizontal: 16, borderRadius: 14, borderWidth: 1, borderColor: "rgba(255,213,128,0.2)" },
+  dateButtonInner:{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 16, paddingHorizontal: 16, borderRadius: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
   dateButtonText: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium" },
   daysPreview:    { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12 },
-  daysPreviewText:{ fontSize: 13, fontFamily: "Inter_500Medium", color: "#4CAF60" },
+  daysPreviewText:{ fontSize: 13, fontFamily: "Inter_500Medium", color: "#32D74B" },
 
-  summary:     { flexDirection: "row", alignItems: "center", gap: 8, padding: 15, borderRadius: 15 },
-  summaryText: { fontSize: 14, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.55)" },
+  summary:     { flexDirection: "row", alignItems: "center", gap: 8, padding: 15, borderRadius: 15, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  summaryText: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   summaryBold: { fontFamily: "Inter_700Bold" },
 
-  footer:   { paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: "rgba(255,213,128,0.1)", backgroundColor: "rgba(0,0,0,0.92)" },
-  nextBtn:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 18, borderRadius: 18, shadowColor: "#FFD580", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 10 },
-  nextBtnText: { color: "#1A1A1A", fontSize: 16, fontFamily: "Inter_700Bold" },
+  footer:   { paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#2C2C2E", backgroundColor: "rgba(0,0,0,0.95)" },
+  nextBtn:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 18, borderRadius: 18, shadowColor: "#FFD60A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 14, elevation: 10 },
+  nextBtnText: { color: "#000000", fontSize: 16, fontFamily: "Inter_700Bold" },
 });

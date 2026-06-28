@@ -63,7 +63,7 @@ function SuccessScreen({
   return (
     <View style={[successStyles.root, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 }]}>
       <Animated.View style={[successStyles.iconWrap, { transform: [{ scale: shieldScale }], opacity: shieldOpacity }]}>
-        <LinearGradient colors={["#00CC6A", "#00FF88"]} style={successStyles.iconCircle}>
+        <LinearGradient colors={["#32D74B", "#30C244"]} style={successStyles.iconCircle}>
           <Feather name="shield" size={52} color="#000" />
         </LinearGradient>
       </Animated.View>
@@ -74,9 +74,9 @@ function SuccessScreen({
       </Animated.View>
 
       <Animated.View style={{ opacity: cardOpacity, width: "100%", gap: 12 }}>
-        <GlassCard padding={20} borderColor="rgba(0,255,136,0.12)">
+        <GlassCard padding={20} borderColor="rgba(50,215,75,0.12)">
           <View style={successStyles.infoRow}>
-            <View style={successStyles.infoIcon}><Feather name="clock" size={15} color="#A5B4FC" /></View>
+            <View style={successStyles.infoIcon}><Feather name="clock" size={15} color="#FFD60A" /></View>
             <View style={{ flex: 1 }}>
               <Text style={successStyles.infoLabel}>UNLOCKS AT</Text>
               <Text style={successStyles.infoValue}>{lockedExpiry}</Text>
@@ -86,10 +86,10 @@ function SuccessScreen({
           <View style={successStyles.divider} />
 
           <View style={successStyles.infoRow}>
-            <View style={successStyles.infoIcon}><Feather name="slash" size={15} color="#FF6B6B" /></View>
+            <View style={successStyles.infoIcon}><Feather name="slash" size={15} color="#FF453A" /></View>
             <View style={{ flex: 1 }}>
               <Text style={successStyles.infoLabel}>EARLY UNLOCK</Text>
-              <Text style={[successStyles.infoValue, { color: "#FF6B6B" }]}>Not possible</Text>
+              <Text style={[successStyles.infoValue, { color: "#FF453A" }]}>Not possible</Text>
             </View>
           </View>
 
@@ -98,11 +98,11 @@ function SuccessScreen({
               <View style={successStyles.divider} />
               <View style={successStyles.infoRow}>
                 <View style={successStyles.infoIcon}>
-                  <Feather name={online ? "cloud" : "cloud-off"} size={15} color={online ? "#00FF88" : "rgba(255,255,255,0.35)"} />
+                  <Feather name={online ? "cloud" : "cloud-off"} size={15} color={online ? "#32D74B" : "#8E8E93"} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={successStyles.infoLabel}>CLOUD SYNC</Text>
-                  <Text style={[successStyles.infoValue, { color: online ? "#00FF88" : "rgba(255,255,255,0.45)" }]}>
+                  <Text style={[successStyles.infoValue, { color: online ? "#32D74B" : "#8E8E93" }]}>
                     {online ? "Synced to Firebase" : "Will sync when online"}
                   </Text>
                 </View>
@@ -112,15 +112,15 @@ function SuccessScreen({
         </GlassCard>
 
         {skippedApps.length > 0 && (
-          <GlassCard padding={14} borderColor="rgba(255,149,0,0.2)">
+          <GlassCard padding={14} borderColor="rgba(255,159,10,0.2)">
             <View style={successStyles.infoRow}>
-              <Feather name="info" size={14} color="#FF9500" />
+              <Feather name="info" size={14} color="#FF9F0A" />
               <Text style={successStyles.skipText}>{skippedApps.join(", ")} already locked — skipped</Text>
             </View>
           </GlassCard>
         )}
 
-        <GlassCard padding={18} borderColor="rgba(255,255,255,0.05)">
+        <GlassCard padding={18} borderColor="rgba(255,255,255,0.06)">
           <Text style={successStyles.tipText}>Stay committed. Your future self will thank you. 💪</Text>
         </GlassCard>
       </Animated.View>
@@ -130,17 +130,17 @@ function SuccessScreen({
 
 const successStyles = StyleSheet.create({
   root:       { flex: 1, alignItems: "center", paddingHorizontal: 24, gap: 28 },
-  iconWrap:   { shadowColor: "#00FF88", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.55, shadowRadius: 32, elevation: 18 },
+  iconWrap:   { shadowColor: "#32D74B", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 32, elevation: 18 },
   iconCircle: { width: 110, height: 110, borderRadius: 36, alignItems: "center", justifyContent: "center" },
   title:      { fontSize: 34, fontFamily: "Inter_700Bold", color: "#FFFFFF", letterSpacing: -0.5 },
-  subtitle:   { fontSize: 15, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.45)", textAlign: "center" },
+  subtitle:   { fontSize: 15, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center" },
   infoRow:    { flexDirection: "row", alignItems: "center", gap: 12 },
-  infoIcon:   { width: 32, height: 32, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.07)", alignItems: "center", justifyContent: "center" },
-  infoLabel:  { fontSize: 10, fontFamily: "Inter_500Medium", color: "rgba(255,255,255,0.35)", marginBottom: 3, letterSpacing: 0.8 },
+  infoIcon:   { width: 32, height: 32, borderRadius: 10, backgroundColor: "#2C2C2E", alignItems: "center", justifyContent: "center" },
+  infoLabel:  { fontSize: 10, fontFamily: "Inter_500Medium", color: "#8E8E93", marginBottom: 3, letterSpacing: 0.8 },
   infoValue:  { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#FFFFFF" },
-  divider:    { height: 1, backgroundColor: "rgba(255,255,255,0.07)", marginVertical: 14 },
-  skipText:   { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#FF9500", lineHeight: 18, marginLeft: 8 },
-  tipText:    { fontSize: 14, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.38)", textAlign: "center", lineHeight: 21 },
+  divider:    { height: 1, backgroundColor: "#2C2C2E", marginVertical: 14 },
+  skipText:   { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#FF9F0A", lineHeight: 18, marginLeft: 8 },
+  tipText:    { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center", lineHeight: 21 },
 });
 
 /* ── Final Agreement Modal ── */
@@ -181,9 +181,9 @@ function AgreementModal({
 
           {/* Warning icon */}
           <View style={agStyles.iconRow}>
-            <LinearGradient colors={["rgba(255,0,85,0.25)", "rgba(255,0,85,0.1)"]} style={agStyles.iconCircle}>
-              <Feather name="alert-octagon" size={28} color="#FF0055" />
-            </LinearGradient>
+            <View style={agStyles.iconCircle}>
+              <Feather name="alert-octagon" size={28} color="#FF453A" />
+            </View>
           </View>
 
           {/* Title */}
@@ -227,7 +227,6 @@ function AgreementModal({
 
           {/* Buttons */}
           <View style={agStyles.btnRow}>
-            {/* Cancel — grey */}
             <Pressable
               onPress={onCancel}
               style={({ pressed }) => [agStyles.cancelBtn, { opacity: pressed ? 0.65 : 1 }]}
@@ -235,18 +234,17 @@ function AgreementModal({
               <Text style={agStyles.cancelText}>Cancel</Text>
             </Pressable>
 
-            {/* Agree — golden/red gradient */}
             <Pressable
               onPress={onAgree}
               style={({ pressed }) => [{ flex: 1, opacity: pressed ? 0.85 : 1 }]}
             >
               <LinearGradient
-                colors={["#FFD580", "#FF2255"]}
+                colors={["#FFD60A", "#FF453A"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={agStyles.agreeBtn}
               >
-                <Feather name="lock" size={16} color="#1A1A1A" />
+                <Feather name="lock" size={16} color="#000000" />
                 <Text style={agStyles.agreeText}>I Agree &amp; Lock</Text>
               </LinearGradient>
             </Pressable>
@@ -258,46 +256,46 @@ function AgreementModal({
 }
 
 const agStyles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.78)", alignItems: "center", justifyContent: "center", paddingHorizontal: 22 },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.82)", alignItems: "center", justifyContent: "center", paddingHorizontal: 22 },
   sheet: {
     width: "100%",
     maxWidth: 380,
-    backgroundColor: "#000000",
+    backgroundColor: "#1C1C1E",
     borderRadius: 22,
     paddingVertical: 28,
     paddingHorizontal: 24,
     borderWidth: 1,
-    borderColor: "rgba(255,0,85,0.25)",
-    shadowColor: "#FF0055",
+    borderColor: "rgba(255,69,58,0.25)",
+    shadowColor: "#FF453A",
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.2,
     shadowRadius: 24,
     elevation: 20,
     gap: 16,
   },
   iconRow:    { alignItems: "center" },
-  iconCircle: { width: 64, height: 64, borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,0,85,0.3)" },
+  iconCircle: { width: 64, height: 64, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,69,58,0.12)", borderWidth: 1, borderColor: "rgba(255,69,58,0.25)" },
   title:      { fontSize: 22, fontFamily: "Inter_700Bold", color: "#FFFFFF", textAlign: "center" },
-  titleUnderline: { height: 2, backgroundColor: "rgba(255,0,85,0.3)", borderRadius: 1, marginHorizontal: 40 },
+  titleUnderline: { height: 2, backgroundColor: "rgba(255,69,58,0.3)", borderRadius: 1, marginHorizontal: 40 },
 
-  infoBlock:   { backgroundColor: "rgba(255,213,128,0.06)", borderRadius: 12, padding: 14, gap: 4, borderWidth: 1, borderColor: "rgba(255,213,128,0.12)" },
-  infoHeading: { fontSize: 10, fontFamily: "Inter_500Medium", letterSpacing: 1, color: "rgba(255,213,128,0.45)", marginBottom: 2 },
+  infoBlock:   { backgroundColor: "#2C2C2E", borderRadius: 12, padding: 14, gap: 4, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  infoHeading: { fontSize: 10, fontFamily: "Inter_500Medium", letterSpacing: 1, color: "#8E8E93", marginBottom: 2 },
   infoValue:   { fontSize: 14, fontFamily: "Inter_700Bold", color: "#FFFFFF", lineHeight: 20 },
-  infoSub:     { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.4)" },
+  infoSub:     { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
 
-  divider:     { height: 1, backgroundColor: "rgba(255,255,255,0.07)" },
+  divider:     { height: 1, backgroundColor: "#2C2C2E" },
 
-  clauseHeading:{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: "rgba(255,0,85,0.7)", letterSpacing: 0.3 },
+  clauseHeading:{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#FF453A", letterSpacing: 0.3 },
   clauses:      { gap: 8 },
   clauseRow:    { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  bullet:       { width: 5, height: 5, borderRadius: 3, backgroundColor: "#FF0055", marginTop: 5, flexShrink: 0 },
-  clauseText:   { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "rgba(255,248,240,0.7)", lineHeight: 19 },
+  bullet:       { width: 5, height: 5, borderRadius: 3, backgroundColor: "#FF453A", marginTop: 5, flexShrink: 0 },
+  clauseText:   { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.7)", lineHeight: 19 },
 
   btnRow:     { flexDirection: "row", gap: 12, marginTop: 4 },
-  cancelBtn:  { height: 52, borderRadius: 14, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.12)", backgroundColor: "rgba(255,255,255,0.05)", alignItems: "center", justifyContent: "center", paddingHorizontal: 20 },
-  cancelText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "rgba(255,255,255,0.45)" },
-  agreeBtn:   { height: 52, borderRadius: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, shadowColor: "#FF0055", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 },
-  agreeText:  { fontSize: 14, fontFamily: "Inter_700Bold", color: "#1A1A1A" },
+  cancelBtn:  { height: 52, borderRadius: 14, borderWidth: 1.5, borderColor: "#2C2C2E", backgroundColor: "#2C2C2E", alignItems: "center", justifyContent: "center", paddingHorizontal: 20 },
+  cancelText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#8E8E93" },
+  agreeBtn:   { height: 52, borderRadius: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  agreeText:  { fontSize: 14, fontFamily: "Inter_700Bold", color: "#000000" },
 });
 
 /* ── Main Confirm Screen ── */
@@ -370,9 +368,9 @@ export default function ConfirmScreen() {
       >
         {/* Warning banner */}
         <View style={styles.warningBanner}>
-          <LinearGradient colors={["rgba(255,0,85,0.22)", "rgba(255,0,85,0.08)"]} style={styles.warningIconBox}>
-            <Feather name="alert-octagon" size={21} color="#FF0055" />
-          </LinearGradient>
+          <View style={styles.warningIconBox}>
+            <Feather name="alert-octagon" size={21} color="#FF453A" />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.warningTitle}>No Going Back</Text>
             <Text style={styles.warningBody}>This lock CANNOT be removed until the timer expires.</Text>
@@ -385,14 +383,14 @@ export default function ConfirmScreen() {
           {selection.selectedApps.map((app, idx) => (
             <View key={app.id}>
               <View style={styles.appRow}>
-                <LinearGradient colors={[app.iconColor + "33", app.iconColor + "15"]} style={styles.appIconBg}>
-                  <FontAwesome5 name={app.iconName as any} size={17} color={app.iconColor} />
-                </LinearGradient>
+                <View style={[styles.appIconBg, { backgroundColor: "rgba(255,214,10,0.1)" }]}>
+                  <FontAwesome5 name={app.iconName as any} size={17} color="#FFD60A" />
+                </View>
                 <View style={styles.appInfo}>
                   <Text style={styles.appName}>{app.name}</Text>
                   <Text style={styles.appPkg}>{app.packageName}</Text>
                 </View>
-                <Feather name="lock" size={13} color="rgba(255,255,255,0.28)" />
+                <Feather name="lock" size={13} color="#3A3A3C" />
               </View>
               {idx < selection.selectedApps.length - 1 && <View style={styles.rowDivider} />}
             </View>
@@ -403,9 +401,9 @@ export default function ConfirmScreen() {
         <Text style={styles.sectionLabel}>DURATION &amp; EXPIRY</Text>
         <GlassCard padding={18}>
           <View style={styles.durationRow}>
-            <LinearGradient colors={["#6366F1", "#8B5CF6"]} style={styles.durationIcon}>
-              <Feather name="clock" size={22} color="#fff" />
-            </LinearGradient>
+            <View style={styles.durationIcon}>
+              <Feather name="clock" size={22} color="#FFD60A" />
+            </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.durationValue}>{durationText}</Text>
               <Text style={styles.durationExpiry}>Unlocks: {expiryDate}</Text>
@@ -416,11 +414,11 @@ export default function ConfirmScreen() {
         {/* Summary table */}
         <GlassCard>
           {[
-            { label: "Apps blocked",  value: `${selection.selectedApps.length}`, color: "#fff" },
-            { label: "Duration",      value: durationText,   color: "#fff" },
-            { label: "Unlocks at",    value: expiryDate,     color: "#A5B4FC" },
-            { label: "Cloud sync",    value: configured ? (online ? "Firebase ☁️" : "Offline") : "Local only", color: configured && online ? "#00FF88" : "rgba(255,255,255,0.45)" },
-            { label: "Early unlock",  value: "Impossible ✗", color: "#FF0055" },
+            { label: "Apps blocked",  value: `${selection.selectedApps.length}`, color: "#FFFFFF" },
+            { label: "Duration",      value: durationText,   color: "#FFFFFF" },
+            { label: "Unlocks at",    value: expiryDate,     color: "#FFD60A" },
+            { label: "Cloud sync",    value: configured ? (online ? "Firebase ☁️" : "Offline") : "Local only", color: configured && online ? "#32D74B" : "#8E8E93" },
+            { label: "Early unlock",  value: "Impossible ✗", color: "#FF453A" },
           ].map((row, i, arr) => (
             <View key={row.label}>
               <View style={styles.tableRow}>
@@ -452,11 +450,11 @@ export default function ConfirmScreen() {
           style={({ pressed }) => [{ flex: 1, opacity: saving ? 0.7 : pressed ? 0.88 : 1 }]}
         >
           <LinearGradient
-            colors={["#FFD580", "#FF2255"]}
+            colors={["#FFD60A", "#FF453A"]}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={styles.lockBtn}
           >
-            <Feather name="lock" size={18} color="#1A1A1A" />
+            <Feather name="lock" size={18} color="#000000" />
             <Text style={styles.lockBtnText}>{saving ? "Locking…" : "Lock Forever"}</Text>
           </LinearGradient>
         </Pressable>
@@ -479,35 +477,35 @@ const styles = StyleSheet.create({
   scroll:   { flex: 1 },
   content:  { paddingHorizontal: 20, gap: 10 },
 
-  warningBanner:  { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "rgba(255,0,85,0.09)", borderRadius: 16, borderWidth: 1, borderColor: "rgba(255,0,85,0.22)", padding: 16, marginBottom: 4 },
-  warningIconBox: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  warningTitle:   { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FF0055", marginBottom: 3 },
-  warningBody:    { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,0,85,0.6)", lineHeight: 17 },
+  warningBanner:  { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "rgba(255,69,58,0.08)", borderRadius: 16, borderWidth: 1, borderColor: "rgba(255,69,58,0.2)", padding: 16, marginBottom: 4 },
+  warningIconBox: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,69,58,0.12)" },
+  warningTitle:   { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FF453A", marginBottom: 3 },
+  warningBody:    { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,69,58,0.6)", lineHeight: 17 },
 
-  sectionLabel: { fontSize: 11, fontFamily: "Inter_500Medium", letterSpacing: 1, color: "rgba(255,255,255,0.28)", marginTop: 6, marginLeft: 2, marginBottom: 2 },
+  sectionLabel: { fontSize: 11, fontFamily: "Inter_500Medium", letterSpacing: 1, color: "#8E8E93", marginTop: 6, marginLeft: 2, marginBottom: 2 },
 
   appRow:    { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
   appIconBg: { width: 38, height: 38, borderRadius: 11, alignItems: "center", justifyContent: "center" },
   appInfo:   { flex: 1 },
-  appName:   { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#fff", marginBottom: 2 },
-  appPkg:    { fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.28)" },
-  rowDivider:{ height: 1, backgroundColor: "rgba(255,255,255,0.06)", marginLeft: 64 },
+  appName:   { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#FFFFFF", marginBottom: 2 },
+  appPkg:    { fontSize: 11, fontFamily: "Inter_400Regular", color: "#8E8E93" },
+  rowDivider:{ height: 1, backgroundColor: "#2C2C2E", marginLeft: 64 },
 
   durationRow:   { flexDirection: "row", alignItems: "center", gap: 14 },
-  durationIcon:  { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  durationValue: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#fff", marginBottom: 3 },
-  durationExpiry:{ fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.38)" },
+  durationIcon:  { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,214,10,0.1)" },
+  durationValue: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF", marginBottom: 3 },
+  durationExpiry:{ fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
 
   tableRow:    { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12 },
-  tableLabel:  { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.38)" },
+  tableLabel:  { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   tableValue:  { fontSize: 13, fontFamily: "Inter_700Bold" },
-  tableDivider:{ height: 1, backgroundColor: "rgba(255,255,255,0.06)", marginHorizontal: 16 },
+  tableDivider:{ height: 1, backgroundColor: "#2C2C2E", marginHorizontal: 16 },
 
-  footer: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 14, flexDirection: "row", gap: 12, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.07)", backgroundColor: "rgba(8,0,20,0.94)" },
+  footer: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 14, flexDirection: "row", gap: 12, borderTopWidth: 1, borderTopColor: "#2C2C2E", backgroundColor: "rgba(0,0,0,0.95)" },
 
-  cancelBtn:     { height: 56, borderRadius: 16, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.13)", backgroundColor: "rgba(255,255,255,0.05)", alignItems: "center", justifyContent: "center", paddingHorizontal: 22 },
-  cancelBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "rgba(255,255,255,0.55)" },
+  cancelBtn:     { height: 56, borderRadius: 16, borderWidth: 1.5, borderColor: "#2C2C2E", backgroundColor: "#1C1C1E", alignItems: "center", justifyContent: "center", paddingHorizontal: 22 },
+  cancelBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#8E8E93" },
 
-  lockBtn:     { height: 56, borderRadius: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, shadowColor: "#FF0055", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 14, elevation: 10 },
-  lockBtnText: { color: "#1A1A1A", fontSize: 16, fontFamily: "Inter_700Bold" },
+  lockBtn:     { height: 56, borderRadius: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, shadowColor: "#FFD60A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 10 },
+  lockBtnText: { color: "#000000", fontSize: 16, fontFamily: "Inter_700Bold" },
 });

@@ -68,19 +68,16 @@ function LockCard({ item, index }: { item: ActiveLockDisplayItem; index: number 
     <Animated.View style={{ transform: [{ translateY: slideAnim }], opacity: opacityAnim }}>
       <GlassCard style={styles.lockCard}>
         <View style={styles.lockCardInner}>
-          <LinearGradient
-            colors={["rgba(255,213,128,0.12)", "rgba(255,165,0,0.06)"]}
-            style={styles.lockIconBg}
-          >
-            <FontAwesome5 name={item.app.iconName as any} size={22} color="#FFD580" />
-          </LinearGradient>
+          <View style={styles.lockIconBg}>
+            <FontAwesome5 name={item.app.iconName as any} size={22} color="#FFD60A" />
+          </View>
 
           <View style={styles.lockInfo}>
             <Text style={styles.lockAppName}>{item.app.name}</Text>
             <Text style={styles.lockRemaining}>{remaining}</Text>
             <View style={styles.progressTrack}>
               <LinearGradient
-                colors={["#FFD580", "#FFA500"]}
+                colors={["#FFD60A", "#FF9F0A"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]}
@@ -90,7 +87,7 @@ function LockCard({ item, index }: { item: ActiveLockDisplayItem; index: number 
           </View>
 
           <View style={styles.lockBadge}>
-            <Feather name="lock" size={14} color="rgba(255,213,128,0.4)" />
+            <Feather name="lock" size={14} color="rgba(255,255,255,0.3)" />
           </View>
         </View>
       </GlassCard>
@@ -115,12 +112,9 @@ function EmptyState() {
   return (
     <GlassCard style={styles.emptyCard} padding={32}>
       <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-        <LinearGradient
-          colors={["rgba(255,213,128,0.18)", "rgba(255,165,0,0.08)"]}
-          style={styles.emptyIconGrad}
-        >
-          <Feather name="unlock" size={32} color="#FFD580" />
-        </LinearGradient>
+        <View style={styles.emptyIconBox}>
+          <Feather name="unlock" size={32} color="#FFD60A" />
+        </View>
       </Animated.View>
       <Text style={styles.emptyTitle}>{t("noActiveLocks")}</Text>
       <Text style={styles.emptyBody}>{t("noActiveLocksBody")}</Text>
@@ -173,43 +167,40 @@ export default function HomeScreen() {
             <Text style={styles.appTitle}>{t("appTitle")}</Text>
           </View>
           <View style={styles.shieldBadge}>
-            <LinearGradient
-              colors={displayItems.length > 0 ? ["#FFD580", "#FFA500"] : ["rgba(255,255,255,0.06)", "rgba(255,255,255,0.03)"]}
-              style={styles.shieldGrad}
-            >
-              <Feather name="shield" size={22} color={displayItems.length > 0 ? "#1A1A1A" : "rgba(255,255,255,0.25)"} />
-            </LinearGradient>
+            <View style={[styles.shieldCircle, { backgroundColor: displayItems.length > 0 ? "#FFD60A" : "#2C2C2E" }]}>
+              <Feather name="shield" size={22} color={displayItems.length > 0 ? "#000000" : "rgba(255,255,255,0.25)"} />
+            </View>
           </View>
         </Animated.View>
 
         {/* Stats */}
         <View style={styles.statsRow}>
-          <StatCard value={locks.length} label={t("locks")} color="#FFD580" />
-          <StatCard value={displayItems.length} label={t("blocked")} color="#FF6B35" />
-          <StatCard value={avgDays > 0 ? `${avgDays}d` : "—"} label={t("avg")} color="#4CAF50" />
+          <StatCard value={locks.length} label={t("locks")} color="#FFD60A" />
+          <StatCard value={displayItems.length} label={t("blocked")} color="#FF453A" />
+          <StatCard value={avgDays > 0 ? `${avgDays}d` : "—"} label={t("avg")} color="#32D74B" />
         </View>
 
         {/* CTA */}
         <Pressable onPress={handleStartLock} style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}>
           <LinearGradient
-            colors={["#FFD580", "#FFA500"]}
+            colors={["#FFD60A", "#FF9F0A"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.ctaBtn}
           >
-            <Feather name="plus-circle" size={22} color="#1A1A1A" />
+            <Feather name="plus-circle" size={22} color="#000000" />
             <Text style={styles.ctaBtnText}>{t("lockAppsNow")}</Text>
           </LinearGradient>
         </Pressable>
 
         {/* Active locks section */}
         <View style={styles.sectionRow}>
-          <Feather name="lock" size={15} color="#FFD580" />
+          <Feather name="lock" size={15} color="#FFD60A" />
           <Text style={styles.sectionTitle}>{t("activeLocks")}</Text>
           {!loading && displayItems.length > 0 && (
-            <LinearGradient colors={["#FFD580", "#FFA500"]} style={styles.countBadge}>
+            <View style={styles.countBadge}>
               <Text style={styles.countText}>{displayItems.length}</Text>
-            </LinearGradient>
+            </View>
           )}
         </View>
 
@@ -230,11 +221,11 @@ export default function HomeScreen() {
         {displayItems.length > 0 && (
           <GlassCard
             style={styles.warningCard}
-            borderColor="rgba(255,107,53,0.3)"
-            backgroundColor="rgba(255,107,53,0.08)"
+            borderColor="rgba(255,69,58,0.3)"
+            backgroundColor="rgba(255,69,58,0.08)"
             padding={14}
           >
-            <Feather name="alert-triangle" size={14} color="#FF6B35" />
+            <Feather name="alert-triangle" size={14} color="#FF453A" />
             <Text style={styles.warningText}>{t("warningText")}</Text>
           </GlassCard>
         )}
@@ -249,42 +240,42 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingHorizontal: 20, gap: 16 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
-  greeting: { fontSize: 14, fontFamily: "Inter_400Regular", color: "rgba(255,213,128,0.6)", marginBottom: 2 },
+  greeting: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", marginBottom: 2 },
   appTitle: { fontSize: 30, fontFamily: "Inter_700Bold", color: "#FFFFFF", letterSpacing: -0.8 },
-  shieldBadge: { shadowColor: "#FFD580", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 },
-  shieldGrad: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  shieldBadge: { shadowColor: "#FFD60A", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 8 },
+  shieldCircle: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   statsRow: { flexDirection: "row", gap: 10 },
   statWrapper: { flex: 1 },
   statCard: { alignItems: "center" },
   statValue: { fontSize: 24, fontFamily: "Inter_700Bold", marginBottom: 3 },
-  statLabel: { fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.45)" },
+  statLabel: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   ctaBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
     paddingVertical: 18, borderRadius: 20,
-    shadowColor: "#FFD580", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 14, elevation: 10,
+    shadowColor: "#FFD60A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 10,
   },
-  ctaBtnText: { color: "#1A1A1A", fontSize: 17, fontFamily: "Inter_700Bold", letterSpacing: 0.2 },
+  ctaBtnText: { color: "#000000", fontSize: 17, fontFamily: "Inter_700Bold", letterSpacing: 0.2 },
   sectionRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
   sectionTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#FFFFFF", flex: 1 },
-  countBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12, minWidth: 24, alignItems: "center" },
-  countText: { color: "#1A1A1A", fontSize: 12, fontFamily: "Inter_700Bold" },
+  countBadge: { backgroundColor: "#FFD60A", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12, minWidth: 24, alignItems: "center" },
+  countText: { color: "#000000", fontSize: 12, fontFamily: "Inter_700Bold" },
   lockList: { gap: 10 },
   lockCard: {},
   lockCardInner: { flexDirection: "row", alignItems: "center", padding: 16, gap: 14 },
-  lockIconBg: { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  lockIconBg: { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,214,10,0.1)" },
   lockInfo: { flex: 1, gap: 4 },
   lockAppName: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
-  lockRemaining: { fontSize: 13, fontFamily: "Inter_400Regular", color: "rgba(255,213,128,0.7)" },
-  progressTrack: { height: 4, borderRadius: 2, backgroundColor: "rgba(255,213,128,0.12)", overflow: "hidden", marginVertical: 4 },
+  lockRemaining: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#FFD60A" },
+  progressTrack: { height: 4, borderRadius: 2, backgroundColor: "#2C2C2E", overflow: "hidden", marginVertical: 4 },
   progressFill: { height: "100%", borderRadius: 2 },
-  lockExpiry: { fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.35)" },
-  lockBadge: { width: 34, height: 34, borderRadius: 10, backgroundColor: "rgba(255,213,128,0.08)", alignItems: "center", justifyContent: "center" },
+  lockExpiry: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#8E8E93" },
+  lockBadge: { width: 34, height: 34, borderRadius: 10, backgroundColor: "#2C2C2E", alignItems: "center", justifyContent: "center" },
   loadingCard: { alignItems: "center" },
-  loadingText: { color: "rgba(255,255,255,0.5)", fontSize: 14, fontFamily: "Inter_400Regular" },
+  loadingText: { color: "#8E8E93", fontSize: 14, fontFamily: "Inter_400Regular" },
   emptyCard: { alignItems: "center", gap: 12 },
-  emptyIconGrad: { width: 72, height: 72, borderRadius: 24, alignItems: "center", justifyContent: "center" },
+  emptyIconBox: { width: 72, height: 72, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,214,10,0.1)" },
   emptyTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
-  emptyBody: { fontSize: 14, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.45)", textAlign: "center", lineHeight: 22 },
+  emptyBody: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center", lineHeight: 22 },
   warningCard: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 4 },
-  warningText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#FF6B35", lineHeight: 18 },
+  warningText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#FF453A", lineHeight: 18 },
 });

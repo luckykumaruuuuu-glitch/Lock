@@ -23,15 +23,15 @@ interface AnimatedButtonProps {
 }
 
 const GRADIENTS = {
-  primary: ["#FFD580", "#FFA500"] as const,
+  primary: ["#FFD60A", "#FF9F0A"] as const,
   accent: ["#FF6B35", "#E85A20"] as const,
-  ghost: ["rgba(255,213,128,0.08)", "rgba(255,165,0,0.04)"] as const,
+  ghost: ["rgba(255,255,255,0.07)", "rgba(255,255,255,0.04)"] as const,
   danger: ["#CC4400", "#FF6B35"] as const,
   success: ["#3D9142", "#4CAF50"] as const,
 };
 
 const GLOW_COLORS = {
-  primary: "#FFD580",
+  primary: "#FFD60A",
   accent: "#FF6B35",
   ghost: "transparent",
   danger: "#CC4400",
@@ -125,7 +125,7 @@ export function AnimatedButton({
               paddingVertical: sizeStyle.paddingVertical,
               paddingHorizontal: sizeStyle.paddingHorizontal,
               borderWidth: isGhost ? 1 : 0,
-              borderColor: isGhost ? "rgba(255,213,128,0.3)" : undefined,
+              borderColor: isGhost ? "rgba(255,255,255,0.15)" : undefined,
             },
           ]}
         >
@@ -139,7 +139,7 @@ export function AnimatedButton({
                   styles.label,
                   {
                     fontSize: sizeStyle.fontSize,
-                    color: isGhost ? "#FFD580" : "#1A1A1A",
+                    color: isGhost ? "#FFFFFF" : "#000000",
                   },
                 ]}
               >
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: "rgba(255,248,240,0.3)",
-    borderTopColor: "#FFF8F0",
+    borderColor: "rgba(0,0,0,0.3)",
+    borderTopColor: "#000000",
   },
 });
