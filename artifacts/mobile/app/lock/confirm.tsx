@@ -17,6 +17,7 @@ import { useFirebaseSyncContext } from "@/context/FirebaseSyncContext";
 import { useLock } from "@/context/LockContext";
 import { formatExpiryDate, getDurationMs } from "@/hooks/useLockStorage";
 import { useColors } from "@/hooks/useColors";
+import { usePermissionStatus } from "@/hooks/usePermissionStatus";
 import { isFirebaseConfigured } from "@/lib/firebase";
 
 function getDisplayDuration(
@@ -40,9 +41,14 @@ export default function ConfirmScreen() {
   const insets = useSafeAreaInsets();
   const { selection, confirmLock, resetSelection } = useLock();
   const { saveToFirebase, online, configured } = useFirebaseSyncContext();
+  const { permissions } = usePermissionStatus();
   const [saving, setSaving] = useState(false);
   const [locked, setLocked] = useState(false);
   const [lockedExpiry, setLockedExpiry] = useState("");
+
+  const adminGranted = Platform.OS !== "android" || permissions.deviceAdmin.granted;
+  const a11yGranted  = Platform.OS !== "android" || permissions.accessibility.granted;
+  const fullyProtected = adminGranted && a11yGranted;
 
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -128,6 +134,30 @@ export default function ConfirmScreen() {
               {online ? "Synced to Firebase" : "Will sync when online"}
             </Text>
           </View>
+        )}
+
+        {/* Show protection warning if permissions aren't all granted */}
+        {!fullyProtected && (
+          <Pressable
+            onPress={() => router.push("/setup")}
+            style={[styles.protectionWarn, { backgroundColor: "#F59E0B" + "15", borderColor: "#F59E0B" + "50" }]}
+          >
+            <Feather name="alert-triangle" size={16} color="#F59E0B" />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.protectionWarnTitle, { color: "#F59E0B" }]}>
+                Weak Protection
+              </Text>
+              <Text style={[styles.protectionWarnBody, { color: colors.mutedForeground }]}>
+                {!adminGranted && !a11yGranted
+                  ? "Device Admin & Accessibility Service not enabled — apps can be uninstalled or opened freely."
+                  : !adminGranted
+                  ? "Device Admin not enabled — FocusLock can be uninstalled."
+                  : "Accessibility Service not enabled — locked apps won't be blocked."}
+                {" "}Tap to fix.
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={16} color="#F59E0B" />
+          </Pressable>
         )}
       </View>
     );
@@ -231,6 +261,26 @@ export default function ConfirmScreen() {
           <Text style={[styles.detailValueNo, { color: "#DC2626" }]}>Impossible</Text>
         </View>
       </View>
+
+      {/* Protection status banner — shown before the user locks */}
+      {!fullyProtected && Platform.OS === "android" && (
+        <Pressable
+          onPress={() => router.push("/setup")}
+          style={[styles.protectionWarn, { backgroundColor: "#F59E0B" + "15", borderColor: "#F59E0B" + "50" }]}
+        >
+          <Feather name="alert-triangle" size={16} color="#F59E0B" />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.protectionWarnTitle, { color: "#F59E0B" }]}>
+              Weak Protection — Tap to Fix
+            </Text>
+            <Text style={[styles.protectionWarnBody, { color: colors.mutedForeground }]}>
+              {!adminGranted && "Device Admin not enabled — FocusLock can be uninstalled. "}
+              {!a11yGranted && "Accessibility Service not enabled — locked apps won't be blocked."}
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color="#F59E0B" />
+        </Pressable>
+      )}
 
       <View style={{ height: 80 }} />
 
