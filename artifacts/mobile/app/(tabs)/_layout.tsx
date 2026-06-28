@@ -9,8 +9,8 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#6366F1",
-        tabBarInactiveTintColor: "rgba(255,255,255,0.3)",
+        tabBarActiveTintColor: "#E8A030",
+        tabBarInactiveTintColor: "rgba(255,255,255,0.25)",
         headerShown: false,
         tabBarStyle: {
           position: "absolute",
@@ -27,12 +27,12 @@ export default function TabLayout() {
               style={StyleSheet.absoluteFill}
             />
             <LinearGradient
-              colors={["rgba(8,0,20,0.7)", "rgba(22,8,46,0.85)"]}
+              colors={["rgba(0,0,0,0.85)", "rgba(10,5,0,0.95)"]}
               style={[
                 StyleSheet.absoluteFill,
                 {
                   borderTopWidth: 1,
-                  borderTopColor: "rgba(255,255,255,0.08)",
+                  borderTopColor: "rgba(232,160,48,0.12)",
                 },
               ]}
             />
@@ -53,7 +53,7 @@ export default function TabLayout() {
             <View style={focused ? styles.activeIconWrap : null}>
               {focused && (
                 <LinearGradient
-                  colors={["#6366F1", "#8B5CF6"]}
+                  colors={["#E8A030", "#C47B2B"]}
                   style={StyleSheet.absoluteFill}
                 />
               )}
@@ -70,7 +70,7 @@ export default function TabLayout() {
             <View style={focused ? styles.activeIconWrap : null}>
               {focused && (
                 <LinearGradient
-                  colors={["#6366F1", "#8B5CF6"]}
+                  colors={["#E8A030", "#C47B2B"]}
                   style={StyleSheet.absoluteFill}
                 />
               )}

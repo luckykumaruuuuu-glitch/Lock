@@ -7,7 +7,7 @@ interface GradientBackgroundProps {
   colors?: readonly [string, string, ...string[]];
 }
 
-const DEFAULT_COLORS = ["#0D0500", "#1A0A00", "#2C1503"] as const;
+const DEFAULT_COLORS = ["#000000", "#050200", "#0D0500"] as const;
 
 export function GradientBackground({
   children,

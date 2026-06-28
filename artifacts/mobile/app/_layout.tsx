@@ -61,8 +61,8 @@ function RootLayoutNav() {
       <StatusBar style="light" />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: "rgba(8,0,20,0.95)" },
-          headerTintColor: "#A5B4FC",
+          headerStyle: { backgroundColor: "rgba(0,0,0,0.97)" },
+          headerTintColor: "#E8A030",
           headerTitleStyle: {
             fontFamily: "Inter_700Bold",
             color: "#FFFFFF",
