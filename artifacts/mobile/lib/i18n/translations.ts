@@ -26,7 +26,7 @@ export const translations = {
     termsOfService: "Terms of Service",
     about: "ABOUT",
     support: "SUPPORT",
-    feedback: "Feedback",
+    feedback: "Feedback & Help",
     language: "Language",
 
     // Feedback Screen
