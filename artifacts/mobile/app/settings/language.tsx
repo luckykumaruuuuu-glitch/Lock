@@ -19,14 +19,12 @@ import { LANGUAGES, useLanguage } from "@/context/LanguageContext";
 import type { LangKey } from "@/lib/i18n/translations";
 
 function LanguageRow({
-  code,
   name,
   nativeName,
   selected,
   onSelect,
   last,
 }: {
-  code: LangKey;
   name: string;
   nativeName: string;
   selected: boolean;
@@ -63,9 +61,11 @@ export default function LanguageScreen() {
   const [toastVisible, setToastVisible] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom + 16;
+  const bottomInset = Platform.OS === "web" ? 24 : insets.bottom + 16;
+  const hasChanged = pendingLang !== currentLanguage;
 
   async function handleSave() {
+    if (!hasChanged) return;
     await setLanguage(pendingLang);
     setToastVisible(true);
     setTimeout(() => router.back(), 1200);
@@ -73,10 +73,11 @@ export default function LanguageScreen() {
 
   return (
     <GradientBackground>
+      {/* Scrollable area */}
       <ScrollView
         contentContainerStyle={[
-          styles.content,
-          { paddingTop: topPad + 16, paddingBottom: bottomPad + 24 },
+          styles.scrollContent,
+          { paddingTop: topPad + 16, paddingBottom: 120 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -99,7 +100,6 @@ export default function LanguageScreen() {
           {LANGUAGES.map((lang, idx) => (
             <LanguageRow
               key={lang.code}
-              code={lang.code}
               name={lang.name}
               nativeName={lang.nativeName}
               selected={pendingLang === lang.code}
@@ -108,23 +108,36 @@ export default function LanguageScreen() {
             />
           ))}
         </GlassCard>
+      </ScrollView>
 
-        {/* Save button */}
+      {/* Fixed Save button at bottom */}
+      <View style={[styles.stickyFooter, { paddingBottom: bottomInset }]}>
         <Pressable
           onPress={handleSave}
-          style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+          disabled={!hasChanged}
+          style={({ pressed }) => [{ opacity: pressed && hasChanged ? 0.85 : 1 }]}
         >
           <LinearGradient
-            colors={["#C47B2B", "#E8943A"]}
+            colors={
+              hasChanged
+                ? ["#C47B2B", "#E8943A"]
+                : ["rgba(61,31,10,0.55)", "rgba(61,31,10,0.35)"]
+            }
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.saveBtn}
           >
-            <Feather name="check" size={18} color="#FFF8F0" />
-            <Text style={styles.saveBtnText}>{t("saveLanguage")}</Text>
+            <Feather
+              name="check"
+              size={18}
+              color={hasChanged ? "#FFF8F0" : "rgba(255,248,240,0.3)"}
+            />
+            <Text style={[styles.saveBtnText, !hasChanged && styles.saveBtnTextDisabled]}>
+              {t("saveLanguage")}
+            </Text>
           </LinearGradient>
         </Pressable>
-      </ScrollView>
+      </View>
 
       <Toast
         visible={toastVisible}
@@ -137,7 +150,7 @@ export default function LanguageScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20, gap: 14 },
+  scrollContent: { paddingHorizontal: 20, gap: 14 },
 
   backBtn: { alignSelf: "flex-start", marginBottom: 4 },
 
@@ -204,6 +217,18 @@ const styles = StyleSheet.create({
     marginLeft: 18,
   },
 
+  stickyFooter: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    backgroundColor: "rgba(13,5,0,0.85)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(196,123,43,0.12)",
+  },
+
   saveBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -211,7 +236,6 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 18,
     borderRadius: 20,
-    marginTop: 4,
     shadowColor: "#C47B2B",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.45,
@@ -223,5 +247,8 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontFamily: "Inter_700Bold",
     letterSpacing: 0.2,
+  },
+  saveBtnTextDisabled: {
+    color: "rgba(255,248,240,0.3)",
   },
 });
