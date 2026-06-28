@@ -64,7 +64,7 @@ catalogs:
       specifier: ^4.21.0
       version: 4.22.4
     vite:
-      specifier: ^7.3.2
+      specifier: 7.3.5
       version: 7.3.5
     zod:
       specifier: ^3.25.76
