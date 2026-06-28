@@ -55,20 +55,40 @@ FocusLock does not knowingly collect data from children under 13.
 7. CONTACT
 For privacy concerns, contact the developer through the app's Google Play listing.`;
 
-/* ── Setting row ── */
+/* ─── Icon box ─── */
+function IconBox({
+  name,
+  colors = ["#C47B2B", "#E8943A"],
+}: {
+  name: string;
+  colors?: [string, string];
+}) {
+  return (
+    <LinearGradient colors={colors} style={styles.iconBox}>
+      <Feather name={name as any} size={14} color="#FFF8F0" />
+    </LinearGradient>
+  );
+}
+
+/* ─── Divider between rows ─── */
+function RowDivider() {
+  return <View style={styles.rowDivider} />;
+}
+
+/* ─── Standard tappable row ─── */
 function SettingRow({
   icon,
+  iconColors,
   label,
   value,
   onPress,
-  iconColors = ["#C47B2B", "#E8943A"] as const,
   last = false,
 }: {
   icon: string;
+  iconColors?: [string, string];
   label: string;
   value?: string;
   onPress?: () => void;
-  iconColors?: readonly [string, string];
   last?: boolean;
 }) {
   return (
@@ -76,33 +96,31 @@ function SettingRow({
       <Pressable
         onPress={onPress}
         disabled={!onPress}
-        style={({ pressed }) => [styles.settingRow, { opacity: pressed ? 0.7 : 1 }]}
+        style={({ pressed }) => [styles.row, { opacity: pressed ? 0.65 : 1 }]}
       >
-        <LinearGradient colors={iconColors} style={styles.settingIcon}>
-          <Feather name={icon as any} size={14} color="#FFF8F0" />
-        </LinearGradient>
-        <Text style={styles.settingLabel}>{label}</Text>
-        {value && <Text style={styles.settingValue}>{value}</Text>}
-        {onPress && <Feather name="chevron-right" size={15} color="rgba(212,165,116,0.4)" />}
+        <IconBox name={icon} colors={iconColors} />
+        <Text style={styles.rowLabel}>{label}</Text>
+        {value !== undefined && <Text style={styles.rowValue}>{value}</Text>}
+        {onPress && (
+          <Feather name="chevron-right" size={15} color="rgba(212,165,116,0.35)" />
+        )}
       </Pressable>
-      {!last && <View style={styles.rowDivider} />}
+      {!last && <RowDivider />}
     </>
   );
 }
 
-/* ── Sound toggle ── */
+/* ─── Sound toggle row ─── */
 function SoundToggleRow({
   muted,
   setMuted,
   playPreview,
   label,
-  last = false,
 }: {
   muted: boolean;
   setMuted: (v: boolean) => void;
   playPreview: () => void;
   label: string;
-  last?: boolean;
 }) {
   const toggleAnim = useRef(new Animated.Value(muted ? 0 : 1)).current;
 
@@ -118,42 +136,46 @@ function SoundToggleRow({
     if (!next) setTimeout(() => playPreview(), 100);
   }
 
-  const dotPos    = toggleAnim.interpolate({ inputRange: [0, 1], outputRange: [2, 20] });
-  const trackColor = toggleAnim.interpolate({ inputRange: [0, 1], outputRange: ["rgba(61,31,10,0.6)", "#C47B2B"] });
+  const dotPos = toggleAnim.interpolate({ inputRange: [0, 1], outputRange: [2, 20] });
+  const trackColor = toggleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["rgba(61,31,10,0.6)", "#C47B2B"],
+  });
 
   return (
-    <>
-      <Pressable
-        onPress={handleToggle}
-        style={({ pressed }) => [styles.settingRow, { opacity: pressed ? 0.7 : 1 }]}
+    <Pressable
+      onPress={handleToggle}
+      style={({ pressed }) => [styles.row, { opacity: pressed ? 0.65 : 1 }]}
+    >
+      <LinearGradient
+        colors={muted ? ["rgba(61,31,10,0.5)", "rgba(61,31,10,0.3)"] : ["#C47B2B", "#E8943A"]}
+        style={styles.iconBox}
       >
-        <LinearGradient
-          colors={muted ? ["rgba(61,31,10,0.5)", "rgba(61,31,10,0.3)"] : ["#C47B2B", "#E8943A"]}
-          style={styles.settingIcon}
-        >
-          <Feather name={muted ? "volume-x" : "volume-2"} size={14} color={muted ? "#D4A574" : "#FFF8F0"} />
-        </LinearGradient>
-        <Text style={styles.settingLabel}>{label}</Text>
-        <Animated.View style={[styles.track, { backgroundColor: trackColor }]}>
-          <Animated.View style={[styles.dot, { transform: [{ translateX: dotPos }] }]} />
-        </Animated.View>
-      </Pressable>
-      {!last && <View style={styles.rowDivider} />}
-    </>
+        <Feather
+          name={muted ? "volume-x" : "volume-2"}
+          size={14}
+          color={muted ? "#D4A574" : "#FFF8F0"}
+        />
+      </LinearGradient>
+      <Text style={styles.rowLabel}>{label}</Text>
+      <Animated.View style={[styles.track, { backgroundColor: trackColor }]}>
+        <Animated.View style={[styles.dot, { transform: [{ translateX: dotPos }] }]} />
+      </Animated.View>
+    </Pressable>
   );
 }
 
-/* ── Privacy Policy modal ── */
+/* ─── Privacy modal ─── */
 function PrivacyModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[modalStyles.root, { paddingTop: insets.top + 16 }]}>
+      <View style={[modalSt.root, { paddingTop: insets.top + 16 }]}>
         <LinearGradient colors={["#0D0500", "#1A0A00", "#2C1503"]} style={StyleSheet.absoluteFill} />
-        <View style={modalStyles.header}>
-          <Text style={modalStyles.title}>{t("privacyPolicy")}</Text>
-          <Pressable onPress={onClose} style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}>
+        <View style={modalSt.header}>
+          <Text style={modalSt.title}>{t("privacyPolicy")}</Text>
+          <Pressable onPress={onClose} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
             <GlassCard radius={20} padding={8}>
               <Feather name="x" size={18} color="#FFF8F0" />
             </GlassCard>
@@ -161,24 +183,28 @@ function PrivacyModal({ visible, onClose }: { visible: boolean; onClose: () => v
         </View>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[modalStyles.content, { paddingBottom: insets.bottom + 24 }]}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         >
-          <Text style={modalStyles.text}>{PRIVACY_POLICY}</Text>
+          <Text style={modalSt.text}>{PRIVACY_POLICY}</Text>
         </ScrollView>
       </View>
     </Modal>
   );
 }
 
-const modalStyles = StyleSheet.create({
-  root:    { flex: 1, paddingHorizontal: 20 },
-  header:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
-  title:   { fontSize: 22, fontFamily: "Inter_700Bold", color: "#FFF8F0" },
-  content: { paddingBottom: 24 },
-  text:    { fontSize: 13, fontFamily: "Inter_400Regular", color: "#D4A574", lineHeight: 22 },
+const modalSt = StyleSheet.create({
+  root:   { flex: 1, paddingHorizontal: 20 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
+  title:  { fontSize: 22, fontFamily: "Inter_700Bold", color: "#FFF8F0" },
+  text:   { fontSize: 13, fontFamily: "Inter_400Regular", color: "#D4A574", lineHeight: 22 },
 });
 
-/* ── Main Settings Screen ── */
+/* ─── Section label ─── */
+function SectionLabel({ label }: { label: string }) {
+  return <Text style={styles.sectionLabel}>{label}</Text>;
+}
+
+/* ─── Main screen ─── */
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const [privacyVisible, setPrivacyVisible] = useState(false);
@@ -196,58 +222,73 @@ export default function SettingsScreen() {
         contentContainerStyle={[styles.content, { paddingTop: topPad + 16, paddingBottom: bottomPad + 24 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Page title */}
         <Text style={styles.pageTitle}>{t("settings")}</Text>
 
-        {/* Preferences */}
-        <Text style={styles.sectionLabel}>{t("preferences")}</Text>
-        <GlassCard>
-          <SoundToggleRow muted={muted} setMuted={setMuted} playPreview={playPreview} label={t("soundEffects")} last />
+        {/* PREFERENCES */}
+        <SectionLabel label={t("preferences")} />
+        <GlassCard padding={0}>
+          <SoundToggleRow
+            muted={muted}
+            setMuted={setMuted}
+            playPreview={playPreview}
+            label={t("soundEffects")}
+          />
         </GlassCard>
 
-        {/* App info */}
-        <Text style={styles.sectionLabel}>{t("application")}</Text>
-        <GlassCard>
+        {/* APPLICATION */}
+        <SectionLabel label={t("application")} />
+        <GlassCard padding={0}>
           <SettingRow icon="info" label={t("version")} value={APP_VERSION} last />
         </GlassCard>
 
-        {/* Support */}
-        <Text style={styles.sectionLabel}>{t("support")}</Text>
-        <GlassCard>
+        {/* SUPPORT */}
+        <SectionLabel label={t("support")} />
+        <GlassCard padding={0}>
           <SettingRow
             icon="message-circle"
+            iconColors={["#8B4513", "#C47B2B"]}
             label={t("feedback")}
             onPress={() => router.push("/settings/feedback")}
-            iconColors={["#8B4513", "#C47B2B"]}
           />
           <SettingRow
             icon="globe"
+            iconColors={["#1A6B8A", "#2196B5"]}
             label={t("language")}
             value={currentLangName}
             onPress={() => router.push("/settings/language")}
-            iconColors={["#1A6B8A", "#2196B5"]}
             last
           />
         </GlassCard>
 
-        {/* Legal */}
-        <Text style={styles.sectionLabel}>{t("legal")}</Text>
-        <GlassCard>
-          <SettingRow icon="file-text" label={t("privacyPolicy")} onPress={() => setPrivacyVisible(true)} />
+        {/* LEGAL */}
+        <SectionLabel label={t("legal")} />
+        <GlassCard padding={0}>
+          <SettingRow
+            icon="file-text"
+            label={t("privacyPolicy")}
+            onPress={() => setPrivacyVisible(true)}
+          />
           <SettingRow
             icon="book"
             label={t("termsOfService")}
-            last
             onPress={() => Linking.openURL("https://focuslock.app/terms").catch(() => {})}
+            last
           />
         </GlassCard>
 
-        {/* About */}
-        <Text style={styles.sectionLabel}>{t("about")}</Text>
-        <GlassCard padding={28} style={styles.aboutCard}>
-          <LinearGradient colors={["#C47B2B", "#E8943A"]} style={styles.aboutIcon}>
-            <Feather name="shield" size={32} color="#FFF8F0" />
-          </LinearGradient>
-          <Text style={styles.aboutTitle}>FocusLock</Text>
+        {/* ABOUT */}
+        <SectionLabel label={t("about")} />
+        <GlassCard padding={0}>
+          <View style={styles.aboutRow}>
+            <LinearGradient colors={["#C47B2B", "#E8943A"]} style={styles.aboutIcon}>
+              <Feather name="shield" size={26} color="#FFF8F0" />
+            </LinearGradient>
+            <View>
+              <Text style={styles.aboutName}>FocusLock</Text>
+              <Text style={styles.aboutVersion}>Version {APP_VERSION}</Text>
+            </View>
+          </View>
         </GlassCard>
 
         <Text style={styles.footer}>FocusLock {APP_VERSION}</Text>
@@ -259,22 +300,101 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content:    { paddingHorizontal: 20, gap: 8 },
-  pageTitle:  { fontSize: 30, fontFamily: "Inter_700Bold", color: "#FFF8F0", letterSpacing: -0.8, marginBottom: 12 },
-  sectionLabel: { fontSize: 11, fontFamily: "Inter_500Medium", letterSpacing: 1, color: "rgba(212,165,116,0.5)", marginTop: 12, marginBottom: 4, marginLeft: 2 },
+  content:   { paddingHorizontal: 20, gap: 6 },
+  pageTitle: {
+    fontSize: 30,
+    fontFamily: "Inter_700Bold",
+    color: "#FFF8F0",
+    letterSpacing: -0.8,
+    marginBottom: 10,
+  },
 
-  settingRow:   { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
-  settingIcon:  { width: 30, height: 30, borderRadius: 9, alignItems: "center", justifyContent: "center" },
-  settingLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular", color: "#FFF8F0" },
-  settingValue: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#D4A574" },
-  rowDivider:   { height: 1, backgroundColor: "rgba(196,123,43,0.12)", marginLeft: 58 },
+  /* Section header */
+  sectionLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 0.8,
+    color: "rgba(212,165,116,0.45)",
+    marginTop: 14,
+    marginBottom: 5,
+    marginLeft: 4,
+    textTransform: "uppercase",
+  },
 
-  track: { width: 44, height: 24, borderRadius: 12, justifyContent: "center" },
-  dot:   { width: 20, height: 20, borderRadius: 10, backgroundColor: "#FFF8F0" },
+  /* Row inside a card */
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  iconBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rowLabel: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    color: "#FFF8F0",
+  },
+  rowValue: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "rgba(212,165,116,0.65)",
+  },
+  rowDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(196,123,43,0.18)",
+    marginLeft: 56,
+  },
 
-  aboutCard:  { alignItems: "center", gap: 12 },
-  aboutIcon:  { width: 64, height: 64, borderRadius: 22, alignItems: "center", justifyContent: "center", shadowColor: "#C47B2B", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 12 },
-  aboutTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#FFF8F0" },
+  /* Toggle */
+  track: { width: 44, height: 26, borderRadius: 13, justifyContent: "center" },
+  dot:   { width: 22, height: 22, borderRadius: 11, backgroundColor: "#FFF8F0", marginHorizontal: 1 },
 
-  footer: { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(212,165,116,0.25)", textAlign: "center", marginTop: 8, marginBottom: 4 },
+  /* About row */
+  aboutRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    gap: 14,
+  },
+  aboutIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#C47B2B",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  aboutName: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    color: "#FFF8F0",
+    marginBottom: 2,
+  },
+  aboutVersion: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "rgba(212,165,116,0.55)",
+  },
+
+  footer: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: "rgba(212,165,116,0.2)",
+    textAlign: "center",
+    marginTop: 10,
+    marginBottom: 4,
+  },
 });
