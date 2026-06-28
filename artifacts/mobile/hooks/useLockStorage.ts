@@ -34,6 +34,7 @@ export interface ActiveLockDisplayItem {
 ─────────────────────────────────────────────── */
 const STORAGE_KEY = "focuslock_locks_v2";
 const NATIVE_FILE = "focuslock_data.json";
+const MAX_DURATION_DAYS = 365;
 
 function getNativeFilePath(): string | null {
   if (!FileSystem.documentDirectory) return null;
@@ -46,7 +47,9 @@ function getNativeFilePath(): string | null {
 export async function getAllLocks(): Promise<LockEntry[]> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
@@ -60,9 +63,12 @@ export async function getActiveLocks(): Promise<LockEntry[]> {
 
 export async function saveLock(entry: LockEntry): Promise<void> {
   const locks = await getAllLocks();
-  locks.push(entry);
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(locks));
-  await syncToNativeFile(locks);
+  const exists = locks.some((l) => l.id === entry.id);
+  if (!exists) {
+    locks.push(entry);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(locks));
+    await syncToNativeFile(locks);
+  }
 }
 
 export async function refreshExpiredLocks(): Promise<LockEntry[]> {
@@ -89,7 +95,6 @@ export async function refreshExpiredLocks(): Promise<LockEntry[]> {
 /* ───────────────────────────────────────────────
    Native file sync (for Kotlin AccessibilityService)
    Writes to documentDirectory/focuslock_data.json
-   which Kotlin reads via context.filesDir
 ─────────────────────────────────────────────── */
 async function syncToNativeFile(locks: LockEntry[]): Promise<void> {
   try {
@@ -98,7 +103,7 @@ async function syncToNativeFile(locks: LockEntry[]): Promise<void> {
 
     const nativePayload = {
       locks: locks
-        .filter((l) => l.status === "ACTIVE")
+        .filter((l) => l.status === "ACTIVE" && l.endTime > Date.now())
         .map((l) => ({
           id: l.id,
           appPackageNames: l.apps.map((a) => a.packageName),
@@ -129,8 +134,8 @@ export function getDurationMs(
   if (preset === "1d") return MS_DAY;
   if (preset === "7d") return 7 * MS_DAY;
   if (preset === "30d") return 30 * MS_DAY;
-  const d = parseInt(customDays) || 0;
-  const h = parseInt(customHours) || 0;
+  const d = Math.min(Math.max(0, parseInt(customDays) || 0), MAX_DURATION_DAYS);
+  const h = Math.min(Math.max(0, parseInt(customHours) || 0), 23);
   return (d * 24 + h) * 60 * 60 * 1000;
 }
 
@@ -142,8 +147,8 @@ export function getDurationLabel(
   if (preset === "1d") return "1 Day";
   if (preset === "7d") return "7 Days";
   if (preset === "30d") return "30 Days";
-  const d = parseInt(customDays) || 0;
-  const h = parseInt(customHours) || 0;
+  const d = Math.min(Math.max(0, parseInt(customDays) || 0), MAX_DURATION_DAYS);
+  const h = Math.min(Math.max(0, parseInt(customHours) || 0), 23);
   const parts: string[] = [];
   if (d > 0) parts.push(`${d}d`);
   if (h > 0) parts.push(`${h}h`);
@@ -183,6 +188,8 @@ export function getLockProgress(startTime: number, endTime: number): number {
 
 /* ───────────────────────────────────────────────
    React hook — real-time active locks
+   Refreshes every 60s by default; use 30s for
+   sub-minute precision on the home screen.
 ─────────────────────────────────────────────── */
 export function useActiveLocks(refreshIntervalMs = 60_000) {
   const [locks, setLocks] = useState<LockEntry[]>([]);
@@ -191,7 +198,7 @@ export function useActiveLocks(refreshIntervalMs = 60_000) {
 
   const refresh = useCallback(async () => {
     const updated = await refreshExpiredLocks();
-    const active = updated.filter((l) => l.status === "ACTIVE");
+    const active = updated.filter((l) => l.status === "ACTIVE" && l.endTime > Date.now());
     setLocks(active);
     setLoading(false);
   }, []);

@@ -191,8 +191,6 @@ const withFocusLockNativeFiles = (config) =>
 
       /* ════════════════════════════════════════════════
          LockRepository.kt
-         Shared data layer — reads focuslock_data.json
-         written by the React Native (JS) layer.
       ════════════════════════════════════════════════ */
       fs.writeFileSync(path.join(kotlinDir, "LockRepository.kt"),
 `package ${PACKAGE_NAME}
@@ -249,7 +247,6 @@ class LockRepository(private val context: Context) {
 
     fun hasActiveLocks(): Boolean = getActiveLocks().isNotEmpty()
 
-    /** Returns the endTime of the lock on [packageName], or null if not locked. */
     fun isPackageLocked(packageName: String): Long? {
         val now = System.currentTimeMillis()
         return getActiveLocks()
@@ -257,13 +254,10 @@ class LockRepository(private val context: Context) {
             ?.endTime
     }
 
-    /** Total number of distinct app package names that are currently locked. */
     fun lockedAppCount(): Int = getActiveLocks().sumOf { it.appPackageNames.size }
 
-    /** End time of the lock that expires last. */
     fun longestEndTime(): Long? = getActiveLocks().maxOfOrNull { it.endTime }
 
-    /** Human-readable display name of a package. Falls back to the package name. */
     fun getAppName(packageName: String): String = try {
         val pm = context.packageManager
         pm.getApplicationLabel(pm.getApplicationInfo(packageName, 0)).toString()
@@ -273,9 +267,6 @@ class LockRepository(private val context: Context) {
 
       /* ════════════════════════════════════════════════
          FocusLockNotificationService.kt
-         Foreground service — shows the persistent
-         "FocusLock Active" notification and exposes
-         static helpers for tamper notifications.
       ════════════════════════════════════════════════ */
       fs.writeFileSync(path.join(kotlinDir, "FocusLockNotificationService.kt"),
 `package ${PACKAGE_NAME}
@@ -285,7 +276,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.*
 import android.provider.Settings
-import android.util.Log
 import androidx.core.app.NotificationCompat
 
 class FocusLockNotificationService : Service() {
@@ -295,7 +285,6 @@ class FocusLockNotificationService : Service() {
         const val CHANNEL_TAMPER  = "focuslock_tamper"
         const val NOTIF_ACTIVE    = 1001
         const val NOTIF_TAMPER    = 1002
-        private const val TAG     = "FocusLockNotif"
 
         fun start(context: Context) {
             val intent = Intent(context, FocusLockNotificationService::class.java)
@@ -327,11 +316,6 @@ class FocusLockNotificationService : Service() {
             }
         }
 
-        /**
-         * Shows a persistent, non-dismissible alert when the user disables
-         * the Accessibility Service or Device Admin while locks are active.
-         * Tapping opens the appropriate settings screen.
-         */
         fun showTamperNotification(context: Context, body: String, isDeviceAdmin: Boolean = false) {
             createChannels(context)
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -402,7 +386,6 @@ class FocusLockNotificationService : Service() {
         val locks = repo.getActiveLocks()
 
         if (locks.isEmpty()) {
-            Log.i(TAG, "No active locks — stopping service")
             stopForeground(true)
             stopSelf()
             return
@@ -431,7 +414,6 @@ class FocusLockNotificationService : Service() {
             .build()
 
         startForeground(NOTIF_ACTIVE, notif)
-        Log.i(TAG, "Notification updated: $appCount apps locked | $remaining")
     }
 
     private fun formatRemaining(endTime: Long): String {
@@ -455,8 +437,6 @@ class FocusLockNotificationService : Service() {
 
       /* ════════════════════════════════════════════════
          DeviceAdminReceiver.kt
-         Prevents FocusLock from being uninstalled
-         while active locks exist.
       ════════════════════════════════════════════════ */
       fs.writeFileSync(path.join(kotlinDir, "DeviceAdminReceiver.kt"),
 `package ${PACKAGE_NAME}
@@ -464,27 +444,14 @@ class FocusLockNotificationService : Service() {
 import android.app.admin.DeviceAdminReceiver
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 
-/**
- * Handles device admin lifecycle events.
- *
- * When active, the OS blocks uninstalling FocusLock automatically — no extra
- * code needed. Our job here is to detect tampering and show alert notifications.
- */
 class DeviceAdminReceiver : DeviceAdminReceiver() {
 
     override fun onEnabled(context: Context, intent: Intent) {
         super.onEnabled(context, intent)
-        Log.i(TAG, "Device admin ENABLED — FocusLock uninstall protection active")
-        // Clear any tamper alert that might have been showing
         FocusLockNotificationService.cancelTamperNotification(context)
     }
 
-    /**
-     * Android shows this text in a confirmation dialog before disabling admin.
-     * We cannot truly block deactivation, but we can make the user think twice.
-     */
     override fun onDisableRequested(context: Context, intent: Intent): CharSequence {
         val hasLocks = LockRepository(context).hasActiveLocks()
         return if (hasLocks) {
@@ -502,7 +469,6 @@ class DeviceAdminReceiver : DeviceAdminReceiver() {
         super.onDisabled(context, intent)
         val repo = LockRepository(context)
         if (repo.hasActiveLocks()) {
-            Log.w(TAG, "Device admin DISABLED while locks active — showing tamper alert")
             FocusLockNotificationService.createChannels(context)
             FocusLockNotificationService.showTamperNotification(
                 context,
@@ -510,19 +476,13 @@ class DeviceAdminReceiver : DeviceAdminReceiver() {
                 "Tap here to re-enable admin and restore full protection.",
                 isDeviceAdmin = true,
             )
-        } else {
-            Log.i(TAG, "Device admin disabled — no active locks")
         }
     }
-
-    companion object { private const val TAG = "FocusLockAdmin" }
 }
 `);
 
       /* ════════════════════════════════════════════════
          LockOverlayActivity.kt
-         Full-screen overlay shown for 3 seconds when
-         the user opens a locked app.
       ════════════════════════════════════════════════ */
       fs.writeFileSync(path.join(kotlinDir, "LockOverlayActivity.kt"),
 `package ${PACKAGE_NAME}
@@ -541,11 +501,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Full-screen overlay activity that appears when a locked app is opened.
- *
- * Shows: app name, lock expiry, remaining time, motivational message.
- * Auto-dismisses after 3 seconds and sends the user to the home screen.
- * Back press also goes home — there is no close button.
+ * Full-screen overlay shown for 3 seconds when a locked app is opened.
+ * Auto-dismisses to home screen. Back press also goes home.
  */
 class LockOverlayActivity : Activity() {
 
@@ -560,7 +517,6 @@ class LockOverlayActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Keep screen on and show over lock screen
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
@@ -581,7 +537,6 @@ class LockOverlayActivity : Activity() {
         val density = resources.displayMetrics.density
         fun dp(v: Int) = (v * density).toInt()
 
-        /* ── Root container ── */
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity     = Gravity.CENTER
@@ -589,33 +544,27 @@ class LockOverlayActivity : Activity() {
             setPadding(dp(32), dp(48), dp(32), dp(48))
         }
 
-        /* ── Lock emoji ── */
         root += textView("\\uD83D\\uDD12", 72f, "#FFFFFF")
 
-        /* ── App name ── */
         root += textView(appName, 30f, "#FFFFFF").also {
             it.typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
             it.setPadding(0, dp(16), 0, dp(4))
         }
 
-        /* ── "is locked" label ── */
         root += textView("is locked", 16f, "#64748B").also {
             it.setPadding(0, 0, 0, dp(24))
         }
 
-        /* ── Remaining time ── */
         root += textView(formatRemaining(endTime), 24f, "#60A5FA").also {
             it.typeface = Typeface.create("sans-serif", Typeface.BOLD)
             it.setPadding(0, 0, 0, dp(8))
         }
 
-        /* ── Unlock date ── */
         val expiry = SimpleDateFormat("MMM d 'at' h:mm a", Locale.getDefault()).format(Date(endTime))
         root += textView("Unlocks $expiry", 14f, "#94A3B8").also {
             it.setPadding(0, 0, 0, dp(32))
         }
 
-        /* ── Divider ── */
         root += View(this).also { v ->
             v.setBackgroundColor(Color.parseColor("#1E293B"))
             v.layoutParams = LinearLayout.LayoutParams(
@@ -623,13 +572,11 @@ class LockOverlayActivity : Activity() {
             ).apply { setMargins(0, 0, 0, dp(32)) }
         }
 
-        /* ── Motivational ── */
         root += textView("Stay strong! You chose this. \\uD83D\\uDCAA", 18f, "#A78BFA").also {
             it.typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
             it.setPadding(0, 0, 0, dp(40))
         }
 
-        /* ── Countdown label ── */
         val countdownLabel = textView("Redirecting in 3s\\u2026", 13f, "#475569")
         root += countdownLabel
 
@@ -684,9 +631,6 @@ class LockOverlayActivity : Activity() {
 
       /* ════════════════════════════════════════════════
          AppBlockerAccessibilityService.kt
-         Monitors foreground app, launches overlay on
-         locked app, starts persistent notification,
-         and shows tamper alert when disabled.
       ════════════════════════════════════════════════ */
       fs.writeFileSync(path.join(kotlinDir, "AppBlockerAccessibilityService.kt"),
 `package ${PACKAGE_NAME}
@@ -694,16 +638,12 @@ class LockOverlayActivity : Activity() {
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Intent
-import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 
 /**
  * Core enforcement service.
- *
- * - Monitors TYPE_WINDOW_STATE_CHANGED events.
- * - When a locked app is detected, launches LockOverlayActivity.
- * - Manages the persistent "FocusLock Active" foreground notification.
- * - On destroy (tamper): shows a persistent alert notification.
+ * Monitors foreground app changes and launches the lock overlay when a locked
+ * app is detected. Also manages the persistent notification and tamper alerts.
  */
 class AppBlockerAccessibilityService : AccessibilityService() {
 
@@ -744,10 +684,7 @@ class AppBlockerAccessibilityService : AccessibilityService() {
             FocusLockNotificationService.start(applicationContext)
         }
 
-        // Clear any stale tamper alert
         FocusLockNotificationService.cancelTamperNotification(applicationContext)
-
-        Log.i(TAG, "AppBlockerAccessibilityService connected — monitoring active")
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -766,9 +703,7 @@ class AppBlockerAccessibilityService : AccessibilityService() {
         lastBlockedTime = now
 
         val appName = repo.getAppName(pkg)
-        Log.i(TAG, "Blocking $appName ($pkg) locked until $endTime")
 
-        // Launch full-screen overlay
         startActivity(Intent(applicationContext, LockOverlayActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                     Intent.FLAG_ACTIVITY_SINGLE_TOP or
@@ -779,13 +714,10 @@ class AppBlockerAccessibilityService : AccessibilityService() {
         })
     }
 
-    override fun onInterrupt() {
-        Log.w(TAG, "AppBlockerAccessibilityService interrupted")
-    }
+    override fun onInterrupt() {}
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.w(TAG, "AppBlockerAccessibilityService destroyed")
 
         if (::repo.isInitialized && repo.hasActiveLocks()) {
             FocusLockNotificationService.showTamperNotification(
@@ -795,16 +727,11 @@ class AppBlockerAccessibilityService : AccessibilityService() {
             )
         }
     }
-
-    companion object { private const val TAG = "FocusLockA11y" }
 }
 `);
 
       /* ════════════════════════════════════════════════
          BootReceiver.kt
-         After reboot: restores the persistent
-         notification so the user knows protection
-         is still active.
       ════════════════════════════════════════════════ */
       fs.writeFileSync(path.join(kotlinDir, "BootReceiver.kt"),
 `package ${PACKAGE_NAME}
@@ -812,14 +739,11 @@ class AppBlockerAccessibilityService : AccessibilityService() {
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 
 /**
  * Triggered on device boot.
- *
- * The AccessibilityService is re-bound automatically by Android if the user
- * had it enabled before reboot, so no manual restart is needed. This receiver
- * restores the persistent foreground notification and logs the recovery.
+ * Restores the persistent foreground notification if locks are still active.
+ * The AccessibilityService is re-bound automatically by Android.
  */
 class BootReceiver : BroadcastReceiver() {
 
@@ -828,24 +752,14 @@ class BootReceiver : BroadcastReceiver() {
         if (action != Intent.ACTION_BOOT_COMPLETED &&
             action != "android.intent.action.QUICKBOOT_POWERON") return
 
-        Log.i(TAG, "Boot/quickboot completed — checking FocusLock state")
-
         val repo   = LockRepository(context)
         val active = repo.getActiveLocks()
 
-        if (active.isEmpty()) {
-            Log.i(TAG, "No active locks — nothing to restore")
-            return
-        }
-
-        val appCount = repo.lockedAppCount()
-        Log.i(TAG, "Restoring protection: $appCount app(s) locked")
+        if (active.isEmpty()) return
 
         FocusLockNotificationService.createChannels(context)
         FocusLockNotificationService.start(context)
     }
-
-    companion object { private const val TAG = "FocusLockBoot" }
 }
 `);
 

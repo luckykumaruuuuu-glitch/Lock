@@ -12,12 +12,14 @@ import React, { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { FirebaseSyncProvider } from "@/context/FirebaseSyncContext";
 import { LockProvider } from "@/context/LockContext";
 import { useColors } from "@/hooks/useColors";
 import { usePermissionStatus } from "@/hooks/usePermissionStatus";
+import { ONBOARDING_DONE_KEY } from "./onboarding";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,14 +37,23 @@ function SetupGuard({ children }: { children: React.ReactNode }) {
     if (loading || hasRedirected.current) return;
 
     const inSetup = segments[0] === "setup";
+    const inOnboarding = segments[0] === "onboarding";
+    const inTabs = segments[0] === "(tabs)";
 
-    if (setupComplete === false && !inSetup) {
-      hasRedirected.current = true;
-      router.replace("/setup");
-    } else if (setupComplete === true && inSetup) {
-      hasRedirected.current = true;
-      router.replace("/(tabs)");
-    }
+    (async () => {
+      const onboardingDone = await AsyncStorage.getItem(ONBOARDING_DONE_KEY);
+
+      if (!onboardingDone && !inOnboarding) {
+        hasRedirected.current = true;
+        router.replace("/onboarding");
+      } else if (onboardingDone && setupComplete === false && !inSetup) {
+        hasRedirected.current = true;
+        router.replace("/setup");
+      } else if (onboardingDone && setupComplete === true && inSetup) {
+        hasRedirected.current = true;
+        router.replace("/(tabs)");
+      }
+    })();
   }, [loading, setupComplete, segments]);
 
   return <>{children}</>;
@@ -69,6 +80,10 @@ function RootLayoutNav() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="onboarding"
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
         <Stack.Screen
           name="setup"
           options={{
@@ -119,7 +134,6 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <LockProvider>
-            {/* FirebaseSyncProvider must wrap everything that needs Firebase data */}
             <FirebaseSyncProvider>
               <GestureHandlerRootView>
                 <KeyboardProvider>

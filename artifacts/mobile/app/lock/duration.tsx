@@ -28,13 +28,16 @@ const DURATION_OPTIONS: DurationOption[] = [
   { id: "1d", label: "1 Day", sublabel: "24 hours of focus", icon: "sun" },
   { id: "7d", label: "7 Days", sublabel: "One full week", icon: "calendar" },
   { id: "30d", label: "30 Days", sublabel: "Build a new habit", icon: "award" },
-  { id: "custom", label: "Custom", sublabel: "Set your own duration", icon: "sliders" },
+  { id: "custom", label: "Custom", sublabel: "Set your own duration (up to 365 days)", icon: "sliders" },
 ];
+
+const MAX_DAYS = 365;
 
 export default function DurationScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { selection, setDurationPreset, setCustomDays, setCustomHours } = useLock();
+  const { selection, setDurationPreset, setCustomDays, setCustomHours } =
+    useLock();
 
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -48,10 +51,28 @@ export default function DurationScreen() {
     router.push("/lock/confirm");
   }
 
+  function handleCustomDays(val: string) {
+    const n = parseInt(val) || 0;
+    if (n > MAX_DAYS) {
+      setCustomDays(String(MAX_DAYS));
+    } else {
+      setCustomDays(val);
+    }
+  }
+
+  function handleCustomHours(val: string) {
+    const n = parseInt(val) || 0;
+    if (n > 23) {
+      setCustomHours("23");
+    } else {
+      setCustomHours(val);
+    }
+  }
+
   function getDurationSummary(): string {
     if (selection.durationPreset === "custom") {
-      const d = parseInt(selection.customDays) || 0;
-      const h = parseInt(selection.customHours) || 0;
+      const d = Math.min(parseInt(selection.customDays) || 0, MAX_DAYS);
+      const h = Math.min(parseInt(selection.customHours) || 0, 23);
       if (d === 0 && h === 0) return "No duration set";
       const parts = [];
       if (d > 0) parts.push(`${d} day${d !== 1 ? "s" : ""}`);
@@ -62,10 +83,13 @@ export default function DurationScreen() {
     return opt?.label ?? "";
   }
 
+  const customDays = parseInt(selection.customDays) || 0;
+  const customHours = parseInt(selection.customHours) || 0;
+
   const canProceed =
     selection.durationPreset !== "custom" ||
-    parseInt(selection.customDays) > 0 ||
-    parseInt(selection.customHours) > 0;
+    customDays > 0 ||
+    customHours > 0;
 
   return (
     <KeyboardAvoidingView
@@ -125,9 +149,7 @@ export default function DurationScreen() {
                       styles.optionLabel,
                       {
                         color: selected ? colors.primary : colors.foreground,
-                        fontFamily: selected
-                          ? "Inter_700Bold"
-                          : "Inter_500Medium",
+                        fontFamily: selected ? "Inter_700Bold" : "Inter_500Medium",
                       },
                     ]}
                   >
@@ -185,16 +207,25 @@ export default function DurationScreen() {
                   ]}
                   keyboardType="number-pad"
                   value={selection.customDays}
-                  onChangeText={setCustomDays}
+                  onChangeText={handleCustomDays}
                   maxLength={3}
                   placeholder="0"
                   placeholderTextColor={colors.mutedForeground}
                 />
-                <Text style={[styles.customInputLabel, { color: colors.mutedForeground }]}>
+                <Text
+                  style={[
+                    styles.customInputLabel,
+                    { color: colors.mutedForeground },
+                  ]}
+                >
                   days
                 </Text>
               </View>
-              <Text style={[styles.customSep, { color: colors.mutedForeground }]}>+</Text>
+              <Text
+                style={[styles.customSep, { color: colors.mutedForeground }]}
+              >
+                +
+              </Text>
               <View style={styles.customInputGroup}>
                 <TextInput
                   style={[
@@ -207,23 +238,39 @@ export default function DurationScreen() {
                   ]}
                   keyboardType="number-pad"
                   value={selection.customHours}
-                  onChangeText={setCustomHours}
+                  onChangeText={handleCustomHours}
                   maxLength={2}
                   placeholder="0"
                   placeholderTextColor={colors.mutedForeground}
                 />
-                <Text style={[styles.customInputLabel, { color: colors.mutedForeground }]}>
-                  hours
+                <Text
+                  style={[
+                    styles.customInputLabel,
+                    { color: colors.mutedForeground },
+                  ]}
+                >
+                  hours (0–23)
                 </Text>
               </View>
             </View>
+            <Text
+              style={[styles.maxNote, { color: colors.mutedForeground }]}
+            >
+              Maximum: {MAX_DAYS} days
+            </Text>
           </View>
         )}
 
-        <View style={[styles.summaryBanner, { backgroundColor: colors.primary + "10" }]}>
+        <View
+          style={[
+            styles.summaryBanner,
+            { backgroundColor: colors.primary + "10" },
+          ]}
+        >
           <Feather name="clock" size={14} color={colors.primary} />
           <Text style={[styles.summaryText, { color: colors.primary }]}>
-            Lock duration: <Text style={styles.summaryBold}>{getDurationSummary()}</Text>
+            Lock duration:{" "}
+            <Text style={styles.summaryBold}>{getDurationSummary()}</Text>
           </Text>
         </View>
 
@@ -346,13 +393,20 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
   },
   customInputLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Inter_400Regular",
+    textAlign: "center",
   },
   customSep: {
     fontSize: 20,
     fontFamily: "Inter_400Regular",
     marginTop: -16,
+  },
+  maxNote: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    marginTop: -4,
   },
   summaryBanner: {
     flexDirection: "row",

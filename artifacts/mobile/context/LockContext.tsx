@@ -1,9 +1,15 @@
 import React, { createContext, useContext, useState } from "react";
-import { getDurationLabel, getDurationMs, LockedAppEntry, LockEntry, saveLock } from "@/hooks/useLockStorage";
+import {
+  getDurationLabel,
+  getDurationMs,
+  getActiveLocks,
+  LockedAppEntry,
+  LockEntry,
+  saveLock,
+} from "@/hooks/useLockStorage";
 
 /* ───────────────────────────────────────────────
-   App catalogue (dummy — replace with real
-   installed-apps query in a future milestone)
+   App catalogue
 ─────────────────────────────────────────────── */
 export interface AppItem {
   id: string;
@@ -24,6 +30,11 @@ export interface LockSelection {
   customHours: string;
 }
 
+export interface LockCreationResult {
+  entry: LockEntry;
+  duplicatesSkipped: string[];
+}
+
 interface LockContextType {
   selection: LockSelection;
   setSelectedApps: (apps: AppItem[]) => void;
@@ -31,11 +42,7 @@ interface LockContextType {
   setCustomDays: (v: string) => void;
   setCustomHours: (v: string) => void;
   resetSelection: () => void;
-  /**
-   * Persists the current selection to local storage and returns the
-   * created LockEntry so the caller can also sync it to Firebase.
-   */
-  confirmLock: () => Promise<LockEntry | null>;
+  confirmLock: () => Promise<LockCreationResult | null>;
 }
 
 const defaultSelection: LockSelection = {
@@ -72,7 +79,7 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
 
   const resetSelection = () => setSelection(defaultSelection);
 
-  const confirmLock = async (): Promise<LockEntry | null> => {
+  const confirmLock = async (): Promise<LockCreationResult | null> => {
     const { selectedApps, durationPreset, customDays, customHours } = selection;
     if (selectedApps.length === 0) return null;
 
@@ -80,7 +87,29 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
     const durationMs = getDurationMs(durationPreset, customDays, customHours);
     const endTime = now + durationMs;
 
-    const apps: LockedAppEntry[] = selectedApps.map((a) => ({
+    /* ── Duplicate detection: skip apps already locked ── */
+    const activeLocks = await getActiveLocks();
+    const alreadyLockedPkgs = new Set<string>(
+      activeLocks.flatMap((l) => l.apps.map((a) => a.packageName))
+    );
+
+    const duplicatesSkipped: string[] = [];
+    const freshApps = selectedApps.filter((a) => {
+      if (alreadyLockedPkgs.has(a.packageName)) {
+        duplicatesSkipped.push(a.name);
+        return false;
+      }
+      return true;
+    });
+
+    if (freshApps.length === 0) {
+      return {
+        entry: {} as LockEntry,
+        duplicatesSkipped,
+      };
+    }
+
+    const apps: LockedAppEntry[] = freshApps.map((a) => ({
       id: a.id,
       name: a.name,
       iconName: a.iconName,
@@ -98,7 +127,7 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
     };
 
     await saveLock(entry);
-    return entry;
+    return { entry, duplicatesSkipped };
   };
 
   return (

@@ -1,7 +1,7 @@
 import { FontAwesome5, Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
   Platform,
@@ -15,52 +15,91 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { DUMMY_APPS, AppItem, useLock } from "@/context/LockContext";
 import { useColors } from "@/hooks/useColors";
+import { getActiveLocks } from "@/hooks/useLockStorage";
 
 function AppRow({
   app,
   selected,
+  alreadyLocked,
   onToggle,
   colors,
 }: {
   app: AppItem;
   selected: boolean;
+  alreadyLocked: boolean;
   onToggle: () => void;
   colors: ReturnType<typeof useColors>;
 }) {
+  const disabled = alreadyLocked;
+
   return (
     <Pressable
-      onPress={onToggle}
+      onPress={disabled ? undefined : onToggle}
       style={({ pressed }) => [
         styles.appRow,
         {
-          backgroundColor: selected
+          backgroundColor: alreadyLocked
+            ? colors.muted
+            : selected
             ? colors.primary + "10"
             : colors.card,
-          borderColor: selected ? colors.primary + "40" : colors.border,
-          opacity: pressed ? 0.8 : 1,
+          borderColor: alreadyLocked
+            ? colors.border
+            : selected
+            ? colors.primary + "40"
+            : colors.border,
+          opacity: pressed && !disabled ? 0.8 : 1,
         },
       ]}
     >
-      <View style={[styles.appIconBg, { backgroundColor: app.iconColor + "18" }]}>
-        <FontAwesome5 name={app.iconName as any} size={18} color={app.iconColor} />
-      </View>
-      <View style={styles.appInfo}>
-        <Text style={[styles.appName, { color: colors.foreground }]}>{app.name}</Text>
-        <Text style={[styles.appCategory, { color: colors.mutedForeground }]}>
-          {app.category}
-        </Text>
-      </View>
       <View
         style={[
-          styles.checkbox,
+          styles.appIconBg,
           {
-            backgroundColor: selected ? colors.primary : "transparent",
-            borderColor: selected ? colors.primary : colors.border,
+            backgroundColor: alreadyLocked
+              ? colors.border
+              : app.iconColor + "18",
           },
         ]}
       >
-        {selected && <Feather name="check" size={14} color="#fff" />}
+        <FontAwesome5
+          name={app.iconName as any}
+          size={18}
+          color={alreadyLocked ? colors.mutedForeground : app.iconColor}
+        />
       </View>
+      <View style={styles.appInfo}>
+        <Text
+          style={[
+            styles.appName,
+            {
+              color: alreadyLocked ? colors.mutedForeground : colors.foreground,
+            },
+          ]}
+        >
+          {app.name}
+        </Text>
+        <Text style={[styles.appCategory, { color: colors.mutedForeground }]}>
+          {alreadyLocked ? "Already locked" : app.category}
+        </Text>
+      </View>
+      {alreadyLocked ? (
+        <View style={[styles.lockedBadge, { backgroundColor: colors.border }]}>
+          <Feather name="lock" size={12} color={colors.mutedForeground} />
+        </View>
+      ) : (
+        <View
+          style={[
+            styles.checkbox,
+            {
+              backgroundColor: selected ? colors.primary : "transparent",
+              borderColor: selected ? colors.primary : colors.border,
+            },
+          ]}
+        >
+          {selected && <Feather name="check" size={14} color="#fff" />}
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -70,8 +109,20 @@ export default function SelectAppsScreen() {
   const insets = useSafeAreaInsets();
   const { selection, setSelectedApps } = useLock();
   const [search, setSearch] = useState("");
+  const [alreadyLockedPkgs, setAlreadyLockedPkgs] = useState<Set<string>>(
+    new Set()
+  );
 
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+
+  useEffect(() => {
+    getActiveLocks().then((active) => {
+      const pkgs = new Set<string>(
+        active.flatMap((l) => l.apps.map((a) => a.packageName))
+      );
+      setAlreadyLockedPkgs(pkgs);
+    });
+  }, []);
 
   const filtered = DUMMY_APPS.filter((a) =>
     a.name.toLowerCase().includes(search.toLowerCase())
@@ -79,20 +130,28 @@ export default function SelectAppsScreen() {
 
   const selectedIds = new Set(selection.selectedApps.map((a) => a.id));
 
-  function toggle(app: AppItem) {
-    Haptics.selectionAsync();
-    if (selectedIds.has(app.id)) {
-      setSelectedApps(selection.selectedApps.filter((a) => a.id !== app.id));
-    } else {
-      setSelectedApps([...selection.selectedApps, app]);
-    }
-  }
+  const toggle = useCallback(
+    (app: AppItem) => {
+      if (alreadyLockedPkgs.has(app.packageName)) return;
+      Haptics.selectionAsync();
+      if (selectedIds.has(app.id)) {
+        setSelectedApps(selection.selectedApps.filter((a) => a.id !== app.id));
+      } else {
+        setSelectedApps([...selection.selectedApps, app]);
+      }
+    },
+    [alreadyLockedPkgs, selectedIds, selection.selectedApps, setSelectedApps]
+  );
 
   function handleNext() {
     if (selection.selectedApps.length === 0) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push("/lock/duration");
   }
+
+  const alreadyLockedCount = filtered.filter((a) =>
+    alreadyLockedPkgs.has(a.packageName)
+  ).length;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -118,11 +177,32 @@ export default function SelectAppsScreen() {
       </View>
 
       {selection.selectedApps.length > 0 && (
-        <View style={[styles.selectionBanner, { backgroundColor: colors.primary + "12" }]}>
+        <View
+          style={[
+            styles.selectionBanner,
+            { backgroundColor: colors.primary + "12" },
+          ]}
+        >
           <Feather name="check-circle" size={14} color={colors.primary} />
           <Text style={[styles.selectionText, { color: colors.primary }]}>
             {selection.selectedApps.length} app
             {selection.selectedApps.length !== 1 ? "s" : ""} selected
+          </Text>
+        </View>
+      )}
+
+      {alreadyLockedCount > 0 && (
+        <View
+          style={[
+            styles.infoBanner,
+            { backgroundColor: colors.muted, borderColor: colors.border },
+          ]}
+        >
+          <Feather name="info" size={13} color={colors.mutedForeground} />
+          <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
+            {alreadyLockedCount} app
+            {alreadyLockedCount !== 1 ? "s are" : " is"} already locked and
+            cannot be selected again.
           </Text>
         </View>
       )}
@@ -134,6 +214,7 @@ export default function SelectAppsScreen() {
           <AppRow
             app={item}
             selected={selectedIds.has(item.id)}
+            alreadyLocked={alreadyLockedPkgs.has(item.packageName)}
             onToggle={() => toggle(item)}
             colors={colors}
           />
@@ -168,9 +249,7 @@ export default function SelectAppsScreen() {
             },
           ]}
         >
-          <Text style={styles.nextButtonText}>
-            Next — Set Duration
-          </Text>
+          <Text style={styles.nextButtonText}>Next — Set Duration</Text>
           <Feather name="arrow-right" size={18} color="#fff" />
         </Pressable>
       </View>
@@ -202,7 +281,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     marginHorizontal: 16,
-    marginBottom: 8,
+    marginBottom: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
@@ -210,6 +289,23 @@ const styles = StyleSheet.create({
   selectionText: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
+  },
+  infoBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginHorizontal: 16,
+    marginBottom: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 18,
   },
   listContent: {
     paddingHorizontal: 16,
@@ -246,6 +342,13 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 7,
     borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  lockedBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
