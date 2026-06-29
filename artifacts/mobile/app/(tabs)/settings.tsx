@@ -368,7 +368,7 @@ export default function SettingsScreen() {
   const { t, currentLanguage } = useLanguage();
 
   const topPad    = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 + 84 : 84;
+  const bottomPad = Platform.OS === "web" ? 34 + 84 : 60 + insets.bottom;
 
   const currentLangName = LANGUAGES.find((l) => l.code === currentLanguage)?.name ?? "English";
 

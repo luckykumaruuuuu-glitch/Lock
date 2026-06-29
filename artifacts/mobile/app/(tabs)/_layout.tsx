@@ -2,6 +2,7 @@ import { Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import React, { useRef, useEffect } from "react";
 import { Animated, Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function AnimatedTabIcon({
   name,
@@ -38,7 +39,12 @@ function AnimatedTabIcon({
   );
 }
 
+const TAB_HEIGHT = 60;
+
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = Platform.OS === "web" ? 84 : TAB_HEIGHT + insets.bottom;
+
   return (
     <Tabs
       screenOptions={{
@@ -50,7 +56,8 @@ export default function TabLayout() {
           borderTopWidth: 0,
           elevation: 0,
           shadowOpacity: 0,
-          height: Platform.OS === "web" ? 84 : 70,
+          height: tabBarHeight,
+          paddingBottom: Platform.OS === "web" ? 0 : insets.bottom,
         },
         tabBarLabelStyle: {
           fontFamily: "Inter_500Medium",

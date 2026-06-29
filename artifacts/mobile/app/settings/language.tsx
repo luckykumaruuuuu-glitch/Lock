@@ -75,7 +75,7 @@ export default function LanguageScreen() {
   return (
     <GradientBackground>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: topPad + 16, paddingBottom: 120 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: topPad + 16, paddingBottom: bottomInset + 100 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Back button */}
