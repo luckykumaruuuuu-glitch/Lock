@@ -69,7 +69,7 @@ function LockCard({ item, index }: { item: ActiveLockDisplayItem; index: number 
       <GlassCard style={styles.lockCard}>
         <View style={styles.lockCardInner}>
           <View style={styles.lockIconBg}>
-            <FontAwesome5 name={item.app.iconName as any} size={22} color="#F5A94E" />
+            <FontAwesome5 name={item.app.iconName as any} size={22} color="#FFEBD4" />
           </View>
 
           <View style={styles.lockInfo}>
@@ -77,7 +77,7 @@ function LockCard({ item, index }: { item: ActiveLockDisplayItem; index: number 
             <Text style={styles.lockRemaining}>{remaining}</Text>
             <View style={styles.progressTrack}>
               <LinearGradient
-                colors={["#F5A94E", "#E07830"]}
+                colors={["#FFEBD4", "#FFCF96"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]}
@@ -113,7 +113,7 @@ function EmptyState() {
     <GlassCard style={styles.emptyCard} padding={32}>
       <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
         <View style={styles.emptyIconBox}>
-          <Feather name="unlock" size={32} color="#F5A94E" />
+          <Feather name="unlock" size={32} color="#FFEBD4" />
         </View>
       </Animated.View>
       <Text style={styles.emptyTitle}>{t("noActiveLocks")}</Text>
@@ -167,7 +167,7 @@ export default function HomeScreen() {
             <Text style={styles.appTitle}>{t("appTitle")}</Text>
           </View>
           <View style={styles.shieldBadge}>
-            <View style={[styles.shieldCircle, { backgroundColor: displayItems.length > 0 ? "#F5A94E" : "#2C2C2E" }]}>
+            <View style={[styles.shieldCircle, { backgroundColor: displayItems.length > 0 ? "#FFEBD4" : "#2C2C2E" }]}>
               <Feather name="shield" size={22} color={displayItems.length > 0 ? "#000000" : "rgba(255,255,255,0.25)"} />
             </View>
           </View>
@@ -175,7 +175,7 @@ export default function HomeScreen() {
 
         {/* Stats */}
         <View style={styles.statsRow}>
-          <StatCard value={locks.length} label={t("locks")} color="#F5A94E" />
+          <StatCard value={locks.length} label={t("locks")} color="#FFEBD4" />
           <StatCard value={displayItems.length} label={t("blocked")} color="#FF453A" />
           <StatCard value={avgDays > 0 ? `${avgDays}d` : "—"} label={t("avg")} color="#32D74B" />
         </View>
@@ -183,7 +183,7 @@ export default function HomeScreen() {
         {/* CTA */}
         <Pressable onPress={handleStartLock} style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}>
           <LinearGradient
-            colors={["#F5A94E", "#E07830"]}
+            colors={["#FFEBD4", "#FFCF96"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.ctaBtn}
@@ -195,7 +195,7 @@ export default function HomeScreen() {
 
         {/* Active locks section */}
         <View style={styles.sectionRow}>
-          <Feather name="lock" size={15} color="#F5A94E" />
+          <Feather name="lock" size={15} color="#FFEBD4" />
           <Text style={styles.sectionTitle}>{t("activeLocks")}</Text>
           {!loading && displayItems.length > 0 && (
             <View style={styles.countBadge}>
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
   greeting: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", marginBottom: 2 },
   appTitle: { fontSize: 30, fontFamily: "Inter_700Bold", color: "#FFFFFF", letterSpacing: -0.8 },
-  shieldBadge: { shadowColor: "#F5A94E", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 8 },
+  shieldBadge: { shadowColor: "#FFEBD4", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 8 },
   shieldCircle: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   statsRow: { flexDirection: "row", gap: 10 },
   statWrapper: { flex: 1 },
@@ -252,20 +252,20 @@ const styles = StyleSheet.create({
   ctaBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
     paddingVertical: 18, borderRadius: 20,
-    shadowColor: "#F5A94E", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 10,
+    shadowColor: "#FFEBD4", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 10,
   },
   ctaBtnText: { color: "#000000", fontSize: 17, fontFamily: "Inter_700Bold", letterSpacing: 0.2 },
   sectionRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
   sectionTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#FFFFFF", flex: 1 },
-  countBadge: { backgroundColor: "#F5A94E", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12, minWidth: 24, alignItems: "center" },
+  countBadge: { backgroundColor: "#FFEBD4", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12, minWidth: 24, alignItems: "center" },
   countText: { color: "#000000", fontSize: 12, fontFamily: "Inter_700Bold" },
   lockList: { gap: 10 },
   lockCard: {},
   lockCardInner: { flexDirection: "row", alignItems: "center", padding: 16, gap: 14 },
-  lockIconBg: { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(245,169,78,0.1)" },
+  lockIconBg: { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,203,142,0.12)" },
   lockInfo: { flex: 1, gap: 4 },
   lockAppName: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
-  lockRemaining: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#F5A94E" },
+  lockRemaining: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#FFEBD4" },
   progressTrack: { height: 4, borderRadius: 2, backgroundColor: "#2C2C2E", overflow: "hidden", marginVertical: 4 },
   progressFill: { height: "100%", borderRadius: 2 },
   lockExpiry: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#8E8E93" },
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   loadingCard: { alignItems: "center" },
   loadingText: { color: "#8E8E93", fontSize: 14, fontFamily: "Inter_400Regular" },
   emptyCard: { alignItems: "center", gap: 12 },
-  emptyIconBox: { width: 72, height: 72, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(245,169,78,0.1)" },
+  emptyIconBox: { width: 72, height: 72, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,203,142,0.12)" },
   emptyTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
   emptyBody: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center", lineHeight: 22 },
   warningCard: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 4 },

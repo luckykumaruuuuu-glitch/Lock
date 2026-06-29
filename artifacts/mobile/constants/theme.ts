@@ -8,26 +8,26 @@ const theme = {
   secondaryText:    "#8E8E93",
   tertiaryText:     "#48484A",
 
-  accent:           "#F5A94E",
-  accentSecondary:  "#E07830",
-  accentBg:         "rgba(245,169,78,0.1)",
-  accentBorder:     "rgba(245,169,78,0.25)",
+  accent:           "#FFEBD4",
+  accentSecondary:  "#FFCF96",
+  accentBg:         "rgba(255,207,150,0.12)",
+  accentBorder:     "rgba(255,207,150,0.28)",
 
-  buttonBackground: "#F5A94E",
+  buttonBackground: "#FFCF96",
   buttonText:       "#000000",
 
-  radioActive:      "#F5A94E",
+  radioActive:      "#FFCF96",
   radioInactive:    "#3A3A3C",
 
   success:          "#32D74B",
   error:            "#FF453A",
-  warning:          "#E07830",
+  warning:          "#FFCF96",
 
   cardBorder:       "rgba(255,255,255,0.1)",
   overlay:          "rgba(0,0,0,0.82)",
   footerBg:         "rgba(0,0,0,0.95)",
 
-  gradientPrimary:  ["#F5A94E", "#E07830"] as const,
+  gradientPrimary:  ["#FFEBD4", "#FFCF96"] as const,
   gradientDisabled: ["#2C2C2E", "#1C1C1E"] as const,
 };
 

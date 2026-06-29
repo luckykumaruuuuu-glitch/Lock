@@ -173,7 +173,7 @@ function SoundToggleRow({
   const dotPos = toggleAnim.interpolate({ inputRange: [0, 1], outputRange: [2, 20] });
   const trackColor = toggleAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ["#3A3A3C", "#F5A94E"],
+    outputRange: ["#3A3A3C", "#FFEBD4"],
   });
 
   return (
@@ -333,7 +333,7 @@ const modalSt = StyleSheet.create({
   sectionNumber: {
     fontSize: 14,
     fontFamily: "Inter_700Bold",
-    color: "#F5A94E",
+    color: "#FFEBD4",
     lineHeight: 22,
     minWidth: 24,
   },
@@ -341,7 +341,7 @@ const modalSt = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontFamily: "Inter_700Bold",
-    color: "#F5A94E",
+    color: "#FFEBD4",
     lineHeight: 22,
     letterSpacing: -0.2,
   },
@@ -441,7 +441,7 @@ export default function SettingsScreen() {
         <GlassCard padding={0}>
           <View style={styles.aboutRow}>
             <View style={styles.aboutIconBox}>
-              <Feather name="shield" size={22} color="#F5A94E" />
+              <Feather name="shield" size={22} color="#FFEBD4" />
             </View>
             <View>
               <Text style={styles.aboutName}>FocusLock</Text>
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: "rgba(245,169,78,0.1)",
+    backgroundColor: "rgba(255,203,142,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
