@@ -1,11 +1,12 @@
-import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import React, { useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
+  Image,
   Platform,
   Pressable,
   StyleSheet,
@@ -24,7 +25,7 @@ export const ONBOARDING_DONE_KEY = "focuslock_onboarding_done";
 
 const SLIDES = [
   {
-    icon: "shield" as const,
+    gif: require("../assets/images/duck-screen1.gif"),
     gradient: ["#FFBF80", "#FFA660"] as const,
     glowColor: "#FFBF80",
     title: "Take Back\nControl",
@@ -32,7 +33,7 @@ const SLIDES = [
     accent: "#FFBF80",
   },
   {
-    icon: "lock" as const,
+    gif: require("../assets/images/duck-screen2.gif"),
     gradient: ["#FF6B35", "#E85A20"] as const,
     glowColor: "#FF6B35",
     title: "Unbreakable\nLocks",
@@ -40,7 +41,7 @@ const SLIDES = [
     accent: "#FF6B35",
   },
   {
-    icon: "clock" as const,
+    gif: require("../assets/images/duck-screen3.gif"),
     gradient: ["#32D74B", "#30C244"] as const,
     glowColor: "#32D74B",
     title: "Server-Verified\nTime",
@@ -48,7 +49,7 @@ const SLIDES = [
     accent: "#32D74B",
   },
   {
-    icon: "alert-triangle" as const,
+    gif: require("../assets/images/duck-screen4.gif"),
     gradient: ["#FFBF80", "#FFA660"] as const,
     glowColor: "#FFBF80",
     title: "True\nEnforcement",
@@ -101,21 +102,18 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.root}>
       <View style={[styles.container, { paddingTop: topPad + 20 }]}>
-        {/* Icon with glow */}
+        {/* GIF Animation */}
         <Animated.View
           style={[
-            styles.iconWrap,
-            { transform: [{ scale: iconScale }], shadowColor: slide.glowColor },
+            styles.gifWrap,
+            { transform: [{ scale: iconScale }] },
           ]}
         >
-          <LinearGradient
-            colors={slide.gradient}
-            style={styles.iconCircle}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Feather name={slide.icon} size={60} color="#000000" />
-          </LinearGradient>
+          <Image
+            source={slide.gif}
+            style={styles.gifImage}
+            resizeMode="contain"
+          />
         </Animated.View>
 
         {/* Slide card */}
@@ -185,18 +183,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 28,
   },
-  iconWrap: {
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
-    shadowRadius: 30,
-    elevation: 20,
-  },
-  iconCircle: {
+  gifWrap: {
     width: 140,
     height: 140,
-    borderRadius: 40,
     alignItems: "center",
     justifyContent: "center",
+  },
+  gifImage: {
+    width: 140,
+    height: 140,
   },
   slideCard: { width: "100%", maxWidth: 380 },
   slideTitle: {
