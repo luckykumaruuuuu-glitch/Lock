@@ -33,6 +33,7 @@ function AppIcon({ app, dimmed }: { app: AppItem; dimmed: boolean }) {
     <Image
       source={{ uri: app.iconUrl }}
       style={[styles.appIcon, { opacity: dimmed ? 0.3 : 1 }]}
+      resizeMode="contain"
       onError={() => setFailed(true)}
     />
   );
@@ -186,8 +187,8 @@ const styles = StyleSheet.create({
   infoText: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   list: { paddingHorizontal: 16, paddingBottom: 8 },
   appRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  appIcon: { width: 52, height: 52, borderRadius: 12 },
-  iconFallback: { width: 52, height: 52, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  appIcon: { width: 56, height: 56, borderRadius: 14 },
+  iconFallback: { width: 56, height: 56, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   appInfo: { flex: 1 },
   appName: { fontSize: 15, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
   appCategory: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
