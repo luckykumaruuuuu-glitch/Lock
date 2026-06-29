@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -6,7 +7,6 @@ import React, { useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
-  Image,
   Platform,
   Pressable,
   StyleSheet,
@@ -112,7 +112,7 @@ export default function OnboardingScreen() {
           <Image
             source={slide.gif}
             style={styles.gifImage}
-            resizeMode="contain"
+            contentFit="contain"
           />
         </Animated.View>
 
