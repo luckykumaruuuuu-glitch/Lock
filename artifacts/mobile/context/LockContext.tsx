@@ -158,7 +158,7 @@ export function useLock() {
 ─────────────────────────────────────────────── */
 export const DUMMY_APPS: AppItem[] = [
   { id: "instagram", name: "Instagram", category: "Social", iconName: "instagram", iconFamily: "FontAwesome5", iconColor: "#E1306C", packageName: "com.instagram.android", domain: "instagram.com", iconUrl: "" },
-  { id: "tiktok", name: "TikTok", category: "Social", iconName: "tiktok", iconFamily: "FontAwesome5", iconColor: "#EE1D52", packageName: "com.zhiliaoapp.musically", domain: "tiktok.com", iconUrl: "" },
+  { id: "tiktok", name: "TikTok", category: "Social", iconName: "tiktok", iconFamily: "FontAwesome5", iconColor: "#000000", packageName: "com.zhiliaoapp.musically", domain: "tiktok.com", iconUrl: "" },
   { id: "twitter", name: "Twitter / X", category: "Social", iconName: "twitter", iconFamily: "FontAwesome5", iconColor: "#1DA1F2", packageName: "com.twitter.android", domain: "twitter.com", iconUrl: "" },
   { id: "facebook", name: "Facebook", category: "Social", iconName: "facebook", iconFamily: "FontAwesome5", iconColor: "#1877F2", packageName: "com.facebook.katana", domain: "facebook.com", iconUrl: "" },
   { id: "youtube", name: "YouTube", category: "Video", iconName: "youtube", iconFamily: "FontAwesome5", iconColor: "#FF0000", packageName: "com.google.android.youtube", domain: "youtube.com", iconUrl: "" },
