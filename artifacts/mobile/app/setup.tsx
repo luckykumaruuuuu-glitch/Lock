@@ -3,7 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as IntentLauncher from "expo-intent-launcher";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
@@ -11,6 +11,7 @@ import {
   AppStateStatus,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -65,400 +66,338 @@ async function openBattery() {
   }
 }
 
-interface Step {
+interface PermItem {
   id: PermissionId;
-  title: string;
-  reason: string;
-  icon: React.ComponentProps<typeof Feather>["name"];
-  color: string;
+  label: string;
+  whyNeeded: string;
   openSettings: () => Promise<void>;
 }
 
-const STEPS: Step[] = [
-  {
-    id: "usageAccess",
-    title: "Usage Access",
-    reason: "App usage track karne ke liye",
-    icon: "activity",
-    color: "#FFD60A",
-    openSettings: openUsageAccess,
-  },
-  {
-    id: "deviceAdmin",
-    title: "Device Admin",
-    reason: "Uninstall block karne ke liye",
-    icon: "shield",
-    color: "#FF6B35",
-    openSettings: openDeviceAdmin,
-  },
-  {
-    id: "overlay",
-    title: "Display Over Apps",
-    reason: "Block screen dikhane ke liye",
-    icon: "layers",
-    color: "#A855F7",
-    openSettings: openOverlay,
-  },
-  {
-    id: "notification",
-    title: "Notifications",
-    reason: "Reminders ke liye",
-    icon: "bell",
-    color: "#38BDF8",
-    openSettings: openNotification,
-  },
-  {
-    id: "battery",
-    title: "Battery Optimization",
-    reason: "Background mein chalne ke liye",
-    icon: "zap",
-    color: "#32D74B",
-    openSettings: openBattery,
-  },
+const PERMS: PermItem[] = [
+  { id: "usageAccess",  label: "Usage Access",        whyNeeded: "App usage track karne ke liye — FocusLock ko pata chal sake kaunsa app open hai.",         openSettings: openUsageAccess },
+  { id: "deviceAdmin",  label: "Device Admin",         whyNeeded: "Uninstall block karne ke liye — lock active hone par app delete nahi ho sakti.",            openSettings: openDeviceAdmin },
+  { id: "overlay",      label: "Display Over Apps",    whyNeeded: "Block screen dikhane ke liye — locked app ke upar FocusLock ka screen aayega.",             openSettings: openOverlay },
+  { id: "notification", label: "Notifications",        whyNeeded: "Reminders ke liye — lock expire hone par aur session updates ke liye notifications aayenge.", openSettings: openNotification },
+  { id: "battery",      label: "Battery Optimization", whyNeeded: "Background mein chalne ke liye — Android app ko band na kare jab screen off ho.",           openSettings: openBattery },
 ];
 
 export default function SetupScreen() {
   const insets = useSafeAreaInsets();
   const { permissions, markOpened, markGranted, completeSetup } = usePermissionStatus();
 
-  const [currentStep, setCurrentStep] = useState(0);
-  const [openedSettings, setOpenedSettings] = useState(false);
-  const [returnedFromSettings, setReturnedFromSettings] = useState(false);
-  const [showTick, setShowTick] = useState(false);
-  const [advancing, setAdvancing] = useState(false);
+  const [whyOpen, setWhyOpen]   = useState(false);
+  const [opening, setOpening]   = useState<PermissionId | null>(null);
+  const whyHeight               = useRef(new Animated.Value(0)).current;
+  const continueAnim            = useRef(new Animated.Value(0)).current;
 
-  const slideX    = useRef(new Animated.Value(0)).current;
-  const fadeAnim  = useRef(new Animated.Value(1)).current;
-  const tickScale = useRef(new Animated.Value(0)).current;
-  const iconScale = useRef(new Animated.Value(0.8)).current;
-  const iconFade  = useRef(new Animated.Value(0)).current;
+  const appStateRef   = useRef<AppStateStatus>(AppState.currentState);
+  const lastOpenedRef = useRef<PermissionId | null>(null);
 
-  const appStateRef    = useRef<AppStateStatus>(AppState.currentState);
-  const lastOpenedRef  = useRef(false);
-
-  const step    = STEPS[currentStep];
-  const granted = permissions[step.id]?.granted ?? false;
+  const grantedCount = PERMS.filter(p => permissions[p.id]?.granted).length;
+  const allGranted   = grantedCount === PERMS.length;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.spring(iconScale, { toValue: 1, useNativeDriver: true, tension: 180, friction: 10 }),
-      Animated.timing(iconFade, { toValue: 1, duration: 300, useNativeDriver: true }),
-    ]).start();
-  }, [currentStep]);
+    Animated.spring(continueAnim, {
+      toValue: allGranted ? 1 : 0,
+      useNativeDriver: true,
+      tension: 180,
+      friction: 10,
+    }).start();
+  }, [allGranted]);
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next: AppStateStatus) => {
       if (appStateRef.current !== "active" && next === "active" && lastOpenedRef.current) {
-        setReturnedFromSettings(true);
-        lastOpenedRef.current = false;
+        const id = lastOpenedRef.current;
+        lastOpenedRef.current = null;
+        markGranted(id, true);
       }
       appStateRef.current = next;
     });
     return () => sub.remove();
-  }, []);
+  }, [markGranted]);
 
-  useEffect(() => {
-    if (granted && !advancing) {
-      setShowTick(true);
-      setAdvancing(true);
-      Animated.spring(tickScale, { toValue: 1, useNativeDriver: true, tension: 200, friction: 7 }).start();
-      setTimeout(() => goNext(), 1200);
-    }
-  }, [granted]);
+  function toggleWhy() {
+    const isOpen = !whyOpen;
+    setWhyOpen(isOpen);
+    Animated.spring(whyHeight, {
+      toValue: isOpen ? 1 : 0,
+      useNativeDriver: false,
+      tension: 180,
+      friction: 14,
+    }).start();
+  }
 
-  const goNext = useCallback(() => {
-    Animated.parallel([
-      Animated.timing(slideX, { toValue: -420, duration: 260, useNativeDriver: true }),
-      Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
-    ]).start(() => {
-      const nextIdx = currentStep + 1;
-      if (nextIdx >= STEPS.length) {
-        completeSetup().then(() => router.replace("/(tabs)"));
-        return;
-      }
-      setCurrentStep(nextIdx);
-      setOpenedSettings(false);
-      setReturnedFromSettings(false);
-      setShowTick(false);
-      setAdvancing(false);
-      tickScale.setValue(0);
-      iconScale.setValue(0.8);
-      iconFade.setValue(0);
-      slideX.setValue(420);
-      fadeAnim.setValue(1);
-      Animated.spring(slideX, { toValue: 0, useNativeDriver: true, tension: 200, friction: 14 }).start();
-    });
-  }, [currentStep, slideX, fadeAnim, tickScale, iconScale, iconFade, completeSetup]);
-
-  async function handleAllow() {
-    lastOpenedRef.current = true;
-    setReturnedFromSettings(false);
-    setOpenedSettings(true);
-    await markOpened(step.id);
+  async function handleAllow(perm: PermItem) {
+    setOpening(perm.id);
+    lastOpenedRef.current = perm.id;
+    await markOpened(perm.id);
 
     if (Platform.OS !== "android") {
       Alert.alert(
         "Android Permission",
-        "This permission is only available on Android. Tap 'Mark Enabled' to continue.",
+        perm.whyNeeded,
         [
-          { text: "Mark Enabled", onPress: () => markGranted(step.id, true) },
-          { text: "Skip", style: "cancel", onPress: () => setReturnedFromSettings(true) },
+          { text: "Mark as Granted", onPress: () => markGranted(perm.id, true) },
+          { text: "Cancel", style: "cancel", onPress: () => { lastOpenedRef.current = null; } },
         ]
       );
+      setOpening(null);
       return;
     }
-    await step.openSettings();
+
+    try { await perm.openSettings(); }
+    finally { setOpening(null); }
   }
 
-  function handleConfirmEnabled() {
-    markGranted(step.id, true);
+  async function handleContinue() {
+    await completeSetup();
+    router.replace("/(tabs)");
   }
 
-  const topPad = Platform.OS === "web" ? 44 : insets.top + 8;
-  const botPad = Platform.OS === "web" ? 40 : insets.bottom + 24;
+  const topPad = Platform.OS === "web" ? 52 : insets.top + 12;
+  const botPad = Platform.OS === "web" ? 40 : insets.bottom + 20;
+
+  const whyMaxHeight = whyHeight.interpolate({ inputRange: [0, 1], outputRange: [0, 260] });
+  const whyOpacity   = whyHeight.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0, 1] });
 
   return (
-    <View style={[styles.container, { paddingTop: topPad, paddingBottom: botPad }]}>
+    <View style={[styles.root, { paddingTop: topPad, paddingBottom: botPad }]}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Title ── */}
+        <Text style={styles.title}>Enable permissions{"\n"}to use FocusLock</Text>
+        <Text style={styles.subtitle}>{grantedCount} of {PERMS.length} granted</Text>
 
-      {/* ── Progress header ── */}
-      <View style={styles.progressHeader}>
-        <View style={styles.dotsRow}>
-          {STEPS.map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dot,
-                i < currentStep && styles.dotDone,
-                i === currentStep && styles.dotActive,
-              ]}
-            />
-          ))}
+        {/* ── Permissions list ── */}
+        <View style={styles.listCard}>
+          {PERMS.map((perm, i) => {
+            const granted   = permissions[perm.id]?.granted ?? false;
+            const isOpening = opening === perm.id;
+            const isLast    = i === PERMS.length - 1;
+
+            return (
+              <View key={perm.id}>
+                <View style={styles.row}>
+                  <Text style={[styles.permLabel, granted && styles.permLabelGranted]}>
+                    {perm.label}
+                  </Text>
+
+                  {granted ? (
+                    <View style={styles.tickCircle}>
+                      <Feather name="check" size={13} color="#636366" />
+                    </View>
+                  ) : (
+                    <Pressable
+                      onPress={() => handleAllow(perm)}
+                      disabled={isOpening}
+                      style={({ pressed }) => [{ opacity: isOpening || pressed ? 0.7 : 1 }]}
+                    >
+                      <LinearGradient
+                        colors={["#FFD60A", "#FF9F0A"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.allowBtn}
+                      >
+                        <Text style={styles.allowBtnText}>
+                          {isOpening ? "Opening…" : "Allow"}
+                        </Text>
+                      </LinearGradient>
+                    </Pressable>
+                  )}
+                </View>
+
+                {!isLast && <View style={styles.divider} />}
+              </View>
+            );
+          })}
         </View>
-        <Text style={styles.stepCount}>{currentStep + 1} / {STEPS.length}</Text>
-      </View>
 
-      {/* ── Main animated slide ── */}
-      <Animated.View style={[styles.slide, { transform: [{ translateX: slideX }], opacity: fadeAnim }]}>
+        {/* ── Why card ── */}
+        <Pressable onPress={toggleWhy} style={styles.whyCard}>
+          <Text style={styles.whyTitle}>Why should I give this permission?</Text>
+          <Animated.View style={{ transform: [{ rotate: whyHeight.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "90deg"] }) }] }}>
+            <Feather name="chevron-right" size={18} color="#636366" />
+          </Animated.View>
+        </Pressable>
 
-        {/* Icon */}
-        <Animated.View style={[styles.iconWrap, { transform: [{ scale: iconScale }], opacity: iconFade }]}>
-          <View style={[styles.iconRing, { borderColor: step.color + "40", shadowColor: step.color }]}>
-            <View style={[styles.iconBg, { backgroundColor: step.color + "18" }]}>
-              <Feather name={step.icon} size={72} color={step.color} />
-            </View>
+        <Animated.View style={{ maxHeight: whyMaxHeight, overflow: "hidden", opacity: whyOpacity }}>
+          <View style={styles.whyBody}>
+            {PERMS.map((perm) => (
+              <View key={perm.id} style={styles.whyRow}>
+                <Text style={styles.whyLabel}>{perm.label}</Text>
+                <Text style={styles.whyDesc}>{perm.whyNeeded}</Text>
+              </View>
+            ))}
           </View>
-
-          {showTick && (
-            <Animated.View style={[styles.tickBadge, { transform: [{ scale: tickScale }] }]}>
-              <LinearGradient colors={["#32D74B", "#27AE60"]} style={styles.tickGradient}>
-                <Feather name="check" size={22} color="#FFFFFF" />
-              </LinearGradient>
-            </Animated.View>
-          )}
         </Animated.View>
 
-        {/* Title & reason */}
-        <Text style={styles.title}>{step.title}</Text>
-        <Text style={styles.reason}>{step.reason}</Text>
-
-        {granted && (
-          <View style={styles.grantedBadge}>
-            <Feather name="check-circle" size={15} color="#32D74B" />
-            <Text style={styles.grantedText}>Permission granted</Text>
-          </View>
-        )}
-      </Animated.View>
-
-      {/* ── Footer ── */}
-      <View style={styles.footer}>
-        {!granted && (
+        {/* ── Continue button (appears when all granted) ── */}
+        <Animated.View
+          style={{
+            transform: [{ scale: continueAnim }],
+            opacity: continueAnim,
+          }}
+          pointerEvents={allGranted ? "auto" : "none"}
+        >
           <Pressable
-            onPress={returnedFromSettings ? handleConfirmEnabled : handleAllow}
-            style={({ pressed }) => [{ opacity: pressed ? 0.82 : 1 }]}
+            onPress={handleContinue}
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
           >
             <LinearGradient
-              colors={returnedFromSettings ? ["#32D74B", "#27AE60"] : ["#FFD60A", "#FF9F0A"]}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-              style={styles.allowBtn}
+              colors={["#32D74B", "#27AE60"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.continueBtn}
             >
-              <Feather
-                name={returnedFromSettings ? "check" : "external-link"}
-                size={18}
-                color="#000000"
-              />
-              <Text style={styles.allowBtnText}>
-                {returnedFromSettings
-                  ? "I've Enabled This ✓"
-                  : openedSettings
-                  ? "Open Settings Again"
-                  : "Allow"}
-              </Text>
+              <Feather name="arrow-right" size={20} color="#FFFFFF" />
+              <Text style={styles.continueBtnText}>Continue</Text>
             </LinearGradient>
           </Pressable>
-        )}
+        </Animated.View>
 
-        {!granted && !openedSettings && (
-          <Pressable onPress={goNext} style={styles.skipBtn}>
-            <Text style={styles.skipText}>Skip for now</Text>
-          </Pressable>
+        {!allGranted && (
+          <Text style={styles.hint}>Grant all permissions to continue</Text>
         )}
-
-        {!granted && openedSettings && !returnedFromSettings && (
-          <Pressable onPress={() => setReturnedFromSettings(true)} style={styles.skipBtn}>
-            <Text style={styles.skipText}>I went back without enabling</Text>
-          </Pressable>
-        )}
-      </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
     backgroundColor: "#000000",
-    paddingHorizontal: 24,
   },
-
-  progressHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  dotsRow: {
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#2C2C2E",
-  },
-  dotDone: {
-    backgroundColor: "#32D74B",
-    width: 8,
-  },
-  dotActive: {
-    width: 24,
-    backgroundColor: "#FFD60A",
-    borderRadius: 4,
-  },
-  stepCount: {
-    fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
-    color: "#8E8E93",
-  },
-
-  slide: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 20,
-  },
-
-  iconWrap: {
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-    marginBottom: 8,
-  },
-  iconRing: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 30,
-    elevation: 20,
-  },
-  iconBg: {
-    width: 144,
-    height: 144,
-    borderRadius: 72,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tickBadge: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-  },
-  tickGradient: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 3,
-    borderColor: "#000000",
+  scroll: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    gap: 14,
   },
 
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
-    textAlign: "center",
+    lineHeight: 36,
     letterSpacing: -0.5,
+    marginBottom: 2,
   },
-  reason: {
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
-    color: "#8E8E93",
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  grantedBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "#32D74B22",
-    marginTop: 4,
-  },
-  grantedText: {
+  subtitle: {
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
-    color: "#32D74B",
+    fontFamily: "Inter_400Regular",
+    color: "#636366",
+    marginBottom: 4,
   },
 
-  footer: {
-    gap: 14,
-    paddingTop: 12,
+  listCard: {
+    backgroundColor: "#1C1C1E",
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 18,
+    paddingVertical: 17,
+    gap: 12,
+  },
+  permLabel: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
+  },
+  permLabelGranted: {
+    color: "#636366",
+    fontFamily: "Inter_400Regular",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#2C2C2E",
+    marginLeft: 18,
+  },
+  tickCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#2C2C2E",
+    alignItems: "center",
+    justifyContent: "center",
   },
   allowBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  allowBtnText: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+    color: "#000000",
+  },
+
+  whyCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#1C1C1E",
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 17,
+  },
+  whyTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
+    color: "#FFFFFF",
+  },
+  whyBody: {
+    backgroundColor: "#1C1C1E",
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingTop: 4,
+    paddingBottom: 18,
+    gap: 14,
+    marginTop: -8,
+  },
+  whyRow: {
+    gap: 3,
+  },
+  whyLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFD60A",
+  },
+  whyDesc: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "#8E8E93",
+    lineHeight: 19,
+  },
+
+  continueBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
     paddingVertical: 18,
-    borderRadius: 18,
-    shadowColor: "#FFD60A",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 18,
-    elevation: 12,
+    borderRadius: 16,
+    marginTop: 6,
   },
-  allowBtnText: {
+  continueBtnText: {
     fontSize: 17,
     fontFamily: "Inter_700Bold",
-    color: "#000000",
+    color: "#FFFFFF",
   },
-  skipBtn: {
-    alignItems: "center",
-    paddingVertical: 6,
-  },
-  skipText: {
-    fontSize: 13,
+
+  hint: {
+    fontSize: 12,
     fontFamily: "Inter_400Regular",
     color: "#48484A",
-    textDecorationLine: "underline",
+    textAlign: "center",
+    marginTop: 4,
   },
 });
