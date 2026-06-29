@@ -110,9 +110,11 @@ export default function OnboardingScreen() {
           ]}
         >
           <Image
+            key={currentIndex}
             source={slide.gif}
             style={styles.gifImage}
             contentFit="contain"
+            transition={0}
           />
         </Animated.View>
 
