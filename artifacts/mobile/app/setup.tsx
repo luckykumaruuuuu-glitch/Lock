@@ -196,7 +196,7 @@ export default function SetupScreen() {
                       style={({ pressed }) => [{ opacity: isOpening || pressed ? 0.7 : 1 }]}
                     >
                       <LinearGradient
-                        colors={["#FFEBD4", "#FFCF96"]}
+                        colors={["#FFBF80", "#FFA660"]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                         style={styles.allowBtn}
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   whyLabel: {
     fontSize: 13,
     fontFamily: "Inter_600SemiBold",
-    color: "#FFEBD4",
+    color: "#FFBF80",
   },
   whyDesc: {
     fontSize: 13,

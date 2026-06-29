@@ -22,9 +22,9 @@ import { useSounds } from "@/hooks/useSounds";
 
 /* ── Duration options ── */
 const DURATION_OPTIONS = [
-  { id: "1d" as DurationPreset, label: "1 Day",    sublabel: "24 hours of focus",  icon: "sun"      as const, colors: ["#FFEBD4", "#FFCF96"] as [string, string], glow: "#FFEBD4" },
-  { id: "7d" as DurationPreset, label: "7 Days",   sublabel: "One full week",       icon: "calendar" as const, colors: ["#FFEBD4", "#FFCF96"] as [string, string], glow: "#FFEBD4" },
-  { id: "30d" as DurationPreset, label: "30 Days",  sublabel: "Build a new habit",  icon: "award"    as const, colors: ["#FFEBD4", "#FFCF96"] as [string, string], glow: "#FFEBD4" },
+  { id: "1d" as DurationPreset, label: "1 Day",    sublabel: "24 hours of focus",  icon: "sun"      as const, colors: ["#FFBF80", "#FFA660"] as [string, string], glow: "#FFBF80" },
+  { id: "7d" as DurationPreset, label: "7 Days",   sublabel: "One full week",       icon: "calendar" as const, colors: ["#FFBF80", "#FFA660"] as [string, string], glow: "#FFBF80" },
+  { id: "30d" as DurationPreset, label: "30 Days",  sublabel: "Build a new habit",  icon: "award"    as const, colors: ["#FFBF80", "#FFA660"] as [string, string], glow: "#FFBF80" },
   { id: "custom" as DurationPreset, label: "Custom", sublabel: "Pick any date",     icon: "edit-2"   as const, colors: ["#32D74B", "#30C244"] as [string, string], glow: "#32D74B" },
 ];
 
@@ -116,7 +116,7 @@ function DarkCalendar({
               disabled={!canGoPrev}
               style={({ pressed }) => [calStyles.navBtn, { opacity: !canGoPrev ? 0.22 : pressed ? 0.55 : 1 }]}
             >
-              <Feather name="chevron-left" size={22} color="#FFEBD4" />
+              <Feather name="chevron-left" size={22} color="#FFBF80" />
             </Pressable>
 
             <View style={{ alignItems: "center" }}>
@@ -129,7 +129,7 @@ function DarkCalendar({
               disabled={!canGoNext}
               style={({ pressed }) => [calStyles.navBtn, { opacity: !canGoNext ? 0.22 : pressed ? 0.55 : 1 }]}
             >
-              <Feather name="chevron-right" size={22} color="#FFEBD4" />
+              <Feather name="chevron-right" size={22} color="#FFBF80" />
             </Pressable>
           </View>
 
@@ -152,7 +152,7 @@ function DarkCalendar({
               return (
                 <Pressable key={`${day}`} onPress={() => selectDay(day)} style={calStyles.cell} disabled={disabled}>
                   {sel ? (
-                    <LinearGradient colors={["#FFEBD4", "#FFCF96"]} style={calStyles.selCircle}>
+                    <LinearGradient colors={["#FFBF80", "#FFA660"]} style={calStyles.selCircle}>
                       <Text style={calStyles.selDayText}>{day}</Text>
                     </LinearGradient>
                   ) : (
@@ -160,7 +160,7 @@ function DarkCalendar({
                       <Text style={[
                         calStyles.dayText,
                         disabled && { color: "#3A3A3C" },
-                        today && !disabled && { color: "#FFEBD4" },
+                        today && !disabled && { color: "#FFBF80" },
                       ]}>
                         {day}
                       </Text>
@@ -173,7 +173,7 @@ function DarkCalendar({
 
           {/* Selected date summary */}
           <View style={calStyles.selectedRow}>
-            <Feather name="calendar" size={13} color="#FFEBD4" />
+            <Feather name="calendar" size={13} color="#FFBF80" />
             <Text style={calStyles.selectedText}>
               {selected.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "long", year: "numeric" })}
             </Text>
@@ -194,7 +194,7 @@ function DarkCalendar({
               onPress={() => onConfirm(selected)}
               style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1 }]}
             >
-              <LinearGradient colors={["#FFEBD4", "#FFCF96"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={calStyles.okBtn}>
+              <LinearGradient colors={["#FFBF80", "#FFA660"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={calStyles.okBtn}>
                 <Text style={calStyles.okBtnText}>OK</Text>
               </LinearGradient>
             </Pressable>
@@ -218,9 +218,9 @@ const calStyles = StyleSheet.create({
   grid:    { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 10, paddingVertical: 8 },
   cell:    { width: "14.28%", aspectRatio: 1, alignItems: "center", justifyContent: "center", padding: 2 },
   dayCircle: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 18 },
-  todayRing: { borderWidth: 1, borderColor: "#FFEBD4" },
+  todayRing: { borderWidth: 1, borderColor: "#FFBF80" },
   dayText:   { fontSize: 14, fontFamily: "Inter_500Medium", color: "rgba(255,255,255,0.7)" },
-  selCircle: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#FFEBD4", shadowOpacity: 0.4, shadowRadius: 8, elevation: 4 },
+  selCircle: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#FFBF80", shadowOpacity: 0.4, shadowRadius: 8, elevation: 4 },
   selDayText:{ fontSize: 14, fontFamily: "Inter_700Bold", color: "#000000" },
   selectedRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 20, paddingVertical: 12 },
   selectedText:{ fontSize: 13, fontFamily: "Inter_500Medium", color: "#8E8E93" },
@@ -364,10 +364,10 @@ export default function DurationScreen() {
 
         {/* Duration summary pill */}
         <View style={[styles.summary, { backgroundColor: "#1C1C1E" }]}>
-          <Feather name="clock" size={14} color={selectedOpt?.colors[0] ?? "#FFEBD4"} />
+          <Feather name="clock" size={14} color={selectedOpt?.colors[0] ?? "#FFBF80"} />
           <Text style={styles.summaryText}>
             Duration:{" "}
-            <Text style={[styles.summaryBold, { color: selectedOpt?.colors[0] ?? "#FFEBD4" }]}>
+            <Text style={[styles.summaryBold, { color: selectedOpt?.colors[0] ?? "#FFBF80" }]}>
               {getSummary()}
             </Text>
           </Text>
@@ -385,7 +385,7 @@ export default function DurationScreen() {
           style={({ pressed }) => [{ opacity: !canProceed ? 0.32 : pressed ? 0.82 : 1 }]}
         >
           <LinearGradient
-            colors={["#FFEBD4", "#FFCF96"]}
+            colors={["#FFBF80", "#FFA660"]}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={styles.nextBtn}
           >
@@ -424,6 +424,6 @@ const styles = StyleSheet.create({
   summaryBold: { fontFamily: "Inter_700Bold" },
 
   footer:   { paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#2C2C2E", backgroundColor: "rgba(0,0,0,0.95)" },
-  nextBtn:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 18, borderRadius: 18, shadowColor: "#FFEBD4", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 14, elevation: 10 },
+  nextBtn:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 18, borderRadius: 18, shadowColor: "#FFBF80", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 14, elevation: 10 },
   nextBtnText: { color: "#000000", fontSize: 16, fontFamily: "Inter_700Bold" },
 });
