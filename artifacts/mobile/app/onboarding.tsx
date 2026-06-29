@@ -25,11 +25,11 @@ export const ONBOARDING_DONE_KEY = "focuslock_onboarding_done";
 const SLIDES = [
   {
     icon: "shield" as const,
-    gradient: ["#FFD60A", "#FF9F0A"] as const,
-    glowColor: "#FFD60A",
+    gradient: ["#F5A94E", "#E07830"] as const,
+    glowColor: "#F5A94E",
     title: "Take Back\nControl",
     body: "FocusLock lets you lock distracting apps for a set period — with absolutely no way to bypass it early. Your commitment, enforced.",
-    accent: "#FFD60A",
+    accent: "#F5A94E",
   },
   {
     icon: "lock" as const,
@@ -49,11 +49,11 @@ const SLIDES = [
   },
   {
     icon: "alert-triangle" as const,
-    gradient: ["#FFD60A", "#FF9F0A"] as const,
-    glowColor: "#FFD60A",
+    gradient: ["#F5A94E", "#E07830"] as const,
+    glowColor: "#F5A94E",
     title: "True\nEnforcement",
     body: "Device Administrator prevents uninstalling FocusLock while active. The Accessibility Service blocks apps in real-time.",
-    accent: "#FFD60A",
+    accent: "#F5A94E",
   },
 ];
 

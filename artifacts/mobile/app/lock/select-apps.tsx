@@ -74,10 +74,10 @@ function AppCard({ app, selected, alreadyLocked, onToggle, index }: {
             {alreadyLocked ? (
               <View style={styles.lockedBadge}><Feather name="lock" size={12} color="#3A3A3C" /></View>
             ) : (
-              <View style={[styles.checkbox, { borderColor: selected ? "#FFD60A" : "#3A3A3C" }]}>
+              <View style={[styles.checkbox, { borderColor: selected ? "#F5A94E" : "#3A3A3C" }]}>
                 <Animated.View style={{ transform: [{ scale: checkScale }] }}>
                   {selected && (
-                    <LinearGradient colors={["#FFD60A", "#FF9F0A"]} style={styles.checkFill}>
+                    <LinearGradient colors={["#F5A94E", "#E07830"]} style={styles.checkFill}>
                       <Feather name="check" size={12} color="#000000" />
                     </LinearGradient>
                   )}
@@ -142,7 +142,7 @@ export default function SelectAppsScreen() {
 
       {selection.selectedApps.length > 0 && (
         <View style={styles.selBanner}>
-          <Feather name="check-circle" size={14} color="#FFD60A" />
+          <Feather name="check-circle" size={14} color="#F5A94E" />
           <Text style={styles.selText}>{selection.selectedApps.length} app{selection.selectedApps.length !== 1 ? "s" : ""} selected</Text>
         </View>
       )}
@@ -167,7 +167,7 @@ export default function SelectAppsScreen() {
 
       <View style={[styles.footer, { paddingBottom: bottomPad + 20 }]}>
         <Pressable onPress={handleNext} disabled={selection.selectedApps.length === 0} style={({ pressed }) => [{ opacity: selection.selectedApps.length === 0 ? 0.35 : pressed ? 0.85 : 1 }]}>
-          <LinearGradient colors={["#FFD60A", "#FF9F0A"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.nextBtn}>
+          <LinearGradient colors={["#F5A94E", "#E07830"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.nextBtn}>
             <Text style={styles.nextBtnText}>Next — Set Duration</Text>
             <Feather name="arrow-right" size={18} color="#000000" />
           </LinearGradient>
@@ -181,8 +181,8 @@ const styles = StyleSheet.create({
   searchBar: { margin: 16, marginBottom: 8 },
   searchInner: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
   searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular", color: "#FFFFFF" },
-  selBanner: { flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 16, marginBottom: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: "rgba(255,214,10,0.1)" },
-  selText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#FFD60A" },
+  selBanner: { flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 16, marginBottom: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: "rgba(245,169,78,0.1)" },
+  selText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#F5A94E" },
   infoBanner: { flexDirection: "row", alignItems: "center", gap: 6, marginHorizontal: 16, marginBottom: 6, paddingHorizontal: 12, paddingVertical: 8 },
   infoText: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   list: { paddingHorizontal: 16, paddingBottom: 8 },
@@ -196,6 +196,6 @@ const styles = StyleSheet.create({
   checkFill: { width: 26, height: 26, alignItems: "center", justifyContent: "center" },
   lockedBadge: { width: 30, height: 30, borderRadius: 8, backgroundColor: "#2C2C2E", alignItems: "center", justifyContent: "center" },
   footer: { paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#2C2C2E", backgroundColor: "rgba(0,0,0,0.95)" },
-  nextBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 17, borderRadius: 18, shadowColor: "#FFD60A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 14, elevation: 10 },
+  nextBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 17, borderRadius: 18, shadowColor: "#F5A94E", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 14, elevation: 10 },
   nextBtnText: { color: "#000000", fontSize: 16, fontFamily: "Inter_700Bold" },
 });

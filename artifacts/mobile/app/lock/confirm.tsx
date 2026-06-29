@@ -76,7 +76,7 @@ function SuccessScreen({
       <Animated.View style={{ opacity: cardOpacity, width: "100%", gap: 12 }}>
         <GlassCard padding={20} borderColor="rgba(50,215,75,0.12)">
           <View style={successStyles.infoRow}>
-            <View style={successStyles.infoIcon}><Feather name="clock" size={15} color="#FFD60A" /></View>
+            <View style={successStyles.infoIcon}><Feather name="clock" size={15} color="#F5A94E" /></View>
             <View style={{ flex: 1 }}>
               <Text style={successStyles.infoLabel}>UNLOCKS AT</Text>
               <Text style={successStyles.infoValue}>{lockedExpiry}</Text>
@@ -114,7 +114,7 @@ function SuccessScreen({
         {skippedApps.length > 0 && (
           <GlassCard padding={14} borderColor="rgba(255,159,10,0.2)">
             <View style={successStyles.infoRow}>
-              <Feather name="info" size={14} color="#FF9F0A" />
+              <Feather name="info" size={14} color="#E07830" />
               <Text style={successStyles.skipText}>{skippedApps.join(", ")} already locked — skipped</Text>
             </View>
           </GlassCard>
@@ -139,7 +139,7 @@ const successStyles = StyleSheet.create({
   infoLabel:  { fontSize: 10, fontFamily: "Inter_500Medium", color: "#8E8E93", marginBottom: 3, letterSpacing: 0.8 },
   infoValue:  { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#FFFFFF" },
   divider:    { height: 1, backgroundColor: "#2C2C2E", marginVertical: 14 },
-  skipText:   { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#FF9F0A", lineHeight: 18, marginLeft: 8 },
+  skipText:   { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#E07830", lineHeight: 18, marginLeft: 8 },
   tipText:    { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center", lineHeight: 21 },
 });
 
@@ -239,7 +239,7 @@ function AgreementModal({
               style={({ pressed }) => [{ flex: 1, opacity: pressed ? 0.85 : 1 }]}
             >
               <LinearGradient
-                colors={["#FFD60A", "#FF453A"]}
+                colors={["#F5A94E", "#FF453A"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={agStyles.agreeBtn}
@@ -383,8 +383,8 @@ export default function ConfirmScreen() {
           {selection.selectedApps.map((app, idx) => (
             <View key={app.id}>
               <View style={styles.appRow}>
-                <View style={[styles.appIconBg, { backgroundColor: "rgba(255,214,10,0.1)" }]}>
-                  <FontAwesome5 name={app.iconName as any} size={17} color="#FFD60A" />
+                <View style={[styles.appIconBg, { backgroundColor: "rgba(245,169,78,0.1)" }]}>
+                  <FontAwesome5 name={app.iconName as any} size={17} color="#F5A94E" />
                 </View>
                 <View style={styles.appInfo}>
                   <Text style={styles.appName}>{app.name}</Text>
@@ -402,7 +402,7 @@ export default function ConfirmScreen() {
         <GlassCard padding={18}>
           <View style={styles.durationRow}>
             <View style={styles.durationIcon}>
-              <Feather name="clock" size={22} color="#FFD60A" />
+              <Feather name="clock" size={22} color="#F5A94E" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.durationValue}>{durationText}</Text>
@@ -416,7 +416,7 @@ export default function ConfirmScreen() {
           {[
             { label: "Apps blocked",  value: `${selection.selectedApps.length}`, color: "#FFFFFF" },
             { label: "Duration",      value: durationText,   color: "#FFFFFF" },
-            { label: "Unlocks at",    value: expiryDate,     color: "#FFD60A" },
+            { label: "Unlocks at",    value: expiryDate,     color: "#F5A94E" },
             { label: "Cloud sync",    value: configured ? (online ? "Firebase ☁️" : "Offline") : "Local only", color: configured && online ? "#32D74B" : "#8E8E93" },
             { label: "Early unlock",  value: "Impossible ✗", color: "#FF453A" },
           ].map((row, i, arr) => (
@@ -450,7 +450,7 @@ export default function ConfirmScreen() {
           style={({ pressed }) => [{ flex: 1, opacity: saving ? 0.7 : pressed ? 0.88 : 1 }]}
         >
           <LinearGradient
-            colors={["#FFD60A", "#FF453A"]}
+            colors={["#F5A94E", "#FF453A"]}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={styles.lockBtn}
           >
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
   rowDivider:{ height: 1, backgroundColor: "#2C2C2E", marginLeft: 64 },
 
   durationRow:   { flexDirection: "row", alignItems: "center", gap: 14 },
-  durationIcon:  { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,214,10,0.1)" },
+  durationIcon:  { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(245,169,78,0.1)" },
   durationValue: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF", marginBottom: 3 },
   durationExpiry:{ fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
 
@@ -506,6 +506,6 @@ const styles = StyleSheet.create({
   cancelBtn:     { height: 56, borderRadius: 16, borderWidth: 1.5, borderColor: "#2C2C2E", backgroundColor: "#1C1C1E", alignItems: "center", justifyContent: "center", paddingHorizontal: 22 },
   cancelBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#8E8E93" },
 
-  lockBtn:     { height: 56, borderRadius: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, shadowColor: "#FFD60A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 10 },
+  lockBtn:     { height: 56, borderRadius: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, shadowColor: "#F5A94E", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 10 },
   lockBtnText: { color: "#000000", fontSize: 16, fontFamily: "Inter_700Bold" },
 });

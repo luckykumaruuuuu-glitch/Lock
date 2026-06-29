@@ -23,7 +23,7 @@ interface AnimatedButtonProps {
 }
 
 const GRADIENTS = {
-  primary: ["#FFD60A", "#FF9F0A"] as const,
+  primary: ["#F5A94E", "#E07830"] as const,
   accent: ["#FF6B35", "#E85A20"] as const,
   ghost: ["rgba(255,255,255,0.07)", "rgba(255,255,255,0.04)"] as const,
   danger: ["#CC4400", "#FF6B35"] as const,
@@ -31,7 +31,7 @@ const GRADIENTS = {
 };
 
 const GLOW_COLORS = {
-  primary: "#FFD60A",
+  primary: "#F5A94E",
   accent: "#FF6B35",
   ghost: "transparent",
   danger: "#CC4400",
