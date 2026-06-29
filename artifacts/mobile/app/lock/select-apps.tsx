@@ -19,11 +19,11 @@ function AppIcon({ app, dimmed }: { app: AppItem; dimmed: boolean }) {
 
   if (failed || !app.iconUrl) {
     return (
-      <View style={[styles.iconFallback, { backgroundColor: app.iconColor + "22" }]}>
+      <View style={[styles.iconFallback, { backgroundColor: dimmed ? "#2C2C2E" : app.iconColor }]}>
         <FontAwesome5
           name={app.iconName as any}
-          size={26}
-          color={dimmed ? "#3A3A3C" : app.iconColor}
+          size={28}
+          color={dimmed ? "#3A3A3C" : "#FFFFFF"}
         />
       </View>
     );

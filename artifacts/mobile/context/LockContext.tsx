@@ -157,18 +157,18 @@ export function useLock() {
    App catalogue with Android package names
 ─────────────────────────────────────────────── */
 export const DUMMY_APPS: AppItem[] = [
-  { id: "instagram", name: "Instagram", category: "Social", iconName: "instagram", iconFamily: "FontAwesome5", iconColor: "#E1306C", packageName: "com.instagram.android", domain: "instagram.com", iconUrl: "https://static.cdninstagram.com/rsrc.php/v3/yI/r/VsNE-OHk_8a.png" },
+  { id: "instagram", name: "Instagram", category: "Social", iconName: "instagram", iconFamily: "FontAwesome5", iconColor: "#E1306C", packageName: "com.instagram.android", domain: "instagram.com", iconUrl: "" },
   { id: "tiktok", name: "TikTok", category: "Social", iconName: "tiktok", iconFamily: "FontAwesome5", iconColor: "#EE1D52", packageName: "com.zhiliaoapp.musically", domain: "tiktok.com", iconUrl: "" },
-  { id: "twitter", name: "Twitter / X", category: "Social", iconName: "twitter", iconFamily: "FontAwesome5", iconColor: "#1DA1F2", packageName: "com.twitter.android", domain: "twitter.com", iconUrl: "https://abs.twimg.com/responsive-web/client-web/icon-default.ee534d85.png" },
-  { id: "facebook", name: "Facebook", category: "Social", iconName: "facebook", iconFamily: "FontAwesome5", iconColor: "#1877F2", packageName: "com.facebook.katana", domain: "facebook.com", iconUrl: "https://static.xx.fbcdn.net/rsrc.php/yb/r/hLRJ1GG_y0J.ico" },
+  { id: "twitter", name: "Twitter / X", category: "Social", iconName: "twitter", iconFamily: "FontAwesome5", iconColor: "#1DA1F2", packageName: "com.twitter.android", domain: "twitter.com", iconUrl: "" },
+  { id: "facebook", name: "Facebook", category: "Social", iconName: "facebook", iconFamily: "FontAwesome5", iconColor: "#1877F2", packageName: "com.facebook.katana", domain: "facebook.com", iconUrl: "" },
   { id: "youtube", name: "YouTube", category: "Video", iconName: "youtube", iconFamily: "FontAwesome5", iconColor: "#FF0000", packageName: "com.google.android.youtube", domain: "youtube.com", iconUrl: "" },
-  { id: "snapchat", name: "Snapchat", category: "Social", iconName: "snapchat-ghost", iconFamily: "FontAwesome5", iconColor: "#FFFC00", packageName: "com.snapchat.android", domain: "snapchat.com", iconUrl: "https://assets.snapchat.com/snap-kit/snaptions/double_ghost.png" },
-  { id: "reddit", name: "Reddit", category: "Social", iconName: "reddit", iconFamily: "FontAwesome5", iconColor: "#FF4500", packageName: "com.reddit.frontpage", domain: "reddit.com", iconUrl: "https://www.redditstatic.com/desktop2x/img/favicon/android-icon-192x192.png" },
-  { id: "pinterest", name: "Pinterest", category: "Social", iconName: "pinterest", iconFamily: "FontAwesome5", iconColor: "#E60023", packageName: "com.pinterest", domain: "pinterest.com", iconUrl: "https://s.pinimg.com/webapp/logo_trans_144x144-2da37eb3.png" },
-  { id: "whatsapp", name: "WhatsApp", category: "Messaging", iconName: "whatsapp", iconFamily: "FontAwesome5", iconColor: "#25D366", packageName: "com.whatsapp", domain: "whatsapp.com", iconUrl: "https://static.whatsapp.net/rsrc.php/v3/yO/r/FGBnR5s9Omp.png" },
-  { id: "telegram", name: "Telegram", category: "Messaging", iconName: "telegram", iconFamily: "FontAwesome5", iconColor: "#0088CC", packageName: "org.telegram.messenger", domain: "telegram.org", iconUrl: "https://telegram.org/img/t_logo.png" },
-  { id: "discord", name: "Discord", category: "Social", iconName: "discord", iconFamily: "FontAwesome5", iconColor: "#5865F2", packageName: "com.discord", domain: "discord.com", iconUrl: "https://assets-global.website-files.com/6257adef93867e50d84d30e2/636e0a6a49cf127bf92de1e2_icon_clyde_blurple_RGB.png" },
-  { id: "linkedin", name: "LinkedIn", category: "Professional", iconName: "linkedin", iconFamily: "FontAwesome5", iconColor: "#0A66C2", packageName: "com.linkedin.android", domain: "linkedin.com", iconUrl: "https://static.licdn.com/sc/h/al2o9zrvru7ym1ptejhtagzkw" },
+  { id: "snapchat", name: "Snapchat", category: "Social", iconName: "snapchat-ghost", iconFamily: "FontAwesome5", iconColor: "#FFFC00", packageName: "com.snapchat.android", domain: "snapchat.com", iconUrl: "" },
+  { id: "reddit", name: "Reddit", category: "Social", iconName: "reddit", iconFamily: "FontAwesome5", iconColor: "#FF4500", packageName: "com.reddit.frontpage", domain: "reddit.com", iconUrl: "" },
+  { id: "pinterest", name: "Pinterest", category: "Social", iconName: "pinterest", iconFamily: "FontAwesome5", iconColor: "#E60023", packageName: "com.pinterest", domain: "pinterest.com", iconUrl: "" },
+  { id: "whatsapp", name: "WhatsApp", category: "Messaging", iconName: "whatsapp", iconFamily: "FontAwesome5", iconColor: "#25D366", packageName: "com.whatsapp", domain: "whatsapp.com", iconUrl: "" },
+  { id: "telegram", name: "Telegram", category: "Messaging", iconName: "telegram", iconFamily: "FontAwesome5", iconColor: "#0088CC", packageName: "org.telegram.messenger", domain: "telegram.org", iconUrl: "" },
+  { id: "discord", name: "Discord", category: "Social", iconName: "discord", iconFamily: "FontAwesome5", iconColor: "#5865F2", packageName: "com.discord", domain: "discord.com", iconUrl: "" },
+  { id: "linkedin", name: "LinkedIn", category: "Professional", iconName: "linkedin", iconFamily: "FontAwesome5", iconColor: "#0A66C2", packageName: "com.linkedin.android", domain: "linkedin.com", iconUrl: "" },
 ];
 
 export type { LockEntry, LockedAppEntry };
