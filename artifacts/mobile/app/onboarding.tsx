@@ -35,8 +35,8 @@ const SLIDES = [
     accent: "#FFBF80",
   },
   {
-    video: null,
-    gif: require("../assets/images/duck-screen2.gif"),
+    video: require("../assets/images/duck-screen2.mp4"),
+    gif: null,
     gradient: ["#FF6B35", "#E85A20"] as const,
     glowColor: "#FF6B35",
     title: "Unbreakable\nLocks",
