@@ -35,13 +35,12 @@ const DUCK_IDLE = require("../../assets/duck-idle.mp4");
 const DUCK_TOUCH = require("../../assets/duck-touch.mp4");
 
 function DuckCharacter() {
-  // Touch video का opacity animate होगा — idle कभी hide नहीं होगी
-  const touchOpacity = useRef(new Animated.Value(0)).current;
-  const FADE_MS = 220;
+  const [isTouched, setIsTouched] = useState(false);
 
   const idlePlayer = useVideoPlayer(DUCK_IDLE, (p) => {
     p.loop = true;
     p.muted = true;
+    p.play();
   });
 
   const touchPlayer = useVideoPlayer(DUCK_TOUCH, (p) => {
@@ -49,83 +48,38 @@ function DuckCharacter() {
     p.muted = false;
   });
 
-  // Idle को sirf tab play karo jab actually "readyToPlay" ho — fixed timeout hata diya
-  useEffect(() => {
-    const sub = idlePlayer.addListener("statusChange", ({ status }) => {
-      if (status === "readyToPlay") {
-        idlePlayer.loop = true;
-        idlePlayer.muted = true;
-        idlePlayer.play();
-      }
-    });
-    // Fast load edge case: player already ready ho to turant play
-    if ((idlePlayer as any).status === "readyToPlay") {
-      idlePlayer.loop = true;
-      idlePlayer.muted = true;
-      idlePlayer.play();
-    }
-    return () => sub.remove();
-  }, [idlePlayer]);
-
-  // Safety net: agar OS/background se pause ho jaaye, turant resume
-  useEffect(() => {
-    const sub = idlePlayer.addListener("playingChange", ({ isPlaying }) => {
-      if (!isPlaying && (idlePlayer as any).status === "readyToPlay") {
-        idlePlayer.play();
-      }
-    });
-    return () => sub.remove();
-  }, [idlePlayer]);
-
-  // Touch video खत्म → fade out, idle already चल रही है नीचे
   useEffect(() => {
     const sub = touchPlayer.addListener("playToEnd", () => {
-      Animated.timing(touchOpacity, {
-        toValue: 0,
-        duration: FADE_MS,
-        useNativeDriver: true,
-      }).start();
+      setIsTouched(false);
+      idlePlayer.play();
     });
     return () => sub.remove();
-  }, [touchPlayer, touchOpacity]);
+  }, [touchPlayer, idlePlayer]);
 
   function handlePress() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsTouched(true);
     touchPlayer.currentTime = 0;
     touchPlayer.muted = false;
     touchPlayer.play();
-    // Touch video को ऊपर fade in करो — idle नीचे चलती रहेगी
-    Animated.timing(touchOpacity, {
-      toValue: 1,
-      duration: FADE_MS,
-      useNativeDriver: true,
-    }).start();
   }
 
   return (
-    <TouchableOpacity
-      onPress={handlePress}
-      activeOpacity={0.85}
-      style={styles.duckContainer}
-    >
-      {/* Idle: हमेशा opacity 1, कभी hide नहीं — नीचे layer */}
-      <View style={styles.duckAbsolute} pointerEvents="none">
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.85} style={styles.duckContainer}>
+      {!isTouched ? (
         <VideoView
           player={idlePlayer}
           style={styles.duckVideo}
           contentFit="contain"
           nativeControls={false}
         />
-      </View>
-      {/* Touch: ऊपर से fade in/out होती है */}
-      <Animated.View style={[styles.duckAbsolute, { opacity: touchOpacity }]} pointerEvents="none">
+      ) : (
         <VideoView
           player={touchPlayer}
           style={styles.duckVideo}
           contentFit="contain"
           nativeControls={false}
         />
-      </Animated.View>
+      )}
     </TouchableOpacity>
   );
 }
