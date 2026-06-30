@@ -118,19 +118,19 @@ export default function OnboardingScreen() {
     <View style={styles.root}>
       <View style={[styles.container, { paddingTop: topPad + 20 }]}>
 
-        {/* All 4 videos rendered at once — only active one visible */}
+        {/* All 4 videos pre-rendered — display:none hides fully from native layer */}
         <Animated.View style={[styles.mediaWrap, { transform: [{ scale: iconScale }] }]}>
-          <View style={styles.videoSlot} pointerEvents={currentIndex === 0 ? "auto" : "none"}>
-            <VideoView player={p0} style={[styles.video, currentIndex !== 0 && styles.hidden]} contentFit="contain" nativeControls={false} />
+          <View style={[styles.videoSlot, currentIndex !== 0 ? styles.gone : null]}>
+            <VideoView player={p0} style={styles.video} contentFit="contain" nativeControls={false} />
           </View>
-          <View style={styles.videoSlot} pointerEvents={currentIndex === 1 ? "auto" : "none"}>
-            <VideoView player={p1} style={[styles.video, currentIndex !== 1 && styles.hidden]} contentFit="contain" nativeControls={false} />
+          <View style={[styles.videoSlot, currentIndex !== 1 ? styles.gone : null]}>
+            <VideoView player={p1} style={styles.video} contentFit="contain" nativeControls={false} />
           </View>
-          <View style={styles.videoSlot} pointerEvents={currentIndex === 2 ? "auto" : "none"}>
-            <VideoView player={p2} style={[styles.video, currentIndex !== 2 && styles.hidden]} contentFit="contain" nativeControls={false} />
+          <View style={[styles.videoSlot, currentIndex !== 2 ? styles.gone : null]}>
+            <VideoView player={p2} style={styles.video} contentFit="contain" nativeControls={false} />
           </View>
-          <View style={styles.videoSlot} pointerEvents={currentIndex === 3 ? "auto" : "none"}>
-            <VideoView player={p3} style={[styles.video, currentIndex !== 3 && styles.hidden]} contentFit="contain" nativeControls={false} />
+          <View style={[styles.videoSlot, currentIndex !== 3 ? styles.gone : null]}>
+            <VideoView player={p3} style={styles.video} contentFit="contain" nativeControls={false} />
           </View>
         </Animated.View>
 
@@ -214,8 +214,8 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
   },
-  hidden: {
-    opacity: 0,
+  gone: {
+    display: "none",
   },
   slideCard: { width: "100%", maxWidth: 380 },
   slideTitle: {
