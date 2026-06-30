@@ -44,8 +44,8 @@ const SLIDES = [
     accent: "#FF6B35",
   },
   {
-    video: null,
-    gif: require("../assets/images/duck-screen3.gif"),
+    video: require("../assets/images/duck-screen3.mp4"),
+    gif: null,
     gradient: ["#32D74B", "#30C244"] as const,
     glowColor: "#32D74B",
     title: "Server-Verified\nTime",
