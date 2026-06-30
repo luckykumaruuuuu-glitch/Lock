@@ -42,7 +42,6 @@ function DuckCharacter() {
   const idlePlayer = useVideoPlayer(DUCK_IDLE, (p) => {
     p.loop = true;
     p.muted = true;
-    p.play();
   });
 
   const touchPlayer = useVideoPlayer(DUCK_TOUCH, (p) => {
@@ -50,14 +49,32 @@ function DuckCharacter() {
     p.muted = false;
   });
 
-  // Mount पर idle को confirm play (autoplay silently block होने पर backup)
+  // Idle को sirf tab play karo jab actually "readyToPlay" ho — fixed timeout hata diya
   useEffect(() => {
-    const timer = setTimeout(() => {
-      idlePlayer.muted = true;
+    const sub = idlePlayer.addListener("statusChange", ({ status }) => {
+      if (status === "readyToPlay") {
+        idlePlayer.loop = true;
+        idlePlayer.muted = true;
+        idlePlayer.play();
+      }
+    });
+    // Fast load edge case: player already ready ho to turant play
+    if ((idlePlayer as any).status === "readyToPlay") {
       idlePlayer.loop = true;
+      idlePlayer.muted = true;
       idlePlayer.play();
-    }, 100);
-    return () => clearTimeout(timer);
+    }
+    return () => sub.remove();
+  }, [idlePlayer]);
+
+  // Safety net: agar OS/background se pause ho jaaye, turant resume
+  useEffect(() => {
+    const sub = idlePlayer.addListener("playingChange", ({ isPlaying }) => {
+      if (!isPlaying && (idlePlayer as any).status === "readyToPlay") {
+        idlePlayer.play();
+      }
+    });
+    return () => sub.remove();
   }, [idlePlayer]);
 
   // Touch video खत्म → fade out, idle already चल रही है नीचे
