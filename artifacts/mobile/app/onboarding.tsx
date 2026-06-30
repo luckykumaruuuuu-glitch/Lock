@@ -1,10 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useVideoPlayer, VideoView } from "expo-video";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -27,7 +26,6 @@ export const ONBOARDING_DONE_KEY = "focuslock_onboarding_done";
 const SLIDES = [
   {
     video: require("../assets/images/duck-screen1.mp4"),
-    gif: null,
     gradient: ["#FFBF80", "#FFA660"] as const,
     glowColor: "#FFBF80",
     title: "Take Back\nControl",
@@ -36,7 +34,6 @@ const SLIDES = [
   },
   {
     video: require("../assets/images/duck-screen2.mp4"),
-    gif: null,
     gradient: ["#FF6B35", "#E85A20"] as const,
     glowColor: "#FF6B35",
     title: "Unbreakable\nLocks",
@@ -45,7 +42,6 @@ const SLIDES = [
   },
   {
     video: require("../assets/images/duck-screen3.mp4"),
-    gif: null,
     gradient: ["#32D74B", "#30C244"] as const,
     glowColor: "#32D74B",
     title: "Server-Verified\nTime",
@@ -54,7 +50,6 @@ const SLIDES = [
   },
   {
     video: require("../assets/images/duck-screen4.mp4"),
-    gif: null,
     gradient: ["#FFBF80", "#FFA660"] as const,
     glowColor: "#FFBF80",
     title: "True\nEnforcement",
@@ -62,38 +57,6 @@ const SLIDES = [
     accent: "#FFBF80",
   },
 ];
-
-function SlideMedia({ slide, index }: { slide: typeof SLIDES[0]; index: number }) {
-  const player = useVideoPlayer(
-    slide.video ?? null,
-    (p) => {
-      p.loop = true;
-      p.muted = true;
-      if (slide.video) p.play();
-    }
-  );
-
-  if (slide.video) {
-    return (
-      <VideoView
-        player={player}
-        style={styles.gifImage}
-        contentFit="contain"
-        nativeControls={false}
-      />
-    );
-  }
-
-  return (
-    <Image
-      key={index}
-      source={slide.gif}
-      style={styles.gifImage}
-      contentFit="contain"
-      transition={0}
-    />
-  );
-}
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -104,15 +67,30 @@ export default function OnboardingScreen() {
   const topPad = Platform.OS === "web" ? 60 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
+  // ── Preload all 4 players at mount (Rules of Hooks: unconditional) ──
+  const p0 = useVideoPlayer(SLIDES[0].video, (p) => { p.loop = true; p.muted = true; p.play(); });
+  const p1 = useVideoPlayer(SLIDES[1].video, (p) => { p.loop = true; p.muted = true; });
+  const p2 = useVideoPlayer(SLIDES[2].video, (p) => { p.loop = true; p.muted = true; });
+  const p3 = useVideoPlayer(SLIDES[3].video, (p) => { p.loop = true; p.muted = true; });
+
+  // ── On slide change: play active, pause others ──
+  useEffect(() => {
+    const all = [p0, p1, p2, p3];
+    all.forEach((p, i) => {
+      if (i === currentIndex) p.play();
+      else p.pause();
+    });
+  }, [currentIndex, p0, p1, p2, p3]);
+
   const slide = SLIDES[currentIndex];
 
   function animateIcon() {
-    iconScale.setValue(0.6);
+    iconScale.setValue(0.8);
     Animated.spring(iconScale, {
       toValue: 1,
       useNativeDriver: true,
-      tension: 250,
-      friction: 8,
+      tension: 300,
+      friction: 10,
     }).start();
   }
 
@@ -139,14 +117,21 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.root}>
       <View style={[styles.container, { paddingTop: topPad + 20 }]}>
-        {/* Media: Video or GIF per slide */}
-        <Animated.View
-          style={[
-            styles.gifWrap,
-            { transform: [{ scale: iconScale }] },
-          ]}
-        >
-          <SlideMedia key={currentIndex} slide={slide} index={currentIndex} />
+
+        {/* All 4 videos rendered at once — only active one visible */}
+        <Animated.View style={[styles.mediaWrap, { transform: [{ scale: iconScale }] }]}>
+          <View style={styles.videoSlot} pointerEvents={currentIndex === 0 ? "auto" : "none"}>
+            <VideoView player={p0} style={[styles.video, currentIndex !== 0 && styles.hidden]} contentFit="contain" nativeControls={false} />
+          </View>
+          <View style={styles.videoSlot} pointerEvents={currentIndex === 1 ? "auto" : "none"}>
+            <VideoView player={p1} style={[styles.video, currentIndex !== 1 && styles.hidden]} contentFit="contain" nativeControls={false} />
+          </View>
+          <View style={styles.videoSlot} pointerEvents={currentIndex === 2 ? "auto" : "none"}>
+            <VideoView player={p2} style={[styles.video, currentIndex !== 2 && styles.hidden]} contentFit="contain" nativeControls={false} />
+          </View>
+          <View style={styles.videoSlot} pointerEvents={currentIndex === 3 ? "auto" : "none"}>
+            <VideoView player={p3} style={[styles.video, currentIndex !== 3 && styles.hidden]} contentFit="contain" nativeControls={false} />
+          </View>
         </Animated.View>
 
         {/* Slide card */}
@@ -216,15 +201,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 28,
   },
-  gifWrap: {
+  mediaWrap: {
     width: 140,
     height: 140,
-    alignItems: "center",
-    justifyContent: "center",
   },
-  gifImage: {
+  videoSlot: {
+    position: "absolute",
     width: 140,
     height: 140,
+  },
+  video: {
+    width: 140,
+    height: 140,
+  },
+  hidden: {
+    opacity: 0,
   },
   slideCard: { width: "100%", maxWidth: 380 },
   slideTitle: {
