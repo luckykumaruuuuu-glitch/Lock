@@ -37,6 +37,7 @@ const DUCK_TOUCH = require("../../assets/duck-touch.mp4");
 function DuckCharacter() {
   const idleOpacity = useRef(new Animated.Value(1)).current;
   const touchOpacity = useRef(new Animated.Value(0)).current;
+  const isTouchedRef = useRef(false);
   const FADE_MS = 220;
 
   const idlePlayer = useVideoPlayer(DUCK_IDLE, (p) => {
@@ -50,16 +51,24 @@ function DuckCharacter() {
     p.muted = false;
   });
 
-  // Mount पर idle force-play (autoplay block fix)
+  // Idle player को हमेशा जिंदा रखो — अगर unexpectedly pause हो तो restart
   useEffect(() => {
     idlePlayer.muted = true;
     idlePlayer.loop = true;
     idlePlayer.play();
+
+    const sub = idlePlayer.addListener("statusChange", ({ status }) => {
+      if (status === "readyToPlay" && !isTouchedRef.current) {
+        idlePlayer.play();
+      }
+    });
+    return () => sub.remove();
   }, [idlePlayer]);
 
-  // Touch video खत्म → crossfade वापस idle पर
+  // Touch video खत्म → idle को force-play + crossfade वापस
   useEffect(() => {
     const sub = touchPlayer.addListener("playToEnd", () => {
+      isTouchedRef.current = false;
       idlePlayer.muted = true;
       idlePlayer.play();
       Animated.parallel([
@@ -72,10 +81,10 @@ function DuckCharacter() {
 
   function handlePress() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    isTouchedRef.current = true;
     touchPlayer.currentTime = 0;
     touchPlayer.muted = false;
     touchPlayer.play();
-    // Crossfade: idle → touch
     Animated.parallel([
       Animated.timing(idleOpacity, { toValue: 0, duration: FADE_MS, useNativeDriver: true }),
       Animated.timing(touchOpacity, { toValue: 1, duration: FADE_MS, useNativeDriver: true }),
@@ -88,8 +97,7 @@ function DuckCharacter() {
       activeOpacity={0.85}
       style={styles.duckContainer}
     >
-      {/* दोनों हमेशा mounted — सिर्फ opacity से crossfade */}
-      <Animated.View style={[styles.duckAbsolute, { opacity: idleOpacity }]}>
+      <Animated.View style={[styles.duckAbsolute, { opacity: idleOpacity }]} pointerEvents="none">
         <VideoView
           player={idlePlayer}
           style={styles.duckVideo}
@@ -97,7 +105,7 @@ function DuckCharacter() {
           nativeControls={false}
         />
       </Animated.View>
-      <Animated.View style={[styles.duckAbsolute, { opacity: touchOpacity }]}>
+      <Animated.View style={[styles.duckAbsolute, { opacity: touchOpacity }]} pointerEvents="none">
         <VideoView
           player={touchPlayer}
           style={styles.duckVideo}
