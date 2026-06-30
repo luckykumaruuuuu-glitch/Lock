@@ -36,6 +36,7 @@ const DUCK_TOUCH = require("../../assets/duck-touch.mp4");
 
 function DuckCharacter() {
   const [isTouched, setIsTouched] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const idlePlayer = useVideoPlayer(DUCK_IDLE, (p) => {
     p.loop = true;
@@ -50,36 +51,34 @@ function DuckCharacter() {
 
   useEffect(() => {
     const sub = touchPlayer.addListener("playToEnd", () => {
-      setIsTouched(false);
-      idlePlayer.play();
+      Animated.timing(fadeAnim, { toValue: 0, duration: 100, useNativeDriver: true }).start(() => {
+        setIsTouched(false);
+        idlePlayer.play();
+        Animated.timing(fadeAnim, { toValue: 1, duration: 100, useNativeDriver: true }).start();
+      });
     });
     return () => sub.remove();
-  }, [touchPlayer, idlePlayer]);
+  }, [touchPlayer, idlePlayer, fadeAnim]);
 
   function handlePress() {
-    setIsTouched(true);
-    touchPlayer.currentTime = 0;
-    touchPlayer.muted = false;
-    touchPlayer.play();
+    Animated.timing(fadeAnim, { toValue: 0, duration: 100, useNativeDriver: true }).start(() => {
+      setIsTouched(true);
+      touchPlayer.currentTime = 0;
+      touchPlayer.muted = false;
+      touchPlayer.play();
+      Animated.timing(fadeAnim, { toValue: 1, duration: 100, useNativeDriver: true }).start();
+    });
   }
 
   return (
     <TouchableOpacity onPress={handlePress} activeOpacity={0.85} style={styles.duckContainer}>
-      {!isTouched ? (
-        <VideoView
-          player={idlePlayer}
-          style={styles.duckVideo}
-          contentFit="contain"
-          nativeControls={false}
-        />
-      ) : (
-        <VideoView
-          player={touchPlayer}
-          style={styles.duckVideo}
-          contentFit="contain"
-          nativeControls={false}
-        />
-      )}
+      <Animated.View style={{ opacity: fadeAnim }}>
+        {!isTouched ? (
+          <VideoView player={idlePlayer} style={styles.duckVideo} contentFit="contain" nativeControls={false} />
+        ) : (
+          <VideoView player={touchPlayer} style={styles.duckVideo} contentFit="contain" nativeControls={false} />
+        )}
+      </Animated.View>
     </TouchableOpacity>
   );
 }
