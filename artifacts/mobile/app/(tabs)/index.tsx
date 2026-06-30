@@ -2,7 +2,8 @@ import { FontAwesome5, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useEffect, useRef } from "react";
+import { useVideoPlayer, VideoView } from "expo-video";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Platform,
@@ -10,6 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,6 +30,61 @@ import {
   useActiveLocks,
 } from "@/hooks/useLockStorage";
 import { usePermissionGuard } from "@/hooks/usePermissionGuard";
+
+const DUCK_IDLE = require("../../assets/duck-idle.mp4");
+const DUCK_TOUCH = require("../../assets/duck-touch.mp4");
+
+function DuckCharacter() {
+  const [isTouched, setIsTouched] = useState(false);
+
+  const idlePlayer = useVideoPlayer(DUCK_IDLE, (p) => {
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
+
+  const touchPlayer = useVideoPlayer(DUCK_TOUCH, (p) => {
+    p.loop = false;
+    p.muted = false;
+  });
+
+  useEffect(() => {
+    const sub = touchPlayer.addListener("playToEnd", () => {
+      setIsTouched(false);
+      idlePlayer.play();
+    });
+    return () => sub.remove();
+  }, [touchPlayer, idlePlayer]);
+
+  function handlePress() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    touchPlayer.currentTime = 0;
+    touchPlayer.muted = false;
+    touchPlayer.play();
+    setIsTouched(true);
+  }
+
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      activeOpacity={0.85}
+      style={styles.duckContainer}
+    >
+      <VideoView
+        player={idlePlayer}
+        style={[styles.duckVideo, isTouched && { opacity: 0, position: "absolute" }]}
+        contentFit="contain"
+        nativeControls={false}
+      />
+      <VideoView
+        player={touchPlayer}
+        style={[styles.duckVideo, !isTouched && { opacity: 0, position: "absolute" }]}
+        contentFit="contain"
+        nativeControls={false}
+      />
+    </TouchableOpacity>
+  );
+}
 
 function StatCard({ value, label, color }: { value: string | number; label: string; color: string }) {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
@@ -169,11 +226,7 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>{t("stayFocused")}</Text>
             <Text style={styles.appTitle}>{t("appTitle")}</Text>
           </View>
-          <View style={styles.shieldBadge}>
-            <View style={[styles.shieldCircle, { backgroundColor: displayItems.length > 0 ? "#FFBF80" : "#2C2C2E" }]}>
-              <Feather name="shield" size={22} color={displayItems.length > 0 ? "#000000" : "rgba(255,255,255,0.25)"} />
-            </View>
-          </View>
+          <DuckCharacter />
         </Animated.View>
 
         {/* Stats */}
@@ -247,8 +300,17 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
   greeting: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", marginBottom: 2 },
   appTitle: { fontSize: 30, fontFamily: "Inter_700Bold", color: "#FFFFFF", letterSpacing: -0.8 },
-  shieldBadge: { shadowColor: "#FFBF80", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 8 },
-  shieldCircle: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  duckContainer: {
+    width: 56,
+    height: 56,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "visible",
+  },
+  duckVideo: {
+    width: 72,
+    height: 72,
+  },
   statsRow: { flexDirection: "row", gap: 10 },
   statWrapper: { flex: 1 },
   statCard: { alignItems: "center" },
