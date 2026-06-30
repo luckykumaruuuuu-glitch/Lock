@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Toast } from "@/components/ui/Toast";
 import { GradientBackground } from "@/components/ui/GradientBackground";
+import { PermissionGuardPopup } from "@/components/ui/PermissionGuardPopup";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLock } from "@/context/LockContext";
 import {
@@ -26,6 +27,7 @@ import {
   getLockProgress,
   useActiveLocks,
 } from "@/hooks/useLockStorage";
+import { usePermissionGuard } from "@/hooks/usePermissionGuard";
 
 function StatCard({ value, label, color }: { value: string | number; label: string; color: string }) {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
@@ -128,6 +130,7 @@ export default function HomeScreen() {
   const { displayItems, locks, loading } = useActiveLocks(30_000);
   const { t } = useLanguage();
   const [toast, setToast] = React.useState(false);
+  const { missingPerms, recheck } = usePermissionGuard();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 + 84 : 60 + insets.bottom;
@@ -232,6 +235,8 @@ export default function HomeScreen() {
       </ScrollView>
 
       <Toast visible={toast} message={t("lockActivated")} type="success" onHide={() => setToast(false)} />
+
+      <PermissionGuardPopup missing={missingPerms} onRecheck={recheck} />
     </GradientBackground>
   );
 }
