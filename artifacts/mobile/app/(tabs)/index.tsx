@@ -35,7 +35,9 @@ const DUCK_IDLE = require("../../assets/duck-idle.mp4");
 const DUCK_TOUCH = require("../../assets/duck-touch.mp4");
 
 function DuckCharacter() {
-  const [isTouched, setIsTouched] = useState(false);
+  const idleOpacity = useRef(new Animated.Value(1)).current;
+  const touchOpacity = useRef(new Animated.Value(0)).current;
+  const FADE_MS = 220;
 
   const idlePlayer = useVideoPlayer(DUCK_IDLE, (p) => {
     p.loop = true;
@@ -48,35 +50,36 @@ function DuckCharacter() {
     p.muted = false;
   });
 
-  // Idle video को mount होते ही force play करो (autoplay block fix)
+  // Mount पर idle force-play (autoplay block fix)
   useEffect(() => {
     idlePlayer.muted = true;
     idlePlayer.loop = true;
     idlePlayer.play();
   }, [idlePlayer]);
 
-  // isTouched false होते ही idle को explicitly restart करो
-  useEffect(() => {
-    if (!isTouched) {
-      idlePlayer.muted = true;
-      idlePlayer.play();
-    }
-  }, [isTouched, idlePlayer]);
-
-  // Touch video खत्म होने पर वापस idle पर लाओ
+  // Touch video खत्म → crossfade वापस idle पर
   useEffect(() => {
     const sub = touchPlayer.addListener("playToEnd", () => {
-      setIsTouched(false);
+      idlePlayer.muted = true;
+      idlePlayer.play();
+      Animated.parallel([
+        Animated.timing(touchOpacity, { toValue: 0, duration: FADE_MS, useNativeDriver: true }),
+        Animated.timing(idleOpacity, { toValue: 1, duration: FADE_MS, useNativeDriver: true }),
+      ]).start();
     });
     return () => sub.remove();
-  }, [touchPlayer]);
+  }, [touchPlayer, idlePlayer, touchOpacity, idleOpacity]);
 
   function handlePress() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     touchPlayer.currentTime = 0;
     touchPlayer.muted = false;
     touchPlayer.play();
-    setIsTouched(true);
+    // Crossfade: idle → touch
+    Animated.parallel([
+      Animated.timing(idleOpacity, { toValue: 0, duration: FADE_MS, useNativeDriver: true }),
+      Animated.timing(touchOpacity, { toValue: 1, duration: FADE_MS, useNativeDriver: true }),
+    ]).start();
   }
 
   return (
@@ -85,23 +88,23 @@ function DuckCharacter() {
       activeOpacity={0.85}
       style={styles.duckContainer}
     >
-      {!isTouched ? (
+      {/* दोनों हमेशा mounted — सिर्फ opacity से crossfade */}
+      <Animated.View style={[styles.duckAbsolute, { opacity: idleOpacity }]}>
         <VideoView
-          key="idle-video"
           player={idlePlayer}
           style={styles.duckVideo}
           contentFit="contain"
           nativeControls={false}
         />
-      ) : (
+      </Animated.View>
+      <Animated.View style={[styles.duckAbsolute, { opacity: touchOpacity }]}>
         <VideoView
-          key="touch-video"
           player={touchPlayer}
           style={styles.duckVideo}
           contentFit="contain"
           nativeControls={false}
         />
-      )}
+      </Animated.View>
     </TouchableOpacity>
   );
 }
@@ -321,11 +324,16 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", marginBottom: 2 },
   appTitle: { fontSize: 30, fontFamily: "Inter_700Bold", color: "#FFFFFF", letterSpacing: -0.8 },
   duckContainer: {
-    width: 56,
-    height: 56,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 72,
+    height: 72,
     overflow: "visible",
+  },
+  duckAbsolute: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: 72,
+    height: 72,
   },
   duckVideo: {
     width: 72,
