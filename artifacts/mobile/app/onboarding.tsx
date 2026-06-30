@@ -1,10 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useVideoPlayer, VideoView } from "expo-video";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -27,7 +26,6 @@ export const ONBOARDING_DONE_KEY = "focuslock_onboarding_done";
 const SLIDES = [
   {
     video: require("../assets/images/duck-screen1.mp4"),
-    gif: null,
     gradient: ["#FFBF80", "#FFA660"] as const,
     glowColor: "#FFBF80",
     title: "Take Back\nControl",
@@ -36,7 +34,6 @@ const SLIDES = [
   },
   {
     video: require("../assets/images/duck-screen2.mp4"),
-    gif: null,
     gradient: ["#FF6B35", "#E85A20"] as const,
     glowColor: "#FF6B35",
     title: "Unbreakable\nLocks",
@@ -45,7 +42,6 @@ const SLIDES = [
   },
   {
     video: require("../assets/images/duck-screen3.mp4"),
-    gif: null,
     gradient: ["#32D74B", "#30C244"] as const,
     glowColor: "#32D74B",
     title: "Server-Verified\nTime",
@@ -54,7 +50,6 @@ const SLIDES = [
   },
   {
     video: require("../assets/images/duck-screen4.mp4"),
-    gif: null,
     gradient: ["#FFBF80", "#FFA660"] as const,
     glowColor: "#FFBF80",
     title: "True\nEnforcement",
@@ -62,38 +57,6 @@ const SLIDES = [
     accent: "#FFBF80",
   },
 ];
-
-function SlideMedia({ slide, index }: { slide: typeof SLIDES[0]; index: number }) {
-  const player = useVideoPlayer(
-    slide.video ?? null,
-    (p) => {
-      p.loop = true;
-      p.muted = true;
-      if (slide.video) p.play();
-    }
-  );
-
-  if (slide.video) {
-    return (
-      <VideoView
-        player={player}
-        style={styles.gifImage}
-        contentFit="contain"
-        nativeControls={false}
-      />
-    );
-  }
-
-  return (
-    <Image
-      key={index}
-      source={slide.gif}
-      style={styles.gifImage}
-      contentFit="contain"
-      transition={0}
-    />
-  );
-}
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -104,15 +67,47 @@ export default function OnboardingScreen() {
   const topPad = Platform.OS === "web" ? 60 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
+  // Pre-initialize ALL players at mount — no lazy loading, no lag
+  const player0 = useVideoPlayer(SLIDES[0].video, (p) => {
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
+  const player1 = useVideoPlayer(SLIDES[1].video, (p) => {
+    p.loop = true;
+    p.muted = true;
+  });
+  const player2 = useVideoPlayer(SLIDES[2].video, (p) => {
+    p.loop = true;
+    p.muted = true;
+  });
+  const player3 = useVideoPlayer(SLIDES[3].video, (p) => {
+    p.loop = true;
+    p.muted = true;
+  });
+
+  const players = [player0, player1, player2, player3];
+
+  // On screen change: instantly play new, pause others
+  useEffect(() => {
+    players.forEach((p, i) => {
+      if (i === currentIndex) {
+        p.play();
+      } else {
+        p.pause();
+      }
+    });
+  }, [currentIndex]);
+
   const slide = SLIDES[currentIndex];
 
   function animateIcon() {
-    iconScale.setValue(0.6);
+    iconScale.setValue(0.8);
     Animated.spring(iconScale, {
       toValue: 1,
       useNativeDriver: true,
-      tension: 250,
-      friction: 8,
+      tension: 300,
+      friction: 10,
     }).start();
   }
 
@@ -139,14 +134,27 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.root}>
       <View style={[styles.container, { paddingTop: topPad + 20 }]}>
-        {/* Media: Video (Screen 1) or GIF (Screens 2-4) */}
+        {/* All 4 videos pre-rendered — show active, hide others instantly */}
         <Animated.View
-          style={[
-            styles.gifWrap,
-            { transform: [{ scale: iconScale }] },
-          ]}
+          style={[styles.mediaWrap, { transform: [{ scale: iconScale }] }]}
         >
-          <SlideMedia key={currentIndex} slide={slide} index={currentIndex} />
+          {players.map((player, i) => (
+            <View
+              key={i}
+              style={[
+                styles.videoSlot,
+                i === currentIndex ? styles.videoVisible : styles.videoHidden,
+              ]}
+              pointerEvents={i === currentIndex ? "auto" : "none"}
+            >
+              <VideoView
+                player={player}
+                style={styles.videoSize}
+                contentFit="contain"
+                nativeControls={false}
+              />
+            </View>
+          ))}
         </Animated.View>
 
         {/* Slide card */}
@@ -216,13 +224,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 28,
   },
-  gifWrap: {
+  mediaWrap: {
     width: 140,
     height: 140,
     alignItems: "center",
     justifyContent: "center",
   },
-  gifImage: {
+  videoSlot: {
+    position: "absolute",
+    width: 140,
+    height: 140,
+  },
+  videoVisible: {
+    opacity: 1,
+  },
+  videoHidden: {
+    opacity: 0,
+  },
+  videoSize: {
     width: 140,
     height: 140,
   },
