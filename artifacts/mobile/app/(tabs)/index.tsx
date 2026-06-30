@@ -35,8 +35,7 @@ const DUCK_IDLE = require("../../assets/duck-idle.mp4");
 const DUCK_TOUCH = require("../../assets/duck-touch.mp4");
 
 function DuckCharacter() {
-  const [isTouched, setIsTouched] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const touchOpacity = useRef(new Animated.Value(0)).current;
 
   const idlePlayer = useVideoPlayer(DUCK_IDLE, (p) => {
     p.loop = true;
@@ -51,33 +50,27 @@ function DuckCharacter() {
 
   useEffect(() => {
     const sub = touchPlayer.addListener("playToEnd", () => {
-      Animated.timing(fadeAnim, { toValue: 0, duration: 100, useNativeDriver: true }).start(() => {
-        setIsTouched(false);
-        idlePlayer.play();
-        Animated.timing(fadeAnim, { toValue: 1, duration: 100, useNativeDriver: true }).start();
-      });
+      Animated.timing(touchOpacity, { toValue: 0, duration: 150, useNativeDriver: true }).start();
     });
     return () => sub.remove();
-  }, [touchPlayer, idlePlayer, fadeAnim]);
+  }, [touchPlayer, touchOpacity]);
 
   function handlePress() {
-    Animated.timing(fadeAnim, { toValue: 0, duration: 100, useNativeDriver: true }).start(() => {
-      setIsTouched(true);
-      touchPlayer.currentTime = 0;
-      touchPlayer.muted = false;
-      touchPlayer.play();
-      Animated.timing(fadeAnim, { toValue: 1, duration: 100, useNativeDriver: true }).start();
-    });
+    touchPlayer.currentTime = 0;
+    touchPlayer.muted = false;
+    touchPlayer.play();
+    Animated.timing(touchOpacity, { toValue: 1, duration: 150, useNativeDriver: true }).start();
   }
 
   return (
     <TouchableOpacity onPress={handlePress} activeOpacity={0.85} style={styles.duckContainer}>
-      <Animated.View style={{ opacity: fadeAnim }}>
-        {!isTouched ? (
-          <VideoView player={idlePlayer} style={styles.duckVideo} contentFit="contain" nativeControls={false} />
-        ) : (
-          <VideoView player={touchPlayer} style={styles.duckVideo} contentFit="contain" nativeControls={false} />
-        )}
+      {/* Idle: हमेशा mounted और visible — कभी unmount नहीं */}
+      <View style={styles.duckAbsolute}>
+        <VideoView player={idlePlayer} style={styles.duckVideo} contentFit="contain" nativeControls={false} />
+      </View>
+      {/* Touch: हमेशा mounted, ऊपर से opacity 0→1 animate होती है */}
+      <Animated.View style={[styles.duckAbsolute, { opacity: touchOpacity }]} pointerEvents="none">
+        <VideoView player={touchPlayer} style={styles.duckVideo} contentFit="contain" nativeControls={false} />
       </Animated.View>
     </TouchableOpacity>
   );
@@ -306,8 +299,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     left: 0,
-    width: 72,
-    height: 72,
+    width: "100%",
+    height: "100%",
   },
   duckVideo: {
     width: 72,
