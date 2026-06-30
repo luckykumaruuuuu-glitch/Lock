@@ -3,6 +3,7 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useRef, useState } from "react";
 import {
   Animated,
@@ -25,7 +26,8 @@ export const ONBOARDING_DONE_KEY = "focuslock_onboarding_done";
 
 const SLIDES = [
   {
-    gif: require("../assets/images/duck-screen1.gif"),
+    video: require("../assets/images/duck-screen1.mp4"),
+    gif: null,
     gradient: ["#FFBF80", "#FFA660"] as const,
     glowColor: "#FFBF80",
     title: "Take Back\nControl",
@@ -33,6 +35,7 @@ const SLIDES = [
     accent: "#FFBF80",
   },
   {
+    video: null,
     gif: require("../assets/images/duck-screen2.gif"),
     gradient: ["#FF6B35", "#E85A20"] as const,
     glowColor: "#FF6B35",
@@ -41,6 +44,7 @@ const SLIDES = [
     accent: "#FF6B35",
   },
   {
+    video: null,
     gif: require("../assets/images/duck-screen3.gif"),
     gradient: ["#32D74B", "#30C244"] as const,
     glowColor: "#32D74B",
@@ -49,6 +53,7 @@ const SLIDES = [
     accent: "#32D74B",
   },
   {
+    video: null,
     gif: require("../assets/images/duck-screen4.gif"),
     gradient: ["#FFBF80", "#FFA660"] as const,
     glowColor: "#FFBF80",
@@ -57,6 +62,38 @@ const SLIDES = [
     accent: "#FFBF80",
   },
 ];
+
+function SlideMedia({ slide, index }: { slide: typeof SLIDES[0]; index: number }) {
+  const player = useVideoPlayer(
+    slide.video ?? null,
+    (p) => {
+      p.loop = true;
+      p.muted = true;
+      if (slide.video) p.play();
+    }
+  );
+
+  if (slide.video) {
+    return (
+      <VideoView
+        player={player}
+        style={styles.gifImage}
+        contentFit="contain"
+        nativeControls={false}
+      />
+    );
+  }
+
+  return (
+    <Image
+      key={index}
+      source={slide.gif}
+      style={styles.gifImage}
+      contentFit="contain"
+      transition={0}
+    />
+  );
+}
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -102,20 +139,14 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.root}>
       <View style={[styles.container, { paddingTop: topPad + 20 }]}>
-        {/* GIF Animation */}
+        {/* Media: Video (Screen 1) or GIF (Screens 2-4) */}
         <Animated.View
           style={[
             styles.gifWrap,
             { transform: [{ scale: iconScale }] },
           ]}
         >
-          <Image
-            key={currentIndex}
-            source={slide.gif}
-            style={styles.gifImage}
-            contentFit="contain"
-            transition={0}
-          />
+          <SlideMedia key={currentIndex} slide={slide} index={currentIndex} />
         </Animated.View>
 
         {/* Slide card */}

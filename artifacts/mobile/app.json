@@ -60,7 +60,8 @@
           "sounds": []
         }
       ],
-      "./plugins/withFocusLockAndroid"
+      "./plugins/withFocusLockAndroid",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,
