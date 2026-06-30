@@ -53,8 +53,8 @@ const SLIDES = [
     accent: "#32D74B",
   },
   {
-    video: null,
-    gif: require("../assets/images/duck-screen4.gif"),
+    video: require("../assets/images/duck-screen4.mp4"),
+    gif: null,
     gradient: ["#FFBF80", "#FFA660"] as const,
     glowColor: "#FFBF80",
     title: "True\nEnforcement",
