@@ -48,13 +48,28 @@ function DuckCharacter() {
     p.muted = false;
   });
 
+  // Idle video को mount होते ही force play करो (autoplay block fix)
+  useEffect(() => {
+    idlePlayer.muted = true;
+    idlePlayer.loop = true;
+    idlePlayer.play();
+  }, [idlePlayer]);
+
+  // isTouched false होते ही idle को explicitly restart करो
+  useEffect(() => {
+    if (!isTouched) {
+      idlePlayer.muted = true;
+      idlePlayer.play();
+    }
+  }, [isTouched, idlePlayer]);
+
+  // Touch video खत्म होने पर वापस idle पर लाओ
   useEffect(() => {
     const sub = touchPlayer.addListener("playToEnd", () => {
       setIsTouched(false);
-      idlePlayer.play();
     });
     return () => sub.remove();
-  }, [touchPlayer, idlePlayer]);
+  }, [touchPlayer]);
 
   function handlePress() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -70,18 +85,23 @@ function DuckCharacter() {
       activeOpacity={0.85}
       style={styles.duckContainer}
     >
-      <VideoView
-        player={idlePlayer}
-        style={[styles.duckVideo, isTouched && { opacity: 0, position: "absolute" }]}
-        contentFit="contain"
-        nativeControls={false}
-      />
-      <VideoView
-        player={touchPlayer}
-        style={[styles.duckVideo, !isTouched && { opacity: 0, position: "absolute" }]}
-        contentFit="contain"
-        nativeControls={false}
-      />
+      {!isTouched ? (
+        <VideoView
+          key="idle-video"
+          player={idlePlayer}
+          style={styles.duckVideo}
+          contentFit="contain"
+          nativeControls={false}
+        />
+      ) : (
+        <VideoView
+          key="touch-video"
+          player={touchPlayer}
+          style={styles.duckVideo}
+          contentFit="contain"
+          nativeControls={false}
+        />
+      )}
     </TouchableOpacity>
   );
 }
