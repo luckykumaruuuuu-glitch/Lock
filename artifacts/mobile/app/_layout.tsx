@@ -12,7 +12,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
+import { SafeKeyboardProvider } from "@/components/SafeKeyboardProvider";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -179,9 +179,9 @@ export default function RootLayout() {
             <LockProvider>
               <FirebaseSyncProvider>
                 <GestureHandlerRootView>
-                  <KeyboardProvider>
+                  <SafeKeyboardProvider>
                     <RootLayoutNav />
-                  </KeyboardProvider>
+                  </SafeKeyboardProvider>
                 </GestureHandlerRootView>
               </FirebaseSyncProvider>
             </LockProvider>
