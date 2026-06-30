@@ -158,7 +158,7 @@ export default function SetupScreen() {
   const topPad = Platform.OS === "web" ? 52 : insets.top + 12;
   const botPad = Platform.OS === "web" ? 40 : insets.bottom + 20;
 
-  const whyMaxHeight = whyHeight.interpolate({ inputRange: [0, 1], outputRange: [0, 260] });
+  const whyMaxHeight = whyHeight.interpolate({ inputRange: [0, 1], outputRange: [0, 420] });
   const whyOpacity   = whyHeight.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0, 1] });
 
   return (
@@ -223,15 +223,19 @@ export default function SetupScreen() {
           </Animated.View>
         </Pressable>
 
-        <Animated.View style={{ maxHeight: whyMaxHeight, overflow: "hidden", opacity: whyOpacity }}>
-          <View style={styles.whyBody}>
+        <Animated.View style={{ maxHeight: whyMaxHeight, opacity: whyOpacity, overflow: "hidden" }}>
+          <ScrollView
+            nestedScrollEnabled
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.whyBody}
+          >
             {PERMS.map((perm) => (
               <View key={perm.id} style={styles.whyRow}>
                 <Text style={styles.whyLabel}>{perm.label}</Text>
                 <Text style={styles.whyDesc}>{perm.whyNeeded}</Text>
               </View>
             ))}
-          </View>
+          </ScrollView>
         </Animated.View>
 
         {/* ── Continue button (appears when all granted) ── */}
@@ -358,10 +362,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#1C1C1E",
     borderRadius: 16,
     paddingHorizontal: 18,
-    paddingTop: 4,
-    paddingBottom: 18,
-    gap: 14,
-    marginTop: -8,
+    paddingTop: 12,
+    paddingBottom: 32,
+    gap: 16,
   },
   whyRow: {
     gap: 3,
