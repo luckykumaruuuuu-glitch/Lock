@@ -26,37 +26,37 @@ const TERMS_OF_SERVICE = `Terms of Service
 Last updated: June 2026
 
 1. Agreement to Terms
-By downloading, installing, or using FocusLock, you confirm that you have read, understood, and agreed to these Terms of Service in their entirety. If you do not agree, you must not use this application.
+By downloading, installing, or using DuckLock, you confirm that you have read, understood, and agreed to these Terms of Service in their entirety. If you do not agree, you must not use this application.
 
 2. Nature of the App
-FocusLock is a voluntary self-discipline tool that allows users to block selected applications on their device for a self-chosen duration. The lock is intentionally irreversible until the timer expires — this is a core feature, not a bug.
+DuckLock is a voluntary self-discipline tool that allows users to block selected applications on their device for a self-chosen duration. The lock is intentionally irreversible until the timer expires — this is a core feature, not a bug.
 
 3. Informed Consent
 Before any lock is activated, users are shown a clear confirmation screen outlining the lock duration and consequences. By proceeding, the user accepts full responsibility for the lock they have set.
 
 4. No Early Unlock
-Under no circumstances will FocusLock remove an active lock before the timer expires. This includes requests from the user, technical issues, change of mind, or emergencies. No exceptions exist by design.
+Under no circumstances will DuckLock remove an active lock before the timer expires. This includes requests from the user, technical issues, change of mind, or emergencies. No exceptions exist by design.
 
 5. User Responsibility
 You are solely responsible for the apps you choose to lock and the duration you select.
 
-You must grant all required device permissions for the app to function correctly. FocusLock is not responsible for incomplete functionality due to denied permissions.
+You must grant all required device permissions for the app to function correctly. DuckLock is not responsible for incomplete functionality due to denied permissions.
 
 If Device Admin permission is not granted, uninstall protection will not work. This is the user's responsibility.
 
-Factory reset, Android system updates, or manufacturer restrictions may affect lock functionality. FocusLock is not liable for such cases.
+Factory reset, Android system updates, or manufacturer restrictions may affect lock functionality. DuckLock is not liable for such cases.
 
 6. No Warranty
-FocusLock is provided as-is. We do not guarantee that the app will work identically on all Android devices due to manufacturer-level restrictions and Android version differences.
+DuckLock is provided as-is. We do not guarantee that the app will work identically on all Android devices due to manufacturer-level restrictions and Android version differences.
 
 7. Limitation of Liability
-FocusLock and its developers shall not be held liable for any direct, indirect, or consequential damages arising from the use or inability to use this app, including but not limited to missed notifications, inaccessible apps, or lost productivity during a lock period.
+DuckLock and its developers shall not be held liable for any direct, indirect, or consequential damages arising from the use or inability to use this app, including but not limited to missed notifications, inaccessible apps, or lost productivity during a lock period.
 
 8. Complaints & Disputes
 By using this app, you acknowledge that you were clearly informed of all restrictions before activating any lock. Any complaint regarding locked apps or inability to access them during an active lock period will not be considered valid, as the user voluntarily initiated the lock after reading all warnings.
 
 9. Eligibility
-You must be at least 18 years of age to use FocusLock. By using the app, you confirm you meet this requirement.
+You must be at least 18 years of age to use DuckLock. By using the app, you confirm you meet this requirement.
 
 10. Changes to Terms
 We reserve the right to update these Terms at any time. Continued use of the app after changes constitutes acceptance of the new Terms.
@@ -64,21 +64,21 @@ We reserve the right to update these Terms at any time. Continued use of the app
 11. Contact
 For support or feedback, use the in-app Feedback option.`;
 
-const PRIVACY_POLICY = `FocusLock Privacy Policy
+const PRIVACY_POLICY = `DuckLock Privacy Policy
 Last updated: June 28, 2026
 
 1. INFORMATION WE COLLECT
-FocusLock does not collect any personal information. The app operates primarily on your device. If Firebase is configured, a random device UUID (not linked to any personal identity) is used as a database path to sync lock states.
+DuckLock does not collect any personal information. The app operates primarily on your device. If Firebase is configured, a random device UUID (not linked to any personal identity) is used as a database path to sync lock states.
 
 2. DATA STORED ON DEVICE
-FocusLock stores the following data locally:
+DuckLock stores the following data locally:
 • Active lock entries (which apps are locked and until when)
 • Permission grant status for Accessibility Service and Device Admin
 • Onboarding completion flag
 • Sound preference setting
 
 3. FIREBASE REALTIME DATABASE (OPTIONAL)
-If Firebase credentials are configured, FocusLock syncs lock data using a randomly generated device UUID. No personal information is stored.
+If Firebase credentials are configured, DuckLock syncs lock data using a randomly generated device UUID. No personal information is stored.
 
 4. ANDROID PERMISSIONS
 • Accessibility Service: To detect and block locked apps in the foreground
@@ -89,10 +89,10 @@ If Firebase credentials are configured, FocusLock syncs lock data using a random
 • Internet: For optional Firebase time verification
 
 5. DATA SHARING
-FocusLock does not share, sell, or transmit your data to any third parties.
+DuckLock does not share, sell, or transmit your data to any third parties.
 
 6. CHILDREN'S PRIVACY
-FocusLock does not knowingly collect data from children under 13.
+DuckLock does not knowingly collect data from children under 13.
 
 7. CONTACT
 For privacy concerns, contact the developer through the app's Google Play listing.`;
@@ -444,13 +444,13 @@ export default function SettingsScreen() {
               <Feather name="shield" size={22} color="#FFBF80" />
             </View>
             <View>
-              <Text style={styles.aboutName}>FocusLock</Text>
+              <Text style={styles.aboutName}>DuckLock</Text>
               <Text style={styles.aboutVersion}>Version {APP_VERSION}</Text>
             </View>
           </View>
         </GlassCard>
 
-        <Text style={styles.footer}>FocusLock {APP_VERSION}</Text>
+        <Text style={styles.footer}>DuckLock {APP_VERSION}</Text>
       </ScrollView>
 
       <TextModal

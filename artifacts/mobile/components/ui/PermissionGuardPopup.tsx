@@ -38,7 +38,7 @@ async function openSettingsForPerm(id: PermissionId): Promise<void> {
             extra: {
               "android.app.extra.DEVICE_ADMIN": `${APP_PACKAGE}/.DeviceAdminReceiver`,
               "android.app.extra.ADD_EXPLANATION":
-                "FocusLock needs device admin to prevent uninstall while a lock is active.",
+                "DuckLock needs device admin to prevent uninstall while a lock is active.",
             },
           }
         );
@@ -121,7 +121,7 @@ export function PermissionGuardPopup({ missing, onRecheck }: Props) {
           {/* Title */}
           <Text style={styles.title}>Permissions Missing</Text>
           <Text style={styles.subtitle}>
-            FocusLock cannot work properly without these permissions. Please
+            DuckLock cannot work properly without these permissions. Please
             grant them to continue.
           </Text>
 

@@ -29,7 +29,7 @@ const SLIDES = [
     gradient: ["#FFBF80", "#FFA660"] as const,
     glowColor: "#FFBF80",
     title: "Take Back\nControl",
-    body: "FocusLock lets you lock distracting apps for a set period — with absolutely no way to bypass it early. Your commitment, enforced.",
+    body: "DuckLock lets you lock distracting apps for a set period — with absolutely no way to bypass it early. Your commitment, enforced.",
     accent: "#FFBF80",
   },
   {
@@ -45,7 +45,7 @@ const SLIDES = [
     gradient: ["#32D74B", "#30C244"] as const,
     glowColor: "#32D74B",
     title: "Server-Verified\nTime",
-    body: "FocusLock uses Firebase server time, not your device clock. Changing the date or time on your phone won't unlock a single app.",
+    body: "DuckLock uses Firebase server time, not your device clock. Changing the date or time on your phone won't unlock a single app.",
     accent: "#32D74B",
   },
   {
@@ -53,7 +53,7 @@ const SLIDES = [
     gradient: ["#FFBF80", "#FFA660"] as const,
     glowColor: "#FFBF80",
     title: "True\nEnforcement",
-    body: "Device Administrator prevents uninstalling FocusLock while active. The Accessibility Service blocks apps in real-time.",
+    body: "Device Administrator prevents uninstalling DuckLock while active. The Accessibility Service blocks apps in real-time.",
     accent: "#FFBF80",
   },
 ];

@@ -48,7 +48,7 @@ async function scheduleUnlockNotification(entry: LockEntry): Promise<void> {
   await Notifications.scheduleNotificationAsync({
     identifier: `unlock_${entry.id}`,
     content: {
-      title: "🔓 FocusLock — Locks Removed",
+      title: "🔓 DuckLock — Locks Removed",
       body: `Your lock on ${appNames} has expired. Stay focused! 💪`,
       data: { lockId: entry.id },
     },

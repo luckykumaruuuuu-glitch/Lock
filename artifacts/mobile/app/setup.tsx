@@ -34,7 +34,7 @@ async function openDeviceAdmin() {
     await IntentLauncher.startActivityAsync("android.app.action.ADD_DEVICE_ADMIN", {
       extra: {
         "android.app.extra.DEVICE_ADMIN": `${APP_PACKAGE}/.DeviceAdminReceiver`,
-        "android.app.extra.ADD_EXPLANATION": "FocusLock needs device admin to prevent uninstall while a lock is active.",
+        "android.app.extra.ADD_EXPLANATION": "DuckLock needs device admin to prevent uninstall while a lock is active.",
       },
     });
   } catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
@@ -74,9 +74,9 @@ interface PermItem {
 }
 
 const PERMS: PermItem[] = [
-  { id: "usageAccess",  label: "Usage Access",        whyNeeded: "App usage track karne ke liye — FocusLock ko pata chal sake kaunsa app open hai.",         openSettings: openUsageAccess },
+  { id: "usageAccess",  label: "Usage Access",        whyNeeded: "App usage track karne ke liye — DuckLock ko pata chal sake kaunsa app open hai.",         openSettings: openUsageAccess },
   { id: "deviceAdmin",  label: "Device Admin",         whyNeeded: "Uninstall block karne ke liye — lock active hone par app delete nahi ho sakti.",            openSettings: openDeviceAdmin },
-  { id: "overlay",      label: "Display Over Apps",    whyNeeded: "Block screen dikhane ke liye — locked app ke upar FocusLock ka screen aayega.",             openSettings: openOverlay },
+  { id: "overlay",      label: "Display Over Apps",    whyNeeded: "Block screen dikhane ke liye — locked app ke upar DuckLock ka screen aayega.",             openSettings: openOverlay },
   { id: "notification", label: "Notifications",        whyNeeded: "Reminders ke liye — lock expire hone par aur session updates ke liye notifications aayenge.", openSettings: openNotification },
   { id: "battery",      label: "Battery Optimization", whyNeeded: "Background mein chalne ke liye — Android app ko band na kare jab screen off ho.",           openSettings: openBattery },
 ];
@@ -168,7 +168,7 @@ export default function SetupScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Title ── */}
-        <Text style={styles.title}>Enable permissions{"\n"}to use FocusLock</Text>
+        <Text style={styles.title}>Enable permissions{"\n"}to use DuckLock</Text>
         <Text style={styles.subtitle}>{grantedCount} of {PERMS.length} granted</Text>
 
         {/* ── Permissions list ── */}
