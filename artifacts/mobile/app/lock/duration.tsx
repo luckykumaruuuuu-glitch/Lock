@@ -327,7 +327,7 @@ function TimePickerModal({
           <View style={calStyles.divider} />
 
           {/* Hour  :  Minute  (+ AM/PM in 12h mode) */}
-          <View style={tpStyles.timeRow}>
+          <View style={[tpStyles.timeRow, !is24Hour && tpStyles.timeRowCompact]}>
             {/* Hours */}
             <View style={tpStyles.col}>
               <Text style={tpStyles.colLabel}>Hour</Text>
@@ -337,7 +337,7 @@ function TimePickerModal({
               >
                 <Feather name="chevron-up" size={26} color="#FFBF80" />
               </Pressable>
-              <View style={tpStyles.valueBox}>
+              <View style={[tpStyles.valueBox, !is24Hour && tpStyles.valueBoxCompact]}>
                 <Text style={tpStyles.valueText}>{pad(displayHour)}</Text>
               </View>
               <Pressable
@@ -359,7 +359,7 @@ function TimePickerModal({
               >
                 <Feather name="chevron-up" size={26} color="#FFBF80" />
               </Pressable>
-              <View style={tpStyles.valueBox}>
+              <View style={[tpStyles.valueBox, !is24Hour && tpStyles.valueBoxCompact]}>
                 <Text style={tpStyles.valueText}>{pad(minute)}</Text>
               </View>
               <Pressable
@@ -382,7 +382,7 @@ function TimePickerModal({
                   >
                     <Feather name="chevron-up" size={26} color="#FFBF80" />
                   </Pressable>
-                  <View style={tpStyles.valueBox}>
+                  <View style={[tpStyles.valueBox, tpStyles.periodValueBox]}>
                     <Text style={[tpStyles.valueText, tpStyles.ampmText]}>
                       {isAm ? "AM" : "PM"}
                     </Text>
@@ -445,11 +445,14 @@ const tpStyles = StyleSheet.create({
   headerSub:     { fontSize: 13, fontFamily: "Inter_400Regular", color: "#8E8E93", marginTop: 4 },
   fmtToggle:     { backgroundColor: "#2C2C2E", borderRadius: 8, borderWidth: 1, borderColor: "rgba(255,191,128,0.25)", paddingHorizontal: 10, paddingVertical: 6 },
   fmtToggleText: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#FFBF80", letterSpacing: 0.5 },
-  timeRow:       { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 28, gap: 20 },
+  timeRow:       { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 28, paddingHorizontal: 8, gap: 20 },
+  timeRowCompact:{ gap: 10, paddingHorizontal: 4 },
   col:           { alignItems: "center", gap: 10 },
   colLabel:      { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#8E8E93", letterSpacing: 0.8, textTransform: "uppercase" },
   arrow:         { padding: 4 },
   valueBox:      { width: 76, height: 68, alignItems: "center", justifyContent: "center", backgroundColor: "#2C2C2E", borderRadius: 14, borderWidth: 1, borderColor: "rgba(255,191,128,0.25)" },
+  valueBoxCompact:{ width: 62 },
+  periodValueBox:{ width: 60 },
   valueText:     { fontSize: 38, fontFamily: "Inter_700Bold", color: "#FFBF80" },
   ampmText:      { fontSize: 22 },
   colon:         { fontSize: 38, fontFamily: "Inter_700Bold", color: "#FFBF80", marginTop: 26 },
