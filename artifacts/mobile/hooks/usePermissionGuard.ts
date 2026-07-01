@@ -1,5 +1,4 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Notifications from "expo-notifications";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, AppStateStatus, Platform } from "react-native";
 
@@ -23,7 +22,9 @@ const PERM_LABELS: Record<PermissionId, string> = {
 };
 
 async function checkNotificationGranted(): Promise<boolean> {
+  if (Platform.OS !== "android") return true;
   try {
+    const Notifications = require("expo-notifications");
     const { status } = await Notifications.getPermissionsAsync();
     return status === "granted";
   } catch {

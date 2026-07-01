@@ -1,7 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as IntentLauncher from "expo-intent-launcher";
-import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -49,6 +48,7 @@ async function openOverlay() {
 async function openNotification() {
   if (Platform.OS !== "android") return;
   try {
+    const Notifications = require("expo-notifications");
     const { status } = await Notifications.requestPermissionsAsync();
     if (status === "granted") return;
     await IntentLauncher.startActivityAsync("android.settings.APP_NOTIFICATION_SETTINGS", {
@@ -93,8 +93,9 @@ export default function SetupScreen() {
   const appStateRef   = useRef<AppStateStatus>(AppState.currentState);
   const lastOpenedRef = useRef<PermissionId | null>(null);
 
-  const grantedCount = PERMS.filter(p => permissions[p.id]?.granted).length;
-  const allGranted   = grantedCount === PERMS.length;
+  const isWeb        = Platform.OS === "web";
+  const grantedCount = isWeb ? PERMS.length : PERMS.filter(p => permissions[p.id]?.granted).length;
+  const allGranted   = isWeb || grantedCount === PERMS.length;
 
   useEffect(() => {
     Animated.spring(continueAnim, {
@@ -174,7 +175,7 @@ export default function SetupScreen() {
         {/* ── Permissions list ── */}
         <View style={styles.listCard}>
           {PERMS.map((perm, i) => {
-            const granted   = permissions[perm.id]?.granted ?? false;
+            const granted   = isWeb || (permissions[perm.id]?.granted ?? false);
             const isOpening = opening === perm.id;
             const isLast    = i === PERMS.length - 1;
 

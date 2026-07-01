@@ -1,6 +1,5 @@
 import { Feather } from "@expo/vector-icons";
 import * as IntentLauncher from "expo-intent-launcher";
-import * as Notifications from "expo-notifications";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
@@ -51,6 +50,7 @@ async function openSettingsForPerm(id: PermissionId): Promise<void> {
         break;
       case "notification":
         try {
+          const Notifications = require("expo-notifications");
           const { status } = await Notifications.requestPermissionsAsync();
           if (status === "granted") return;
         } catch {}
