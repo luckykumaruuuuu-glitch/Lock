@@ -279,7 +279,8 @@ export async function writeStartupUnverifiedMarker(): Promise<void> {
 export function getDurationMs(
   preset: string,
   customDays: string,
-  customHours: string
+  customHours: string,
+  customMinutes: string = "0"
 ): number {
   const MS_DAY = 24 * 60 * 60 * 1000;
   if (preset === "1d") return MS_DAY;
@@ -287,22 +288,26 @@ export function getDurationMs(
   if (preset === "30d") return 30 * MS_DAY;
   const d = Math.min(Math.max(0, parseInt(customDays) || 0), MAX_DURATION_DAYS);
   const h = Math.min(Math.max(0, parseInt(customHours) || 0), 23);
-  return (d * 24 + h) * 60 * 60 * 1000;
+  const m = Math.min(Math.max(0, parseInt(customMinutes) || 0), 59);
+  return ((d * 24 + h) * 60 + m) * 60 * 1000;
 }
 
 export function getDurationLabel(
   preset: string,
   customDays: string,
-  customHours: string
+  customHours: string,
+  customMinutes: string = "0"
 ): string {
   if (preset === "1d") return "1 Day";
   if (preset === "7d") return "7 Days";
   if (preset === "30d") return "30 Days";
   const d = Math.min(Math.max(0, parseInt(customDays) || 0), MAX_DURATION_DAYS);
   const h = Math.min(Math.max(0, parseInt(customHours) || 0), 23);
+  const m = Math.min(Math.max(0, parseInt(customMinutes) || 0), 59);
   const parts: string[] = [];
   if (d > 0) parts.push(`${d}d`);
   if (h > 0) parts.push(`${h}h`);
+  if (m > 0) parts.push(`${m}m`);
   return `Custom: ${parts.join(" ")}`;
 }
 

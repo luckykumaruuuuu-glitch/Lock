@@ -22,15 +22,17 @@ import { useLock } from "@/context/LockContext";
 import { formatExpiryDate, getDurationMs } from "@/hooks/useLockStorage";
 import { isFirebaseConfigured } from "@/lib/firebase";
 
-function getDisplayDuration(preset: string, customDays: string, customHours: string): string {
+function getDisplayDuration(preset: string, customDays: string, customHours: string, customMinutes: string = "0"): string {
   if (preset === "1d") return "1 Day (24 hours)";
   if (preset === "7d") return "7 Days";
   if (preset === "30d") return "30 Days";
   const d = parseInt(customDays) || 0;
   const h = parseInt(customHours) || 0;
+  const m = parseInt(customMinutes) || 0;
   const parts: string[] = [];
   if (d > 0) parts.push(`${d} day${d !== 1 ? "s" : ""}`);
   if (h > 0) parts.push(`${h} hour${h !== 1 ? "s" : ""}`);
+  if (m > 0) parts.push(`${m} minute${m !== 1 ? "s" : ""}`);
   return parts.join(" and ") || "No duration";
 }
 
@@ -323,8 +325,8 @@ export default function ConfirmScreen() {
 
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const durationText = getDisplayDuration(selection.durationPreset, selection.customDays, selection.customHours);
-  const durationMs   = getDurationMs(selection.durationPreset, selection.customDays, selection.customHours);
+  const durationText = getDisplayDuration(selection.durationPreset, selection.customDays, selection.customHours, selection.customMinutes);
+  const durationMs   = getDurationMs(selection.durationPreset, selection.customDays, selection.customHours, selection.customMinutes);
   const expiryDate   = formatExpiryDate(Date.now() + durationMs);
   const appNames     = selection.selectedApps.map(a => a.name);
 

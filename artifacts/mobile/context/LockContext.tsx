@@ -30,6 +30,7 @@ export interface LockSelection {
   durationPreset: DurationPreset;
   customDays: string;
   customHours: string;
+  customMinutes: string;
 }
 
 export interface LockCreationResult {
@@ -43,6 +44,7 @@ interface LockContextType {
   setDurationPreset: (preset: DurationPreset) => void;
   setCustomDays: (v: string) => void;
   setCustomHours: (v: string) => void;
+  setCustomMinutes: (v: string) => void;
   resetSelection: () => void;
   confirmLock: () => Promise<LockCreationResult | null>;
 }
@@ -52,6 +54,7 @@ const defaultSelection: LockSelection = {
   durationPreset: "1d",
   customDays: "1",
   customHours: "0",
+  customMinutes: "0",
 };
 
 const LockContext = createContext<LockContextType>({
@@ -60,6 +63,7 @@ const LockContext = createContext<LockContextType>({
   setDurationPreset: () => {},
   setCustomDays: () => {},
   setCustomHours: () => {},
+  setCustomMinutes: () => {},
   resetSelection: () => {},
   confirmLock: async () => null,
 });
@@ -79,14 +83,17 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
   const setCustomHours = (v: string) =>
     setSelection((s) => ({ ...s, customHours: v }));
 
+  const setCustomMinutes = (v: string) =>
+    setSelection((s) => ({ ...s, customMinutes: v }));
+
   const resetSelection = () => setSelection(defaultSelection);
 
   const confirmLock = async (): Promise<LockCreationResult | null> => {
-    const { selectedApps, durationPreset, customDays, customHours } = selection;
+    const { selectedApps, durationPreset, customDays, customHours, customMinutes } = selection;
     if (selectedApps.length === 0) return null;
 
     const now = Date.now();
-    const durationMs = getDurationMs(durationPreset, customDays, customHours);
+    const durationMs = getDurationMs(durationPreset, customDays, customHours, customMinutes);
     const endTime = now + durationMs;
 
     /* ── Duplicate detection: skip apps already locked ── */
@@ -140,6 +147,7 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
         setDurationPreset,
         setCustomDays,
         setCustomHours,
+        setCustomMinutes,
         resetSelection,
         confirmLock,
       }}

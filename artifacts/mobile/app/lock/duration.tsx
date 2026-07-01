@@ -478,7 +478,7 @@ const tpStyles = StyleSheet.create({
 /* ── Main Duration Screen ── */
 export default function DurationScreen() {
   const insets = useSafeAreaInsets();
-  const { selection, setDurationPreset, setCustomDays, setCustomHours } = useLock();
+  const { selection, setDurationPreset, setCustomDays, setCustomHours, setCustomMinutes } = useLock();
   const { playClick } = useSounds();
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -522,12 +522,15 @@ export default function DurationScreen() {
 
     if (target <= now) return; // validation already done in modal, safety guard
 
-    const durationMs  = target.getTime() - now.getTime();
-    const totalHours  = Math.ceil(durationMs / (60 * 60 * 1000));
+    const durationMs    = target.getTime() - now.getTime();
+    const totalMinutes  = Math.floor(durationMs / (60 * 1000));
+    const wholeHours    = Math.floor(totalMinutes / 60);
+    const remMinutes    = totalMinutes % 60;
 
     setPickedDate(target);
     setCustomDays("0");
-    setCustomHours(String(Math.max(1, totalHours)));
+    setCustomHours(String(wholeHours));
+    setCustomMinutes(String(remMinutes));
     setShowTimePicker(false);
   }
 
@@ -535,9 +538,14 @@ export default function DurationScreen() {
     if (selection.durationPreset === "custom") {
       if (!pickedDate) return "No date selected";
       if (sameDay(pickedDate, new Date())) {
-        const durationMs = pickedDate.getTime() - Date.now();
-        const totalHours = Math.ceil(durationMs / (60 * 60 * 1000));
-        return `Today, ~${totalHours}h`;
+        const durationMs    = pickedDate.getTime() - Date.now();
+        const totalMinutes  = Math.floor(durationMs / (60 * 1000));
+        const h = Math.floor(totalMinutes / 60);
+        const m = totalMinutes % 60;
+        const parts: string[] = [];
+        if (h > 0) parts.push(`${h}h`);
+        if (m > 0) parts.push(`${m}m`);
+        return `Today, ${parts.join(" ") || "<1m"}`;
       }
       const days = msToDays(pickedDate.getTime() - Date.now());
       return `${days} day${days !== 1 ? "s" : ""}`;
