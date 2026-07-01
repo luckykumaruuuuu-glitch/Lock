@@ -1,0 +1,22 @@
+पूरे app में screen transitions, popups, और navigation animations में smoothness/white-flash की problem है। Web preview पर सब कुछ smooth चलता है, लेकिन Expo Go और native APK दोनों पर (यह सिर्फ Expo Go की समस्या नहीं है, APK में भी रहती है) — किसी भी screen पर जाने या back आने पर एक बहुत छोटी सी white/blank flash screen दिखती है, और popups/page transitions jerky लगते हैं, browser जितने smooth नहीं।
+Root causes जो check और fix करने हैं:
+Navigation stack का background color:
+हर screen की navigation options में contentStyle (या Expo Router में screenOptions) में explicitly dark background set करो, ताकि transition के बीच में कभी default white background ना दिखे:
+Javascript
+अगर Expo Router इस्तेमाल हो रहा है तो app/_layout.tsx में root Stack पर यह globally set करो, हर individual screen पर बार-बार नहीं।
+Root-level background:
+app.json/app.config.js में Android के लिए backgroundColor explicitly dark set करो (splash screen और root view दोनों के लिए), ताकि native level पर भी कभी white ना दिखे:
+Json
+Modal/Popup transitions:
+जहाँ भी Modal component (React Native का) इस्तेमाल हो रहा है, उसमें animationType="fade" या "slide" properly set करो, और Modal के अंदर root View का background भी explicitly dark set करो — Modal खुद transparent background के साथ आता है by default जिससे नीचे का white base दिख सकता है।
+Animated API में useNativeDriver:
+पूरे codebase में जितनी भी Animated.timing(), Animated.spring() calls हैं, हर एक में useNativeDriver: true confirm करो (सिर्फ opacity/transform properties के लिए ही यह possible है, layout properties जैसे width/height के लिए नहीं — वहाँ अलग approach चाहिए हो सकता है)। यह animations को JS thread से हटाकर native/UI thread पर चलाता है, जिससे jerk नहीं आता।
+StatusBar aur SafeAreaView background:
+StatusBar aur SafeAreaView ka background bhi confirm karo ki wo dark theme se match kare, koi white gap na dikhe transition ke दौरान top/bottom edges par.
+Test scenario jo सही होना चाहिए:
+कोई भी screen खोलो, कोई popup खोलो/बंद करो, back button दबाओ — कहीं भी, कभी भी एक भी frame के लिए सफ़ेद/blank flash नहीं दिखनी चाहिए, transition बिल्कुल browser जितना smooth लगना चाहिए।
+ज़रूरी:
+यह सिर्फ transition/rendering smoothness से जुड़ा global-level fix है
+कोई existing function, feature, logic (locking, Firebase, duck animation, sound, time picker) बिल्कुल मत छेड़ना
+हर screen को individually मत छेड़ना अगर root/global level पर fix हो सकता है (जैसे root Stack config में background सेट करना) — इससे कम changes में ज़्यादा असर पड़ेगा और existing चीज़ें टूटने का risk कम रहेगा
+Fix करने के बाद बताओ कि exactly कौन-कौन सी जगह पर background/animation config missing था, ताकि पता चले असली वजह क्या थी"

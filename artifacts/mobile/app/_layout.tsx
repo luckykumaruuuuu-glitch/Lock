@@ -110,7 +110,7 @@ function RootLayoutNav() {
             fontSize: 17,
           },
           headerShadowVisible: false,
-          contentStyle: { backgroundColor: "transparent" },
+          contentStyle: { backgroundColor: "#000000" },
           animation: "slide_from_right",
           animationDuration: 300,
           gestureEnabled: true,
