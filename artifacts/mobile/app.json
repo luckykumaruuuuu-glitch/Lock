@@ -61,7 +61,8 @@
         }
       ],
       "./plugins/withFocusLockAndroid",
-      "expo-video"
+      "expo-video",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

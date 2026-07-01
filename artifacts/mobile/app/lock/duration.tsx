@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
+import * as Localization from "expo-localization";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -232,8 +233,8 @@ const calStyles = StyleSheet.create({
 });
 
 /* ── System time format detection ── */
-function detectTimeFormat(): boolean {
-  // Returns true if device/locale uses 24-hour clock
+function detectTimeFormatFromLocale(): boolean {
+  // Fallback: returns true if device/locale uses 24-hour clock
   try {
     const sample = new Date(2000, 0, 1, 13, 0, 0); // 1 PM
     const formatted = sample.toLocaleTimeString([], { hour: "numeric" });
@@ -241,6 +242,20 @@ function detectTimeFormat(): boolean {
   } catch {
     return false;
   }
+}
+
+function detectTimeFormat(): boolean {
+  // Returns true if device uses 24-hour clock.
+  // Prefer the actual OS-level time-format setting (Localization.getCalendars()),
+  // which reflects the user's explicit 24-hour toggle even when it differs from
+  // their locale/region. Fall back to the locale-based heuristic if unavailable.
+  try {
+    const uses24hourClock = Localization.getCalendars()?.[0]?.uses24hourClock;
+    if (typeof uses24hourClock === "boolean") return uses24hourClock;
+  } catch {
+    // fall through to locale-based fallback
+  }
+  return detectTimeFormatFromLocale();
 }
 
 /* ── Time Picker Modal (for today's date) ── */
