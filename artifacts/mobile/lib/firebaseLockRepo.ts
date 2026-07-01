@@ -7,18 +7,42 @@ import {
   set,
   update,
 } from "firebase/database";
+import * as Application from "expo-application";
+import { Platform } from "react-native";
 
 import { LockEntry } from "@/hooks/useLockStorage";
 import { getFirebaseDb } from "./firebase";
 
 /* ───────────────────────────────────────────────
-   Device ID — unique per install, used as the
+   Device ID — unique per device, used as the
    RTDB path key instead of Firebase Auth UID.
-   Stored in AsyncStorage and never changes.
+
+   Priority:
+   1. Android — Application.androidId (hardware-based,
+      survives "Clear Data" because it is derived from
+      device hardware + signing key + package name).
+   2. iOS / web — AsyncStorage UUID (generated once,
+      survives normal app restarts).
+
+   The AsyncStorage cache is kept so the ID is always
+   available synchronously after the first call.
 ─────────────────────────────────────────────── */
 const DEVICE_ID_KEY = "focuslock_device_id";
 
 export async function getDeviceId(): Promise<string> {
+  // Android: prefer hardware-backed androidId — survives Clear Data
+  if (Platform.OS === "android") {
+    const androidId = Application.getAndroidId();
+    if (androidId) {
+      // Sanitise: Firebase path segments cannot contain ".", "#", "$", "[", "]"
+      const safeId = androidId.replace(/[.#$[\]]/g, "_");
+      // Keep AsyncStorage in sync so other callers get the same value quickly
+      AsyncStorage.setItem(DEVICE_ID_KEY, safeId).catch(() => {});
+      return safeId;
+    }
+  }
+
+  // iOS / web / fallback: use cached UUID from AsyncStorage
   let id = await AsyncStorage.getItem(DEVICE_ID_KEY);
   if (!id) {
     // uuid-lite: timestamp + random hex
