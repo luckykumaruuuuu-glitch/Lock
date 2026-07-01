@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Modal,
   Platform,
@@ -231,6 +231,172 @@ const calStyles = StyleSheet.create({
   okBtnText:   { fontSize: 14, fontFamily: "Inter_700Bold", color: "#000000", letterSpacing: 0.5 },
 });
 
+/* ── Time Picker Modal (for today's date) ── */
+function TimePickerModal({
+  visible,
+  onCancel,
+  onConfirm,
+}: {
+  visible: boolean;
+  onCancel: () => void;
+  onConfirm: (hours: number, minutes: number) => void;
+}) {
+  function getDefaultTime(): { h: number; m: number } {
+    const d = new Date();
+    d.setHours(d.getHours() + 1, 0, 0, 0);
+    return { h: d.getHours() % 24, m: 0 };
+  }
+
+  const def = getDefaultTime();
+  const [hour,   setHour]   = useState(def.h);
+  const [minute, setMinute] = useState(def.m);
+  const [error,  setError]  = useState("");
+
+  useEffect(() => {
+    if (visible) {
+      const d = getDefaultTime();
+      setHour(d.h);
+      setMinute(d.m);
+      setError("");
+    }
+  }, [visible]);
+
+  function adjustHour(delta: number) {
+    setError("");
+    setHour(h => (h + delta + 24) % 24);
+  }
+  function adjustMinute(delta: number) {
+    setError("");
+    setMinute(m => (m + delta + 60) % 60);
+  }
+
+  function confirm() {
+    const now    = new Date();
+    const target = new Date();
+    target.setHours(hour, minute, 0, 0);
+    if (target <= now) {
+      setError("Please select a future time");
+      return;
+    }
+    onConfirm(hour, minute);
+  }
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+      <View style={calStyles.overlay}>
+        <View style={calStyles.sheet}>
+
+          {/* Header */}
+          <View style={tpStyles.header}>
+            <Text style={calStyles.monthLabel}>Select End Time</Text>
+            <Text style={tpStyles.headerSub}>Today — pick a future time</Text>
+          </View>
+
+          <View style={calStyles.divider} />
+
+          {/* Hour + Minute columns */}
+          <View style={tpStyles.timeRow}>
+            {/* Hours */}
+            <View style={tpStyles.col}>
+              <Text style={tpStyles.colLabel}>Hour</Text>
+              <Pressable
+                onPress={() => adjustHour(1)}
+                style={({ pressed }) => [tpStyles.arrow, { opacity: pressed ? 0.55 : 1 }]}
+              >
+                <Feather name="chevron-up" size={26} color="#FFBF80" />
+              </Pressable>
+              <View style={tpStyles.valueBox}>
+                <Text style={tpStyles.valueText}>{pad(hour)}</Text>
+              </View>
+              <Pressable
+                onPress={() => adjustHour(-1)}
+                style={({ pressed }) => [tpStyles.arrow, { opacity: pressed ? 0.55 : 1 }]}
+              >
+                <Feather name="chevron-down" size={26} color="#FFBF80" />
+              </Pressable>
+            </View>
+
+            <Text style={tpStyles.colon}>:</Text>
+
+            {/* Minutes */}
+            <View style={tpStyles.col}>
+              <Text style={tpStyles.colLabel}>Minute</Text>
+              <Pressable
+                onPress={() => adjustMinute(5)}
+                style={({ pressed }) => [tpStyles.arrow, { opacity: pressed ? 0.55 : 1 }]}
+              >
+                <Feather name="chevron-up" size={26} color="#FFBF80" />
+              </Pressable>
+              <View style={tpStyles.valueBox}>
+                <Text style={tpStyles.valueText}>{pad(minute)}</Text>
+              </View>
+              <Pressable
+                onPress={() => adjustMinute(-5)}
+                style={({ pressed }) => [tpStyles.arrow, { opacity: pressed ? 0.55 : 1 }]}
+              >
+                <Feather name="chevron-down" size={26} color="#FFBF80" />
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Error / spacer */}
+          <View style={tpStyles.errorRow}>
+            {!!error && (
+              <>
+                <Feather name="alert-circle" size={13} color="#FF453A" />
+                <Text style={tpStyles.errorText}>{error}</Text>
+              </>
+            )}
+          </View>
+
+          <View style={calStyles.divider} />
+
+          {/* CANCEL / CONFIRM */}
+          <View style={calStyles.btnRow}>
+            <Pressable
+              onPress={onCancel}
+              style={({ pressed }) => [calStyles.cancelBtn, { opacity: pressed ? 0.65 : 1 }]}
+            >
+              <Text style={calStyles.cancelBtnText}>CANCEL</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={confirm}
+              style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1 }]}
+            >
+              <LinearGradient
+                colors={["#FFBF80", "#FFA660"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={calStyles.okBtn}
+              >
+                <Text style={calStyles.okBtnText}>CONFIRM</Text>
+              </LinearGradient>
+            </Pressable>
+          </View>
+
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const tpStyles = StyleSheet.create({
+  header:    { alignItems: "center", paddingHorizontal: 20, paddingVertical: 20, backgroundColor: "#1C1C1E" },
+  headerSub: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#8E8E93", marginTop: 4 },
+  timeRow:   { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 28, gap: 20 },
+  col:       { alignItems: "center", gap: 10 },
+  colLabel:  { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#8E8E93", letterSpacing: 0.8, textTransform: "uppercase" },
+  arrow:     { padding: 4 },
+  valueBox:  { width: 76, height: 68, alignItems: "center", justifyContent: "center", backgroundColor: "#2C2C2E", borderRadius: 14, borderWidth: 1, borderColor: "rgba(255,191,128,0.25)" },
+  valueText: { fontSize: 38, fontFamily: "Inter_700Bold", color: "#FFBF80" },
+  colon:     { fontSize: 38, fontFamily: "Inter_700Bold", color: "#FFBF80", marginTop: 26 },
+  errorRow:  { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 20, paddingBottom: 14, minHeight: 30 },
+  errorText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#FF453A" },
+});
+
 /* ── Main Duration Screen ── */
 export default function DurationScreen() {
   const insets = useSafeAreaInsets();
@@ -238,8 +404,9 @@ export default function DurationScreen() {
   const { playClick } = useSounds();
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const [showPicker, setShowPicker] = useState(false);
-  const [pickedDate, setPickedDate] = useState<Date | null>(null);
+  const [showPicker,     setShowPicker]     = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [pickedDate,     setPickedDate]     = useState<Date | null>(null);
 
   function handleSelect(preset: DurationPreset) {
     playClick();
@@ -254,6 +421,14 @@ export default function DurationScreen() {
 
   function handleCalendarConfirm(date: Date) {
     setShowPicker(false);
+
+    // Today selected → open time picker instead
+    if (sameDay(date, new Date())) {
+      setShowTimePicker(true);
+      return;
+    }
+
+    // Future date → existing logic
     const today = startOfToday();
     if (date <= today) return;
     setPickedDate(date);
@@ -262,9 +437,30 @@ export default function DurationScreen() {
     setCustomHours("0");
   }
 
+  function handleTimeConfirm(hours: number, minutes: number) {
+    const now    = new Date();
+    const target = new Date();
+    target.setHours(hours, minutes, 0, 0);
+
+    if (target <= now) return; // validation already done in modal, safety guard
+
+    const durationMs  = target.getTime() - now.getTime();
+    const totalHours  = Math.ceil(durationMs / (60 * 60 * 1000));
+
+    setPickedDate(target);
+    setCustomDays("0");
+    setCustomHours(String(Math.max(1, totalHours)));
+    setShowTimePicker(false);
+  }
+
   function getSummary(): string {
     if (selection.durationPreset === "custom") {
       if (!pickedDate) return "No date selected";
+      if (sameDay(pickedDate, new Date())) {
+        const durationMs = pickedDate.getTime() - Date.now();
+        const totalHours = Math.ceil(durationMs / (60 * 60 * 1000));
+        return `Today, ~${totalHours}h`;
+      }
       const days = msToDays(pickedDate.getTime() - Date.now());
       return `${days} day${days !== 1 ? "s" : ""}`;
     }
@@ -273,6 +469,9 @@ export default function DurationScreen() {
 
   function getPickerLabel(): string {
     if (!pickedDate) return "Choose end date";
+    if (sameDay(pickedDate, new Date())) {
+      return `Today at ${pickedDate.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`;
+    }
     return pickedDate.toLocaleDateString(undefined, { weekday: "short", month: "long", day: "numeric", year: "numeric" });
   }
 
@@ -345,21 +544,30 @@ export default function DurationScreen() {
               <View style={styles.daysPreview}>
                 <Feather name="clock" size={13} color="#32D74B" />
                 <Text style={styles.daysPreviewText}>
-                  {msToDays(pickedDate.getTime() - Date.now())} days from today
+                  {sameDay(pickedDate, new Date())
+                    ? `~${Math.ceil((pickedDate.getTime() - Date.now()) / (60 * 60 * 1000))} hours from now`
+                    : `${msToDays(pickedDate.getTime() - Date.now())} days from today`}
                 </Text>
               </View>
             )}
           </GlassCard>
         )}
 
-        {/* Calendar */}
+        {/* Calendar — minDate includes today so user can select today */}
         <DarkCalendar
           visible={showPicker}
-          initial={pickedDate ?? tomorrowStart()}
-          minDate={tomorrowStart()}
+          initial={pickedDate ?? startOfToday()}
+          minDate={startOfToday()}
           maxDateVal={maxDate()}
           onCancel={() => setShowPicker(false)}
           onConfirm={handleCalendarConfirm}
+        />
+
+        {/* Time picker — shown when today is selected */}
+        <TimePickerModal
+          visible={showTimePicker}
+          onCancel={() => setShowTimePicker(false)}
+          onConfirm={handleTimeConfirm}
         />
 
         {/* Duration summary pill */}
