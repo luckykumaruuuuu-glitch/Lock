@@ -454,7 +454,7 @@ export default function ConfirmScreen() {
           style={({ pressed }) => [{ flex: 1, opacity: saving ? 0.7 : pressed ? 0.88 : 1 }]}
         >
           <LinearGradient
-            colors={["#FFD60A", "#FFA500"]}
+            colors={["#FFBF80", "#FFA660"]}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={styles.lockBtn}
           >
