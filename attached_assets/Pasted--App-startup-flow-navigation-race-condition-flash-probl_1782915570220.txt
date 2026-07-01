@@ -1,0 +1,18 @@
+"App के startup flow में एक navigation race condition/flash problem है। जब app पहली बार (fresh install पर) खुलती है, तो पहले 1-2 seconds के लिए गलती से Home screen दिखती है, फिर अचानक वापस Onboarding/Permission steps पर redirect कर देता है, वो सारे steps पूरे होने के बाद फिर से Home screen पर भेजता है। यह गलत behavior है — user को पहली बार में सीधा onboarding steps दिखने चाहिए (कोई home screen flash नहीं), step-by-step पूरा होकर तभी home screen आना चाहिए।
+Root cause:
+App का initial/default route Home पर fix है, और उसके बाद एक अलग useEffect में check होता है कि onboarding/permissions complete हैं या नहीं — तब जाकर redirect होता है। यह check render होने के बाद (post-render) चल रहा है, render होने से पहले (pre-render) नहीं — इसी वजह से home screen एक बार flash हो जाता है पहले।
+Fix करना है — routing decision render से पहले लॉक करो:
+App के root/entry point पर (जहाँ navigation शुरू होता है), एक loading/splash state रखो जो तब तक कुछ भी render ना करे (ना Home, ना Onboarding) जब तक यह check पूरा ना हो जाए कि:
+क्या यह पहली बार app खुल रहा है (onboarding complete हुआ है या नहीं — local storage/AsyncStorage में एक flag जैसे hasCompletedOnboarding चेक करो)
+क्या ज़रूरी permissions already granted हैं या नहीं
+javascript
+function RootNavigation() { const [initialRoute, setInitialRoute] = useState(null); // null = abhi decide nahi hua useEffect(() => { const determineInitialRoute = async () => { const hasCompletedOnboarding = await AsyncStorage.getItem('hasCompletedOnboarding'); const permissionsGranted = await checkAllPermissions(); if (!hasCompletedOnboarding) { setInitialRoute('Onboarding'); } else if (!permissionsGranted) { setInitialRoute('PermissionSetup'); } else { setInitialRoute('Home'); } }; determineInitialRoute(); }, []); if (initialRoute === null) { // Jab tak decide na ho jaaye, sirf splash/loading dikhao — // koi bhi Home ya Onboarding render mat karo is beech mein return ; } return ...; }
+ज़रूरी बातें:
+जब तक यह initial check पूरा ना हो जाए, तब तक सिर्फ एक simple splash/loading screen दिखे (या मौजूदा app के theme से match करता एक blank dark screen), Home ya Onboarding में से कुछ भी render नहीं होना चाहिए बीच में
+Onboarding पूरा होने के बाद (आख़िरी step पर) AsyncStorage में hasCompletedOnboarding = true सेट करना ज़रूरी है, ताकि अगली बार app खोलने पर सीधा Home खुले — बिना onboarding दोहराए
+Second time app खोलने पर (जब user पहले से onboarding कर चुका है) — flow normal रहे: सीधा Home पर जाए, कोई delay/flash नहीं
+यह loading state बहुत ही quick होना चाहिए (milliseconds में), ताकि user को कोई लंबा wait महसूस ना हो — बस उतना ही रुके जितना AsyncStorage/permission check में लगता है
+ज़रूरी warning:
+सिर्फ यही navigation/routing की timing ठीक करनी है — कोई नया feature, UI element, ya design change मत करना
+Onboarding screens, Permission screens, Home screen — इनका खुद का content/design/logic बिल्कुल मत छेड़ना, सिर्फ इनके बीच जो navigation decide होता है उसकी timing सही करनी है
+बाकी कोई भी existing function (locking, Firebase sync, duck animation, sound, time picker) बिल्कुल मत छेड़ना"
