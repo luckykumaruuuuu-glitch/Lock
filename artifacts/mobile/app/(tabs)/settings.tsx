@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Linking,
@@ -158,15 +158,18 @@ function SoundToggleRow({
 }) {
   const toggleAnim = useRef(new Animated.Value(muted ? 0 : 1)).current;
 
-  function handleToggle() {
-    const next = !muted;
-    setMuted(next);
+  useEffect(() => {
     Animated.spring(toggleAnim, {
-      toValue: next ? 1 : 0,
+      toValue: muted ? 0 : 1,
       useNativeDriver: false,
       tension: 200,
       friction: 10,
     }).start();
+  }, [muted, toggleAnim]);
+
+  function handleToggle() {
+    const next = !muted;
+    setMuted(next);
     if (!next) setTimeout(() => playPreview(), 100);
   }
 

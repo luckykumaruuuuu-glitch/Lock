@@ -19,6 +19,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { FirebaseSyncProvider } from "@/context/FirebaseSyncContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { LockProvider } from "@/context/LockContext";
+import { SoundProvider } from "@/context/SoundContext";
 import { usePermissionStatus } from "@/hooks/usePermissionStatus";
 import "@/lib/i18n";
 import { ONBOARDING_DONE_KEY } from "./onboarding";
@@ -176,6 +177,7 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <LanguageProvider>
+            <SoundProvider>
             <LockProvider>
               <FirebaseSyncProvider>
                 <GestureHandlerRootView>
@@ -185,6 +187,7 @@ export default function RootLayout() {
                 </GestureHandlerRootView>
               </FirebaseSyncProvider>
             </LockProvider>
+            </SoundProvider>
           </LanguageProvider>
         </QueryClientProvider>
       </ErrorBoundary>

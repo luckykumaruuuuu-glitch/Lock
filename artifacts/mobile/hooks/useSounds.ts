@@ -1,9 +1,8 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { Platform } from "react-native";
 
-const SOUND_PREF_KEY = "focuslock_sounds_enabled";
+import { useSoundContext } from "@/context/SoundContext";
 
 function playTone(
   freq: number,
@@ -33,60 +32,49 @@ function playTone(
 }
 
 export function useSounds() {
-  const [muted, setMutedState] = useState(false);
+  const { soundEnabled, setSoundEnabled } = useSoundContext();
 
-  useEffect(() => {
-    AsyncStorage.getItem(SOUND_PREF_KEY)
-      .then((val) => {
-        if (val !== null) setMutedState(val === "false");
-      })
-      .catch(() => {});
-  }, []);
-
-  const setMuted = useCallback((val: boolean) => {
-    setMutedState(val);
-    AsyncStorage.setItem(SOUND_PREF_KEY, String(!val)).catch(() => {});
-  }, []);
+  const muted = !soundEnabled;
+  const setMuted = useCallback(
+    (val: boolean) => setSoundEnabled(!val),
+    [setSoundEnabled]
+  );
 
   const playClick = useCallback(() => {
-    if (muted) return;
+    if (!soundEnabled) return;
     playTone(680, 0.06, "triangle", 0.06);
     Haptics.selectionAsync().catch(() => {});
-  }, [muted]);
+  }, [soundEnabled]);
 
   const playSuccess = useCallback(() => {
-    if (muted) return;
+    if (!soundEnabled) return;
     playTone(523, 0.12, "sine", 0.07);
     setTimeout(() => playTone(659, 0.12, "sine", 0.07), 110);
     setTimeout(() => playTone(784, 0.28, "sine", 0.09), 220);
-    Haptics.notificationAsync(
-      Haptics.NotificationFeedbackType.Success
-    ).catch(() => {});
-  }, [muted]);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+  }, [soundEnabled]);
 
   const playWarning = useCallback(() => {
-    if (muted) return;
+    if (!soundEnabled) return;
     playTone(400, 0.1, "sawtooth", 0.07);
     setTimeout(() => playTone(300, 0.22, "sawtooth", 0.07), 130);
-    Haptics.notificationAsync(
-      Haptics.NotificationFeedbackType.Warning
-    ).catch(() => {});
-  }, [muted]);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+  }, [soundEnabled]);
 
   const playPermissionGranted = useCallback(() => {
-    if (muted) return;
+    if (!soundEnabled) return;
     playTone(880, 0.08, "sine", 0.07);
     setTimeout(() => playTone(1100, 0.18, "sine", 0.06), 100);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-  }, [muted]);
+  }, [soundEnabled]);
 
   const playLock = useCallback(() => {
-    if (muted) return;
+    if (!soundEnabled) return;
     playTone(220, 0.08, "square", 0.06);
     setTimeout(() => playTone(180, 0.15, "square", 0.08), 90);
     setTimeout(() => playTone(150, 0.3, "sine", 0.06), 180);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
-  }, [muted]);
+  }, [soundEnabled]);
 
   const playPreview = useCallback(() => {
     playTone(680, 0.06, "triangle", 0.06);
