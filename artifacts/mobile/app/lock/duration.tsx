@@ -231,6 +231,18 @@ const calStyles = StyleSheet.create({
   okBtnText:   { fontSize: 14, fontFamily: "Inter_700Bold", color: "#000000", letterSpacing: 0.5 },
 });
 
+/* ── System time format detection ── */
+function detectTimeFormat(): boolean {
+  // Returns true if device/locale uses 24-hour clock
+  try {
+    const sample = new Date(2000, 0, 1, 13, 0, 0); // 1 PM
+    const formatted = sample.toLocaleTimeString([], { hour: "numeric" });
+    return !/AM|PM/i.test(formatted);
+  } catch {
+    return false;
+  }
+}
+
 /* ── Time Picker Modal (for today's date) ── */
 function TimePickerModal({
   visible,
@@ -248,9 +260,11 @@ function TimePickerModal({
   }
 
   const def = getDefaultTime();
-  const [hour,   setHour]   = useState(def.h);
-  const [minute, setMinute] = useState(def.m);
-  const [error,  setError]  = useState("");
+  // Internal hour is always 0-23 — calculation logic unchanged
+  const [hour,     setHour]     = useState(def.h);
+  const [minute,   setMinute]   = useState(def.m);
+  const [error,    setError]    = useState("");
+  const [is24Hour, setIs24Hour] = useState<boolean>(detectTimeFormat);
 
   useEffect(() => {
     if (visible) {
@@ -258,6 +272,7 @@ function TimePickerModal({
       setHour(d.h);
       setMinute(d.m);
       setError("");
+      setIs24Hour(detectTimeFormat());
     }
   }, [visible]);
 
@@ -268,6 +283,10 @@ function TimePickerModal({
   function adjustMinute(delta: number) {
     setError("");
     setMinute(m => (m + delta + 60) % 60);
+  }
+  function toggleAmPm() {
+    setError("");
+    setHour(h => (h + 12) % 24);
   }
 
   function confirm() {
@@ -282,21 +301,32 @@ function TimePickerModal({
   }
 
   const pad = (n: number) => String(n).padStart(2, "0");
+  // Display-only conversion — internal `hour` stays 0-23
+  const displayHour = is24Hour ? hour : (hour % 12 || 12);
+  const isAm        = hour < 12;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={calStyles.overlay}>
         <View style={calStyles.sheet}>
 
-          {/* Header */}
-          <View style={tpStyles.header}>
-            <Text style={calStyles.monthLabel}>Select End Time</Text>
-            <Text style={tpStyles.headerSub}>Today — pick a future time</Text>
+          {/* Header + 12H/24H toggle */}
+          <View style={tpStyles.headerRow}>
+            <View>
+              <Text style={calStyles.monthLabel}>Select End Time</Text>
+              <Text style={tpStyles.headerSub}>Today — pick a future time</Text>
+            </View>
+            <Pressable
+              onPress={() => setIs24Hour(v => !v)}
+              style={({ pressed }) => [tpStyles.fmtToggle, { opacity: pressed ? 0.7 : 1 }]}
+            >
+              <Text style={tpStyles.fmtToggleText}>{is24Hour ? "24H" : "12H"}</Text>
+            </Pressable>
           </View>
 
           <View style={calStyles.divider} />
 
-          {/* Hour + Minute columns */}
+          {/* Hour  :  Minute  (+ AM/PM in 12h mode) */}
           <View style={tpStyles.timeRow}>
             {/* Hours */}
             <View style={tpStyles.col}>
@@ -308,7 +338,7 @@ function TimePickerModal({
                 <Feather name="chevron-up" size={26} color="#FFBF80" />
               </Pressable>
               <View style={tpStyles.valueBox}>
-                <Text style={tpStyles.valueText}>{pad(hour)}</Text>
+                <Text style={tpStyles.valueText}>{pad(displayHour)}</Text>
               </View>
               <Pressable
                 onPress={() => adjustHour(-1)}
@@ -339,6 +369,33 @@ function TimePickerModal({
                 <Feather name="chevron-down" size={26} color="#FFBF80" />
               </Pressable>
             </View>
+
+            {/* AM/PM column — only visible in 12h mode */}
+            {!is24Hour && (
+              <>
+                <Text style={[tpStyles.colon, { opacity: 0 }]}>:</Text>
+                <View style={tpStyles.col}>
+                  <Text style={tpStyles.colLabel}>Period</Text>
+                  <Pressable
+                    onPress={toggleAmPm}
+                    style={({ pressed }) => [tpStyles.arrow, { opacity: pressed ? 0.55 : 1 }]}
+                  >
+                    <Feather name="chevron-up" size={26} color="#FFBF80" />
+                  </Pressable>
+                  <View style={tpStyles.valueBox}>
+                    <Text style={[tpStyles.valueText, tpStyles.ampmText]}>
+                      {isAm ? "AM" : "PM"}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={toggleAmPm}
+                    style={({ pressed }) => [tpStyles.arrow, { opacity: pressed ? 0.55 : 1 }]}
+                  >
+                    <Feather name="chevron-down" size={26} color="#FFBF80" />
+                  </Pressable>
+                </View>
+              </>
+            )}
           </View>
 
           {/* Error / spacer */}
@@ -384,17 +441,20 @@ function TimePickerModal({
 }
 
 const tpStyles = StyleSheet.create({
-  header:    { alignItems: "center", paddingHorizontal: 20, paddingVertical: 20, backgroundColor: "#1C1C1E" },
-  headerSub: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#8E8E93", marginTop: 4 },
-  timeRow:   { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 28, gap: 20 },
-  col:       { alignItems: "center", gap: 10 },
-  colLabel:  { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#8E8E93", letterSpacing: 0.8, textTransform: "uppercase" },
-  arrow:     { padding: 4 },
-  valueBox:  { width: 76, height: 68, alignItems: "center", justifyContent: "center", backgroundColor: "#2C2C2E", borderRadius: 14, borderWidth: 1, borderColor: "rgba(255,191,128,0.25)" },
-  valueText: { fontSize: 38, fontFamily: "Inter_700Bold", color: "#FFBF80" },
-  colon:     { fontSize: 38, fontFamily: "Inter_700Bold", color: "#FFBF80", marginTop: 26 },
-  errorRow:  { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 20, paddingBottom: 14, minHeight: 30 },
-  errorText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#FF453A" },
+  headerRow:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 20, backgroundColor: "#1C1C1E" },
+  headerSub:     { fontSize: 13, fontFamily: "Inter_400Regular", color: "#8E8E93", marginTop: 4 },
+  fmtToggle:     { backgroundColor: "#2C2C2E", borderRadius: 8, borderWidth: 1, borderColor: "rgba(255,191,128,0.25)", paddingHorizontal: 10, paddingVertical: 6 },
+  fmtToggleText: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#FFBF80", letterSpacing: 0.5 },
+  timeRow:       { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 28, gap: 20 },
+  col:           { alignItems: "center", gap: 10 },
+  colLabel:      { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#8E8E93", letterSpacing: 0.8, textTransform: "uppercase" },
+  arrow:         { padding: 4 },
+  valueBox:      { width: 76, height: 68, alignItems: "center", justifyContent: "center", backgroundColor: "#2C2C2E", borderRadius: 14, borderWidth: 1, borderColor: "rgba(255,191,128,0.25)" },
+  valueText:     { fontSize: 38, fontFamily: "Inter_700Bold", color: "#FFBF80" },
+  ampmText:      { fontSize: 22 },
+  colon:         { fontSize: 38, fontFamily: "Inter_700Bold", color: "#FFBF80", marginTop: 26 },
+  errorRow:      { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 20, paddingBottom: 14, minHeight: 30 },
+  errorText:     { fontSize: 12, fontFamily: "Inter_500Medium", color: "#FF453A" },
 });
 
 /* ── Main Duration Screen ── */

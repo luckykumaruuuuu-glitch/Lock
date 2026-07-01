@@ -138,6 +138,10 @@ staticServer.listen(PORT, "0.0.0.0", () => {
 // ─── Phase 2: Build in background (non-blocking) ─────────────────────────────
 log("Phase 2 — Building web export in background…");
 
+// Mark as not done while build is running — expo export clears web-dist first,
+// so any in-flight file reads would fail. Serve the loading page instead.
+buildDone = false;
+
 const buildEnv = { ...process.env, CI: "1", NODE_ENV: "production" };
 
 const buildProc = spawn(
@@ -151,16 +155,17 @@ buildProc.on("error", (err) => {
 });
 
 buildProc.on("exit", (code) => {
-  if (code === 0) {
+  if (code === 0 && fs.existsSync(path.join(WEBDIST, "index.html"))) {
     buildDone = true;
     log("Phase 2 done ✓ — Build complete. Browser users: refresh the page to see latest changes.");
   } else {
     log(`Build exited with code ${code} — check logs above for errors.`);
-    // If no existing build, we can't serve anything useful
     if (!fs.existsSync(path.join(WEBDIST, "index.html"))) {
       log("No web-dist available. Exiting.");
       process.exit(1);
     }
+    // Build may have partially succeeded — still serve what we have
+    buildDone = true;
   }
 });
 
