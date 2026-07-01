@@ -179,53 +179,60 @@ function AgreementModal({
       <Animated.View style={[agStyles.overlay, { opacity: opacityAnim }]}>
         <Animated.View style={[agStyles.sheet, { transform: [{ scale: scaleAnim }] }]}>
 
-          {/* Lock icon */}
-          <View style={agStyles.iconRow}>
-            <View style={agStyles.iconCircle}>
-              <Feather name="lock" size={28} color="#FFBF80" />
-            </View>
-          </View>
-
-          {/* Title */}
-          <Text style={agStyles.title}>Final Agreement</Text>
-          <View style={agStyles.titleUnderline} />
-
-          {/* Apps being locked */}
-          <View style={agStyles.infoBlock}>
-            <Text style={agStyles.infoHeading}>APPS BEING LOCKED</Text>
-            <Text style={agStyles.infoValue}>
-              {appNames.length > 0 ? appNames.join(", ") : "No apps selected"}
-            </Text>
-          </View>
-
-          {/* Lock duration */}
-          <View style={agStyles.infoBlock}>
-            <Text style={agStyles.infoHeading}>LOCK DURATION</Text>
-            <Text style={agStyles.infoValue}>{durationText}</Text>
-            <Text style={agStyles.infoSub}>Unlocks: {expiryDate}</Text>
-          </View>
-
-          <View style={agStyles.divider} />
-
-          {/* Agreement clauses */}
-          <Text style={agStyles.clauseHeading}>By agreeing, you confirm that:</Text>
-          <View style={agStyles.clauses}>
-            {[
-              "This lock CANNOT be removed before the timer expires.",
-              "You cannot uninstall this app during the lock period.",
-              "No PIN, no bypass, no exceptions.",
-              "This decision is final and irreversible.",
-            ].map((clause, i) => (
-              <View key={i} style={agStyles.clauseRow}>
-                <View style={agStyles.bullet} />
-                <Text style={agStyles.clauseText}>{clause}</Text>
+          {/* Scrollable body */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            contentContainerStyle={agStyles.scrollContent}
+          >
+            {/* Lock icon */}
+            <View style={agStyles.iconRow}>
+              <View style={agStyles.iconCircle}>
+                <Feather name="lock" size={24} color="#FFBF80" />
               </View>
-            ))}
-          </View>
+            </View>
+
+            {/* Title */}
+            <Text style={agStyles.title}>Final Agreement</Text>
+            <View style={agStyles.titleUnderline} />
+
+            {/* Apps being locked */}
+            <View style={agStyles.infoBlock}>
+              <Text style={agStyles.infoHeading}>APPS BEING LOCKED</Text>
+              <Text style={agStyles.infoValue}>
+                {appNames.length > 0 ? appNames.join(", ") : "No apps selected"}
+              </Text>
+            </View>
+
+            {/* Lock duration */}
+            <View style={agStyles.infoBlock}>
+              <Text style={agStyles.infoHeading}>LOCK DURATION</Text>
+              <Text style={agStyles.infoValue}>{durationText}</Text>
+              <Text style={agStyles.infoSub}>Unlocks: {expiryDate}</Text>
+            </View>
+
+            <View style={agStyles.divider} />
+
+            {/* Agreement clauses */}
+            <Text style={agStyles.clauseHeading}>By agreeing, you confirm that:</Text>
+            <View style={agStyles.clauses}>
+              {[
+                "This lock CANNOT be removed before the timer expires.",
+                "You cannot uninstall this app during the lock period.",
+                "No PIN, no bypass, no exceptions.",
+                "This decision is final and irreversible.",
+              ].map((clause, i) => (
+                <View key={i} style={agStyles.clauseRow}>
+                  <View style={agStyles.bullet} />
+                  <Text style={agStyles.clauseText}>{clause}</Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
 
           <View style={agStyles.divider} />
 
-          {/* Buttons */}
+          {/* Buttons — outside scroll, always visible */}
           <View style={agStyles.btnRow}>
             <Pressable
               onPress={onCancel}
@@ -260,10 +267,12 @@ const agStyles = StyleSheet.create({
   sheet: {
     width: "100%",
     maxWidth: 380,
+    maxHeight: "58%",
     backgroundColor: "#1C1C1E",
     borderRadius: 22,
-    paddingVertical: 28,
-    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
     borderWidth: 1,
     borderColor: "#3A3A3C",
     shadowColor: "#000000",
@@ -271,30 +280,31 @@ const agStyles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 20,
-    gap: 16,
+    gap: 12,
   },
+  scrollContent: { gap: 10, paddingBottom: 4 },
   iconRow:    { alignItems: "center" },
-  iconCircle: { width: 64, height: 64, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,191,128,0.12)", borderWidth: 1, borderColor: "rgba(255,191,128,0.2)" },
-  title:      { fontSize: 22, fontFamily: "Inter_700Bold", color: "#FFFFFF", textAlign: "center" },
+  iconCircle: { width: 52, height: 52, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,191,128,0.12)", borderWidth: 1, borderColor: "rgba(255,191,128,0.2)" },
+  title:      { fontSize: 20, fontFamily: "Inter_700Bold", color: "#FFFFFF", textAlign: "center" },
   titleUnderline: { height: 2, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 1, marginHorizontal: 40 },
 
-  infoBlock:   { backgroundColor: "#2C2C2E", borderRadius: 12, padding: 14, gap: 4, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  infoHeading: { fontSize: 10, fontFamily: "Inter_500Medium", letterSpacing: 1, color: "#8E8E93", marginBottom: 2 },
-  infoValue:   { fontSize: 14, fontFamily: "Inter_700Bold", color: "#FFFFFF", lineHeight: 20 },
-  infoSub:     { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
+  infoBlock:   { backgroundColor: "#2C2C2E", borderRadius: 10, padding: 11, gap: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  infoHeading: { fontSize: 9, fontFamily: "Inter_500Medium", letterSpacing: 1, color: "#8E8E93", marginBottom: 1 },
+  infoValue:   { fontSize: 13, fontFamily: "Inter_700Bold", color: "#FFFFFF", lineHeight: 18 },
+  infoSub:     { fontSize: 11, fontFamily: "Inter_400Regular", color: "#8E8E93" },
 
   divider:     { height: 1, backgroundColor: "#2C2C2E" },
 
-  clauseHeading:{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#EBEBF5", letterSpacing: 0.3 },
-  clauses:      { gap: 8 },
-  clauseRow:    { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  bullet:       { width: 5, height: 5, borderRadius: 3, backgroundColor: "#8E8E93", marginTop: 5, flexShrink: 0 },
-  clauseText:   { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.7)", lineHeight: 19 },
+  clauseHeading:{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#EBEBF5", letterSpacing: 0.3 },
+  clauses:      { gap: 6 },
+  clauseRow:    { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  bullet:       { width: 4, height: 4, borderRadius: 2, backgroundColor: "#8E8E93", marginTop: 6, flexShrink: 0 },
+  clauseText:   { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.7)", lineHeight: 18 },
 
-  btnRow:     { flexDirection: "row", gap: 12, marginTop: 4 },
-  cancelBtn:  { height: 52, borderRadius: 14, borderWidth: 1.5, borderColor: "#2C2C2E", backgroundColor: "#2C2C2E", alignItems: "center", justifyContent: "center", paddingHorizontal: 20 },
+  btnRow:     { flexDirection: "row", gap: 10 },
+  cancelBtn:  { height: 48, borderRadius: 13, borderWidth: 1.5, borderColor: "#2C2C2E", backgroundColor: "#2C2C2E", alignItems: "center", justifyContent: "center", paddingHorizontal: 18 },
   cancelText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#8E8E93" },
-  agreeBtn:   { height: 52, borderRadius: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  agreeBtn:   { height: 48, borderRadius: 13, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   agreeText:  { fontSize: 14, fontFamily: "Inter_700Bold", color: "#000000" },
 });
 
@@ -366,15 +376,9 @@ export default function ConfirmScreen() {
         contentContainerStyle={[styles.content, { paddingTop: 16, paddingBottom: bottomPad + 130 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Warning banner */}
-        <View style={styles.warningBanner}>
-          <View style={styles.warningIconBox}>
-            <Feather name="alert-octagon" size={21} color="#FF453A" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.warningTitle}>No Going Back</Text>
-            <Text style={styles.warningBody}>This lock CANNOT be removed until the timer expires.</Text>
-          </View>
+        {/* Info banner */}
+        <View style={styles.infoBanner}>
+          <Text style={styles.infoText}>Once locked, this cannot be undone until the timer expires.</Text>
         </View>
 
         {/* Apps */}
@@ -383,7 +387,7 @@ export default function ConfirmScreen() {
           {selection.selectedApps.map((app, idx) => (
             <View key={app.id}>
               <View style={styles.appRow}>
-                <View style={[styles.appIconBg, { backgroundColor: "rgba(255,203,142,0.12)" }]}>
+                <View style={[styles.appIconBg, { backgroundColor: "#2C2C2E" }]}>
                   <FontAwesome5 name={app.iconName as any} size={17} color="#FFBF80" />
                 </View>
                 <View style={styles.appInfo}>
@@ -416,7 +420,7 @@ export default function ConfirmScreen() {
           {[
             { label: "Apps blocked",  value: `${selection.selectedApps.length}`, color: "#FFFFFF" },
             { label: "Duration",      value: durationText,   color: "#FFFFFF" },
-            { label: "Unlocks at",    value: expiryDate,     color: "#FFBF80" },
+            { label: "Unlocks at",    value: expiryDate,     color: "#FFFFFF" },
             { label: "Cloud sync",    value: configured ? (online ? "Firebase ☁️" : "Offline") : "Local only", color: configured && online ? "#32D74B" : "#8E8E93" },
             { label: "Early unlock",  value: "Impossible ✗", color: "#FF453A" },
           ].map((row, i, arr) => (
@@ -450,7 +454,7 @@ export default function ConfirmScreen() {
           style={({ pressed }) => [{ flex: 1, opacity: saving ? 0.7 : pressed ? 0.88 : 1 }]}
         >
           <LinearGradient
-            colors={["#FFBF80", "#FF453A"]}
+            colors={["#FFD60A", "#FFA500"]}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={styles.lockBtn}
           >
@@ -477,10 +481,8 @@ const styles = StyleSheet.create({
   scroll:   { flex: 1 },
   content:  { paddingHorizontal: 20, gap: 10 },
 
-  warningBanner:  { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "rgba(255,69,58,0.08)", borderRadius: 16, borderWidth: 1, borderColor: "rgba(255,69,58,0.2)", padding: 16, marginBottom: 4 },
-  warningIconBox: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,69,58,0.12)" },
-  warningTitle:   { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FF453A", marginBottom: 3 },
-  warningBody:    { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,69,58,0.6)", lineHeight: 17 },
+  infoBanner: { backgroundColor: "#1C1C1E", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 4, borderWidth: 1, borderColor: "#2C2C2E" },
+  infoText:   { fontSize: 13, fontFamily: "Inter_400Regular", color: "#FFFFFF", lineHeight: 19 },
 
   sectionLabel: { fontSize: 11, fontFamily: "Inter_500Medium", letterSpacing: 1, color: "#8E8E93", marginTop: 6, marginLeft: 2, marginBottom: 2 },
 
