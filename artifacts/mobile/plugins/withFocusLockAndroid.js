@@ -201,11 +201,22 @@ import org.json.JSONObject
 import java.io.File
 
 /**
- * Reads active lock data from the JSON file maintained by the JS layer.
+ * Reads active lock data from the JSON files maintained by the JS layer.
  *
- * JS writes: [context.filesDir]/focuslock_data.json
- * Format:
- *   { "locks": [{ "id": "...", "appPackageNames": [...], "endTime": ms }], "updatedAt": ms }
+ * Primary file  : [context.filesDir]/focuslock_data.json
+ *   Format: { "locks": [...], "updatedAt": ms, "startupVerified": bool }
+ *
+ * Startup cache : [context.filesDir]/focuslock_startup_cache.json
+ *   Format: { "locks": [...], "updatedAt": ms }
+ *   Written every time locks change; used as conservative fallback during
+ *   the cold-start window before JS sync completes (startupVerified: false).
+ *
+ * Startup safety logic:
+ *   When startupVerified == false in the primary file, the JS layer is still
+ *   fetching from Firebase. The AccessibilityService reads the startup cache
+ *   instead to block apps conservatively during this 1-3s window.
+ *   Once the JS sync completes, startupVerified is set to true and the primary
+ *   file becomes the authoritative source.
  */
 class LockRepository(private val context: Context) {
 
@@ -216,32 +227,74 @@ class LockRepository(private val context: Context) {
     )
 
     private fun dataFile(): File = File(context.filesDir, "focuslock_data.json")
+    private fun startupCacheFile(): File = File(context.filesDir, "focuslock_startup_cache.json")
 
+    /** Parse a JSON array of lock objects into NativeLock list, filtering expired. */
+    private fun parseLockArray(json: JSONObject, key: String = "locks"): List<NativeLock> {
+        val arr = json.optJSONArray(key) ?: return emptyList()
+        val now = System.currentTimeMillis()
+        val result = mutableListOf<NativeLock>()
+        for (i in 0 until arr.length()) {
+            val obj = arr.getJSONObject(i)
+            val endTime = obj.getLong("endTime")
+            if (endTime <= now) continue
+            val pkgArr = obj.getJSONArray("appPackageNames")
+            val pkgs = (0 until pkgArr.length()).map { pkgArr.getString(it) }
+            result += NativeLock(
+                id = obj.optString("id", ""),
+                appPackageNames = pkgs,
+                endTime = endTime,
+            )
+        }
+        return result
+    }
+
+    /**
+     * Returns active locks with startup-safety logic:
+     *
+     * 1. If primary file missing or startupVerified == false →
+     *    read startup cache (conservative: blocks apps that were locked before restart).
+     * 2. If primary file exists and startupVerified == true →
+     *    read primary file (normal operation).
+     */
     fun getActiveLocks(): List<NativeLock> {
         val file = dataFile()
-        if (!file.exists()) return emptyList()
+
+        // Primary file missing → JS hasn't written yet (very early cold start)
+        // Fall back to startup cache so we don't allow locked apps through.
+        if (!file.exists()) {
+            return readStartupCache()
+        }
 
         return try {
             val json = JSONObject(file.readText())
-            val arr = json.optJSONArray("locks") ?: return emptyList()
-            val now = System.currentTimeMillis()
-            val result = mutableListOf<NativeLock>()
+            val startupVerified = json.optBoolean("startupVerified", true)
 
-            for (i in 0 until arr.length()) {
-                val obj = arr.getJSONObject(i)
-                val endTime = obj.getLong("endTime")
-                if (endTime <= now) continue
-
-                val pkgArr = obj.getJSONArray("appPackageNames")
-                val pkgs = (0 until pkgArr.length()).map { pkgArr.getString(it) }
-
-                result += NativeLock(
-                    id = obj.optString("id", ""),
-                    appPackageNames = pkgs,
-                    endTime = endTime,
-                )
+            if (!startupVerified) {
+                // JS sync still in progress — use startup cache conservatively.
+                // Merge: take the union of cache locks and current file locks so
+                // nothing slips through during the verification window.
+                val cacheLocks = readStartupCache()
+                val fileLocks = parseLockArray(json)
+                val merged = (cacheLocks + fileLocks)
+                    .distinctBy { it.id }
+                    .filter { it.endTime > System.currentTimeMillis() }
+                return merged
             }
-            result
+
+            parseLockArray(json)
+        } catch (e: Exception) {
+            // Corrupted primary file → fall back to cache
+            readStartupCache()
+        }
+    }
+
+    /** Read the startup cache file. Returns empty list if missing or corrupt. */
+    private fun readStartupCache(): List<NativeLock> {
+        val cache = startupCacheFile()
+        if (!cache.exists()) return emptyList()
+        return try {
+            parseLockArray(JSONObject(cache.readText()))
         } catch (e: Exception) { emptyList() }
     }
 

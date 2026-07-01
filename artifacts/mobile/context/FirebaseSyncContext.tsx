@@ -15,6 +15,7 @@ const FirebaseSyncContext = createContext<FirebaseSyncContextType>({
   online: false,
   lastSyncedAt: null,
   configured: false,
+  startupSyncStatus: "checking",
   saveToFirebase: async () => {},
 });
 

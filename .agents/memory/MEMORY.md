@@ -1,1 +1,2 @@
 - [Firebase device-UUID approach](firebase-device-uuid.md) — Firebase 12.x removed getReactNativePersistence; use device UUID in AsyncStorage as RTDB path instead of auth.
+- [expo-file-system v19 legacy import](expo-file-system-legacy.md) — expo-file-system v19 dropped legacy API from main module; use `expo-file-system/legacy` for documentDirectory, writeAsStringAsync, EncodingType etc.

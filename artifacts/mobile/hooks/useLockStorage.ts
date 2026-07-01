@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /* ───────────────────────────────────────────────
@@ -34,11 +34,17 @@ export interface ActiveLockDisplayItem {
 ─────────────────────────────────────────────── */
 const STORAGE_KEY = "focuslock_locks_v2";
 const NATIVE_FILE = "focuslock_data.json";
+const STARTUP_CACHE_FILE = "focuslock_startup_cache.json";
 const MAX_DURATION_DAYS = 365;
 
 function getNativeFilePath(): string | null {
   if (!FileSystem.documentDirectory) return null;
   return `${FileSystem.documentDirectory}${NATIVE_FILE}`;
+}
+
+function getStartupCachePath(): string | null {
+  if (!FileSystem.documentDirectory) return null;
+  return `${FileSystem.documentDirectory}${STARTUP_CACHE_FILE}`;
 }
 
 /* ───────────────────────────────────────────────
@@ -95,21 +101,26 @@ export async function refreshExpiredLocks(): Promise<LockEntry[]> {
 /* ───────────────────────────────────────────────
    Native file sync (for Kotlin AccessibilityService)
    Writes to documentDirectory/focuslock_data.json
+   Includes startupVerified:true so the native layer
+   knows the JS sync has completed.
 ─────────────────────────────────────────────── */
 async function syncToNativeFile(locks: LockEntry[]): Promise<void> {
   try {
     const filePath = getNativeFilePath();
     if (!filePath) return;
 
+    const activeLocks = locks
+      .filter((l) => l.status === "ACTIVE" && l.endTime > Date.now())
+      .map((l) => ({
+        id: l.id,
+        appPackageNames: l.apps.map((a) => a.packageName),
+        endTime: l.endTime,
+      }));
+
     const nativePayload = {
-      locks: locks
-        .filter((l) => l.status === "ACTIVE" && l.endTime > Date.now())
-        .map((l) => ({
-          id: l.id,
-          appPackageNames: l.apps.map((a) => a.packageName),
-          endTime: l.endTime,
-        })),
+      locks: activeLocks,
       updatedAt: Date.now(),
+      startupVerified: true,
     };
 
     await FileSystem.writeAsStringAsync(
@@ -117,8 +128,148 @@ async function syncToNativeFile(locks: LockEntry[]): Promise<void> {
       JSON.stringify(nativePayload),
       { encoding: FileSystem.EncodingType.UTF8 }
     );
+
+    // Keep startup cache fresh so AccessibilityService has a
+    // conservative fallback on the next cold start.
+    await writeStartupCache(activeLocks);
   } catch {
     // Best-effort — native sync failure doesn't break the JS layer
+  }
+}
+
+/* ───────────────────────────────────────────────
+   Startup cache — survives across app restarts
+   (not Clear Data, but covers most restart cases).
+   Written alongside focuslock_data.json so the
+   Kotlin layer can use it when startupVerified:false.
+─────────────────────────────────────────────── */
+async function writeStartupCache(
+  activeLocks: Array<{ id: string; appPackageNames: string[]; endTime: number }>
+): Promise<void> {
+  try {
+    const cachePath = getStartupCachePath();
+    if (!cachePath) return;
+    await FileSystem.writeAsStringAsync(
+      cachePath,
+      JSON.stringify({ locks: activeLocks, updatedAt: Date.now() }),
+      { encoding: FileSystem.EncodingType.UTF8 }
+    );
+  } catch {
+    // Best-effort
+  }
+}
+
+/**
+ * Read the startup cache — used as offline fallback when local
+ * AsyncStorage is empty but we can't reach Firebase.
+ * Returns only locks that haven't expired yet.
+ */
+export async function readStartupCacheLocks(): Promise<LockEntry[]> {
+  try {
+    const cachePath = getStartupCachePath();
+    if (!cachePath) return [];
+    const info = await FileSystem.getInfoAsync(cachePath);
+    if (!info.exists) return [];
+    const raw = await FileSystem.readAsStringAsync(cachePath, {
+      encoding: FileSystem.EncodingType.UTF8,
+    });
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed.locks)) return [];
+    const now = Date.now();
+    // Re-inflate into minimal LockEntry shapes (enough for length check)
+    return parsed.locks
+      .filter((l: { endTime: number }) => l.endTime > now)
+      .map(
+        (l: { id: string; appPackageNames: string[]; endTime: number }) =>
+          ({
+            id: l.id,
+            apps: l.appPackageNames.map((pkg) => ({
+              id: pkg,
+              name: pkg,
+              iconName: "smartphone",
+              iconColor: "#888",
+              packageName: pkg,
+            })),
+            startTime: 0,
+            endTime: l.endTime,
+            status: "ACTIVE" as const,
+            durationLabel: "",
+          }) satisfies LockEntry
+      );
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Write the initial unverified marker to focuslock_data.json immediately
+ * on cold start — before Firebase sync. Tells the AccessibilityService
+ * to use the startup cache conservatively while sync is in progress.
+ */
+export async function writeStartupUnverifiedMarker(): Promise<void> {
+  try {
+    const filePath = getNativeFilePath();
+    if (!filePath) return;
+    // Only write the marker if the file is missing or already unverified —
+    // never overwrite a valid verified file (guards against race conditions).
+    let shouldWrite = true;
+    try {
+      const info = await FileSystem.getInfoAsync(filePath);
+      if (info.exists) {
+        const raw = await FileSystem.readAsStringAsync(filePath, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+        const parsed = JSON.parse(raw);
+        if (parsed.startupVerified === true) {
+          // File already has verified locks — JS layer is restarting without
+          // a Clear Data — no need to overwrite with unverified marker.
+          shouldWrite = false;
+        }
+      }
+    } catch {
+      // File unreadable → write fresh marker
+    }
+
+    if (!shouldWrite) return;
+
+    // Read startup cache so native service has conservative lock list
+    const cachePath = getStartupCachePath();
+    let cachedLocks: Array<{
+      id: string;
+      appPackageNames: string[];
+      endTime: number;
+    }> = [];
+    try {
+      if (cachePath) {
+        const cacheInfo = await FileSystem.getInfoAsync(cachePath);
+        if (cacheInfo.exists) {
+          const cacheRaw = await FileSystem.readAsStringAsync(cachePath, {
+            encoding: FileSystem.EncodingType.UTF8,
+          });
+          const cacheParsed = JSON.parse(cacheRaw);
+          if (Array.isArray(cacheParsed.locks)) {
+            const now = Date.now();
+            cachedLocks = cacheParsed.locks.filter(
+              (l: { endTime: number }) => l.endTime > now
+            );
+          }
+        }
+      }
+    } catch {
+      // Cache unreadable — proceed with empty list
+    }
+
+    await FileSystem.writeAsStringAsync(
+      filePath,
+      JSON.stringify({
+        locks: cachedLocks,
+        updatedAt: Date.now(),
+        startupVerified: false,
+      }),
+      { encoding: FileSystem.EncodingType.UTF8 }
+    );
+  } catch {
+    // Best-effort
   }
 }
 

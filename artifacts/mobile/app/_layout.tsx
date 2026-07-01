@@ -16,7 +16,7 @@ import { SafeKeyboardProvider } from "@/components/SafeKeyboardProvider";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { FirebaseSyncProvider } from "@/context/FirebaseSyncContext";
+import { FirebaseSyncProvider, useFirebaseSyncContext } from "@/context/FirebaseSyncContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { LockProvider } from "@/context/LockContext";
 import { SoundProvider } from "@/context/SoundContext";
@@ -30,11 +30,16 @@ const queryClient = new QueryClient();
 
 function SetupGuard({ children }: { children: React.ReactNode }) {
   const { setupComplete, loading } = usePermissionStatus();
+  const { startupSyncStatus } = useFirebaseSyncContext();
   const segments = useSegments();
   const hasRedirected = useRef(false);
 
   useEffect(() => {
-    if (loading || hasRedirected.current) return;
+    // Wait until:
+    //   1. Permission status has loaded
+    //   2. Startup Firebase sync has completed (prevents 1-3s bypass window
+    //      after Clear Data when local storage is empty but Firebase has locks)
+    if (loading || startupSyncStatus === "checking" || hasRedirected.current) return;
 
     const inSetup = segments[0] === "setup";
     const inOnboarding = segments[0] === "onboarding";
@@ -53,7 +58,7 @@ function SetupGuard({ children }: { children: React.ReactNode }) {
         router.replace("/(tabs)");
       }
     })();
-  }, [loading, setupComplete, segments]);
+  }, [loading, startupSyncStatus, setupComplete, segments]);
 
   return <>{children}</>;
 }
