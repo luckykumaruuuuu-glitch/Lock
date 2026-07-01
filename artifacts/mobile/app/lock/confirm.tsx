@@ -179,10 +179,10 @@ function AgreementModal({
       <Animated.View style={[agStyles.overlay, { opacity: opacityAnim }]}>
         <Animated.View style={[agStyles.sheet, { transform: [{ scale: scaleAnim }] }]}>
 
-          {/* Warning icon */}
+          {/* Lock icon */}
           <View style={agStyles.iconRow}>
             <View style={agStyles.iconCircle}>
-              <Feather name="alert-octagon" size={28} color="#FF453A" />
+              <Feather name="lock" size={28} color="#FFBF80" />
             </View>
           </View>
 
@@ -239,7 +239,7 @@ function AgreementModal({
               style={({ pressed }) => [{ flex: 1, opacity: pressed ? 0.85 : 1 }]}
             >
               <LinearGradient
-                colors={["#FFBF80", "#FF453A"]}
+                colors={["#FFBF80", "#FFA660"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={agStyles.agreeBtn}
@@ -265,18 +265,18 @@ const agStyles = StyleSheet.create({
     paddingVertical: 28,
     paddingHorizontal: 24,
     borderWidth: 1,
-    borderColor: "rgba(255,69,58,0.25)",
-    shadowColor: "#FF453A",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
+    borderColor: "#3A3A3C",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
     elevation: 20,
     gap: 16,
   },
   iconRow:    { alignItems: "center" },
-  iconCircle: { width: 64, height: 64, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,69,58,0.12)", borderWidth: 1, borderColor: "rgba(255,69,58,0.25)" },
+  iconCircle: { width: 64, height: 64, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,191,128,0.12)", borderWidth: 1, borderColor: "rgba(255,191,128,0.2)" },
   title:      { fontSize: 22, fontFamily: "Inter_700Bold", color: "#FFFFFF", textAlign: "center" },
-  titleUnderline: { height: 2, backgroundColor: "rgba(255,69,58,0.3)", borderRadius: 1, marginHorizontal: 40 },
+  titleUnderline: { height: 2, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 1, marginHorizontal: 40 },
 
   infoBlock:   { backgroundColor: "#2C2C2E", borderRadius: 12, padding: 14, gap: 4, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   infoHeading: { fontSize: 10, fontFamily: "Inter_500Medium", letterSpacing: 1, color: "#8E8E93", marginBottom: 2 },
@@ -285,10 +285,10 @@ const agStyles = StyleSheet.create({
 
   divider:     { height: 1, backgroundColor: "#2C2C2E" },
 
-  clauseHeading:{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#FF453A", letterSpacing: 0.3 },
+  clauseHeading:{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#EBEBF5", letterSpacing: 0.3 },
   clauses:      { gap: 8 },
   clauseRow:    { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  bullet:       { width: 5, height: 5, borderRadius: 3, backgroundColor: "#FF453A", marginTop: 5, flexShrink: 0 },
+  bullet:       { width: 5, height: 5, borderRadius: 3, backgroundColor: "#8E8E93", marginTop: 5, flexShrink: 0 },
   clauseText:   { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.7)", lineHeight: 19 },
 
   btnRow:     { flexDirection: "row", gap: 12, marginTop: 4 },
