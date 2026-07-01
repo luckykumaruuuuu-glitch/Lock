@@ -4,7 +4,8 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Animated, FlatList, Image, Platform, Pressable, StyleSheet, Text, TextInput, View,
+  Animated, FlatList, Image, Modal, NativeModules, Platform, Pressable,
+  StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -13,6 +14,48 @@ import { GradientBackground } from "@/components/ui/GradientBackground";
 import { DUMMY_APPS, AppItem, useLock } from "@/context/LockContext";
 import { getActiveLocks } from "@/hooks/useLockStorage";
 import { useSounds } from "@/hooks/useSounds";
+
+async function isAppInstalled(packageName: string): Promise<boolean> {
+  if (Platform.OS === "web") return true;
+  try {
+    const installed = await NativeModules.AppChecker?.isInstalled(packageName);
+    return installed ?? true;
+  } catch {
+    return true;
+  }
+}
+
+function AppNotFoundPopup({ appName, onDismiss }: { appName: string; onDismiss: () => void }) {
+  return (
+    <Modal transparent animationType="fade" visible statusBarTranslucent>
+      <View style={popupStyles.backdrop}>
+        <View style={popupStyles.card}>
+          <View style={popupStyles.iconCircle}>
+            <Feather name="alert-triangle" size={26} color="#FF453A" />
+          </View>
+          <Text style={popupStyles.title}>App Not Found</Text>
+          <Text style={popupStyles.message}>
+            <Text style={popupStyles.appNameHighlight}>"{appName}"</Text>
+            {" "}is not installed on your device. You cannot lock an app that doesn't exist.
+          </Text>
+          <Pressable
+            onPress={onDismiss}
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+          >
+            <LinearGradient
+              colors={["#FFBF80", "#FFA660"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={popupStyles.okBtn}
+            >
+              <Text style={popupStyles.okBtnText}>OK</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 function AppIcon({ app, dimmed }: { app: AppItem; dimmed: boolean }) {
   const [failed, setFailed] = useState(false);
@@ -97,6 +140,7 @@ export default function SelectAppsScreen() {
   const { playClick } = useSounds();
   const [search, setSearch] = useState("");
   const [alreadyLockedPkgs, setAlreadyLockedPkgs] = useState<Set<string>>(new Set());
+  const [notFoundApp, setNotFoundApp] = useState<AppItem | null>(null);
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   useEffect(() => {
@@ -107,8 +151,17 @@ export default function SelectAppsScreen() {
   const selectedIds = new Set(selection.selectedApps.map((a) => a.id));
   const alreadyLockedCount = filtered.filter((a) => alreadyLockedPkgs.has(a.packageName)).length;
 
-  const toggle = useCallback((app: AppItem) => {
+  const toggle = useCallback(async (app: AppItem) => {
     if (alreadyLockedPkgs.has(app.packageName)) return;
+
+    if (!selectedIds.has(app.id)) {
+      const installed = await isAppInstalled(app.packageName);
+      if (!installed) {
+        setNotFoundApp(app);
+        return;
+      }
+    }
+
     playClick();
     Haptics.selectionAsync();
     if (selectedIds.has(app.id)) {
@@ -126,6 +179,15 @@ export default function SelectAppsScreen() {
 
   return (
     <GradientBackground>
+      {notFoundApp && (
+        <AppNotFoundPopup
+          appName={notFoundApp.name}
+          onDismiss={() => {
+            setSelectedApps(selection.selectedApps.filter((a) => a.id !== notFoundApp.id));
+            setNotFoundApp(null);
+          }}
+        />
+      )}
       <GlassCard style={styles.searchBar} borderColor="rgba(255,255,255,0.1)" radius={16}>
         <View style={styles.searchInner}>
           <Feather name="search" size={16} color="#8E8E93" />
@@ -198,4 +260,64 @@ const styles = StyleSheet.create({
   footer: { paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#2C2C2E", backgroundColor: "rgba(0,0,0,0.95)" },
   nextBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 17, borderRadius: 18, shadowColor: "#FFBF80", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 14, elevation: 10 },
   nextBtnText: { color: "#000000", fontSize: 16, fontFamily: "Inter_700Bold" },
+});
+
+const popupStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  card: {
+    width: "100%",
+    maxWidth: 380,
+    backgroundColor: "#1C1C1E",
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 24,
+    alignItems: "center",
+    gap: 14,
+  },
+  iconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,69,58,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
+  },
+  title: {
+    fontSize: 20,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+    textAlign: "center",
+  },
+  message: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: "#8E8E93",
+    textAlign: "center",
+    lineHeight: 21,
+    paddingHorizontal: 4,
+  },
+  appNameHighlight: {
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFBF80",
+  },
+  okBtn: {
+    paddingHorizontal: 48,
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  okBtnText: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    color: "#000000",
+  },
 });
