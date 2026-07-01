@@ -10,7 +10,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeKeyboardProvider } from "@/components/SafeKeyboardProvider";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -33,34 +34,66 @@ function SetupGuard({ children }: { children: React.ReactNode }) {
   const { startupSyncStatus } = useFirebaseSyncContext();
   const segments = useSegments();
   const hasRedirected = useRef(false);
+  const [routeReady, setRouteReady] = useState(false);
+
+  // Hard safety net: never keep the overlay up for more than 6s.
+  // The Firebase hook already has its own 5s timeout — this only fires
+  // if context propagation itself stalls (e.g. web/preview environments).
+  useEffect(() => {
+    const id = setTimeout(() => setRouteReady(true), 6000);
+    return () => clearTimeout(id);
+  }, []);
 
   useEffect(() => {
     // Wait until:
     //   1. Permission status has loaded
     //   2. Startup Firebase sync has completed (prevents 1-3s bypass window
     //      after Clear Data when local storage is empty but Firebase has locks)
-    if (loading || startupSyncStatus === "checking" || hasRedirected.current) return;
-
-    const inSetup = segments[0] === "setup";
-    const inOnboarding = segments[0] === "onboarding";
+    if (loading || startupSyncStatus === "checking") return;
 
     (async () => {
-      const onboardingDone = await AsyncStorage.getItem(ONBOARDING_DONE_KEY);
+      try {
+        if (!hasRedirected.current) {
+          const inSetup = segments[0] === "setup";
+          const inOnboarding = segments[0] === "onboarding";
+          const onboardingDone = await AsyncStorage.getItem(ONBOARDING_DONE_KEY);
 
-      if (!onboardingDone && !inOnboarding) {
-        hasRedirected.current = true;
-        router.replace("/onboarding");
-      } else if (onboardingDone && setupComplete === false && !inSetup) {
-        hasRedirected.current = true;
-        router.replace("/setup");
-      } else if (onboardingDone && setupComplete === true && inSetup) {
-        hasRedirected.current = true;
-        router.replace("/(tabs)");
+          if (!onboardingDone && !inOnboarding) {
+            hasRedirected.current = true;
+            router.replace("/onboarding");
+          } else if (onboardingDone && setupComplete === false && !inSetup) {
+            hasRedirected.current = true;
+            router.replace("/setup");
+          } else if (onboardingDone && setupComplete === true && inSetup) {
+            hasRedirected.current = true;
+            router.replace("/(tabs)");
+          }
+        }
+      } catch {
+        // Navigation determination failed — reveal app anyway
+      } finally {
+        setRouteReady(true);
       }
     })();
   }, [loading, startupSyncStatus, setupComplete, segments]);
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {!routeReady && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "#000000",
+          }}
+        />
+      )}
+    </>
+  );
 }
 
 function RootLayoutNav() {
