@@ -1,7 +1,7 @@
 import * as Application from "expo-application";
 import { get, ref } from "firebase/database";
 import { useEffect, useRef, useState } from "react";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, Platform } from "react-native";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 
 export interface UpdateInfo {
@@ -18,6 +18,7 @@ export function useUpdateCheck() {
   const isChecking = useRef(false);
 
   const check = async () => {
+    if (Platform.OS === "web") return; // nativeBuildVersion is null on web
     if (isChecking.current) return;
     if (!isFirebaseConfigured) return;
     const db = getFirebaseDb();
@@ -27,7 +28,7 @@ export function useUpdateCheck() {
     try {
       const rawBuild = Application.nativeBuildVersion ?? "0";
       const currentVersionCode = parseInt(rawBuild, 10);
-      if (isNaN(currentVersionCode)) return;
+      if (isNaN(currentVersionCode) || currentVersionCode === 0) return;
 
       const snapshot = await get(ref(db, "app_config"));
       const config = snapshot.val();
