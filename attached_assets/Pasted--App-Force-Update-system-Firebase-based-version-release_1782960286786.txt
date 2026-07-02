@@ -1,0 +1,22 @@
+"App में एक Force-Update system बनाना है, Firebase-based। यह जब भी नया version release हो, user को update करने के लिए मजबूर करे — Play Store नहीं, direct APK link के through (क्योंकि अभी app Play Store पर नहीं है, manually distribute हो रहा है)।
+Firebase Realtime Database structure (नया node add करो):
+Code
+Logic जो implement करना है:
+App के current installed version को पढ़ो — expo-application से Application.nativeApplicationVersion और Application.nativeBuildVersion (यह already installed हो चुका है पहले, तो issue नहीं होगी)
+App खुलते ही (या resume होने पर), Firebase से app_config/latest_version_code पढ़ो और अपने current build version से compare करो:
+Javascript
+Update Popup design — app के existing dark + golden theme के according:
+Background: dark overlay (semi-transparent black), पूरी screen को cover करे, dismiss ना हो सके tap-outside से (अगर force_update: true है)
+Card: #1C1C1E rounded card, duck icon या app icon के साथ
+Title: "Update Available" (bold, white)
+Message: update_message वाला text dynamically दिखे (grey text)
+Version info: "New version: {latest_version_name}"
+Button: एक golden "Update Now" button — press करने पर Linking.openURL(update_url) से browser/download manager खुले जो naya APK download करे
+अगर force_update: false है, तो एक छोटा "Later" button भी दिखे (skip करने का option), अगर force_update: true है तो कोई skip/cancel button ना हो — user को पहले update करना ही होगा
+यह check app के हर launch पर हो (root-level पर, SetupGuard के साथ ही या उसके तुरंत बाद), और साथ ही जब app background से foreground में आए (AppState listener) तब भी हो — ताकि अगर user app खुला रखे हुए हो और तुम इस बीच नया version push करो, तो अगली बार resume होने पर उसे पता चल जाए
+Network handling: अगर internet ना हो और Firebase से config ना पढ़ पाए, तो silently skip करो (app normally चले) — update check की वजह से app block नहीं होना चाहिए अगर internet issue हो, सिर्फ actual version mismatch पर block करना है
+ज़रूरी:
+यह check बहुत हल्का और तेज़ होना चाहिए, app के normal startup flow (SetupGuard) में कोई extra delay महसूस नहीं होना चाहिए
+कोई existing function, UI, logic, animation (locking, duck animation, sound, time picker, permissions) बिल्कुल मत छेड़ना — सिर्फ यह नया update-check layer जोड़ना है
+expo-application पहले से installed है (हमने पहले use किया था), उसी को reuse करो, नया package add करने की ज़रूरत नहीं होनी चाहिए
+Implement करने के बाद बताओ कि Firebase Realtime Database में मुझे app_config node manually कैसे बनाना/update करना होगा हर नए release पर (ताकि मैं खुद बाद में version बदल सकूं बिना तुमसे दोबारा पूछे)"

@@ -17,11 +17,13 @@ import { SafeKeyboardProvider } from "@/components/SafeKeyboardProvider";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { UpdateModal } from "@/components/ui/UpdateModal";
 import { FirebaseSyncProvider, useFirebaseSyncContext } from "@/context/FirebaseSyncContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { LockProvider } from "@/context/LockContext";
 import { SoundProvider } from "@/context/SoundContext";
 import { usePermissionStatus } from "@/hooks/usePermissionStatus";
+import { useUpdateCheck } from "@/hooks/useUpdateCheck";
 import "@/lib/i18n";
 import { ONBOARDING_DONE_KEY } from "./onboarding";
 
@@ -97,9 +99,12 @@ function SetupGuard({ children }: { children: React.ReactNode }) {
 }
 
 function RootLayoutNav() {
+  const { showUpdateModal, updateInfo, dismiss } = useUpdateCheck();
+
   return (
-    <SetupGuard>
-      <StatusBar style="light" />
+    <>
+      <SetupGuard>
+        <StatusBar style="light" />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: "rgba(0,0,0,0.97)" },
@@ -190,7 +195,9 @@ function RootLayoutNav() {
           }}
         />
       </Stack>
-    </SetupGuard>
+      </SetupGuard>
+      <UpdateModal visible={showUpdateModal} info={updateInfo} onDismiss={dismiss} />
+    </>
   );
 }
 
