@@ -1,4 +1,4 @@
-import * as Application from "expo-application";
+import Constants from "expo-constants";
 import { get, ref } from "firebase/database";
 import { useEffect, useRef, useState } from "react";
 import { AppState, AppStateStatus, Platform } from "react-native";
@@ -18,26 +18,67 @@ export function useUpdateCheck() {
   const isChecking = useRef(false);
 
   const check = async () => {
-    if (Platform.OS === "web") return; // nativeBuildVersion is null on web
-    if (isChecking.current) return;
-    if (!isFirebaseConfigured) return;
+    console.log("🔍 checkForUpdate called, Platform:", Platform.OS);
+
+    if (Platform.OS === "web") {
+      console.log("⏭️ Skipped: web platform");
+      return;
+    }
+
+    if (isChecking.current) {
+      console.log("⏭️ Skipped: already checking");
+      return;
+    }
+
+    if (!isFirebaseConfigured) {
+      console.log("⏭️ Skipped: Firebase not configured");
+      return;
+    }
+
     const db = getFirebaseDb();
-    if (!db) return;
+    if (!db) {
+      console.log("⏭️ Skipped: no Firebase db instance");
+      return;
+    }
 
     isChecking.current = true;
     try {
-      const rawBuild = Application.nativeBuildVersion ?? "0";
-      const currentVersionCode = parseInt(rawBuild, 10);
-      if (isNaN(currentVersionCode) || currentVersionCode === 0) return;
+      // expo-constants reads from app.json — works correctly in both
+      // Expo Go and standalone APK. Application.nativeBuildVersion
+      // returns Expo Go's own versionCode in Expo Go, not the app's.
+      const currentVersionCode =
+        Constants.expoConfig?.android?.versionCode ?? 0;
+      console.log(
+        "📱 currentVersionCode (from expoConfig):",
+        currentVersionCode
+      );
+
+      if (!currentVersionCode || currentVersionCode === 0) {
+        console.log("⏭️ Skipped: invalid version code");
+        return;
+      }
 
       const snapshot = await get(ref(db, "app_config"));
       const config = snapshot.val();
-      if (!config) return;
+      console.log("🔥 Firebase config:", JSON.stringify(config));
+
+      if (!config) {
+        console.log("⏭️ Skipped: no config found");
+        return;
+      }
 
       const latestCode = Number(config.latest_version_code);
-      if (!isFinite(latestCode)) return;
+      console.log(
+        "🔢 Comparison:",
+        config.latest_version_code,
+        ">",
+        currentVersionCode,
+        "=",
+        latestCode > currentVersionCode
+      );
 
       if (latestCode > currentVersionCode) {
+        console.log("✅ Update needed, showing modal");
         setUpdateInfo({
           required: config.force_update === true,
           message:
@@ -47,9 +88,11 @@ export function useUpdateCheck() {
           latestVersionName: config.latest_version_name ?? "",
         });
         setShowUpdateModal(true);
+      } else {
+        console.log("❌ No update needed");
       }
-    } catch {
-      // Network unavailable or Firebase error — silently skip
+    } catch (err) {
+      console.log("💥 checkForUpdate error:", String(err));
     } finally {
       isChecking.current = false;
     }
