@@ -22,8 +22,8 @@ import { FirebaseSyncProvider, useFirebaseSyncContext } from "@/context/Firebase
 import { LanguageProvider } from "@/context/LanguageContext";
 import { LockProvider } from "@/context/LockContext";
 import { SoundProvider } from "@/context/SoundContext";
+import { UpdateCheckProvider, useUpdateCheckContext } from "@/context/UpdateCheckContext";
 import { usePermissionStatus } from "@/hooks/usePermissionStatus";
-import { useUpdateCheck } from "@/hooks/useUpdateCheck";
 import "@/lib/i18n";
 import { ONBOARDING_DONE_KEY } from "./onboarding";
 
@@ -99,7 +99,7 @@ function SetupGuard({ children }: { children: React.ReactNode }) {
 }
 
 function RootLayoutNav() {
-  const { showUpdateModal, updateInfo, dismiss } = useUpdateCheck();
+  const { showUpdateModal, updateInfo, dismiss } = useUpdateCheckContext();
 
   return (
     <>
@@ -225,11 +225,13 @@ export default function RootLayout() {
             <SoundProvider>
             <LockProvider>
               <FirebaseSyncProvider>
-                <GestureHandlerRootView>
-                  <SafeKeyboardProvider>
-                    <RootLayoutNav />
-                  </SafeKeyboardProvider>
-                </GestureHandlerRootView>
+                <UpdateCheckProvider>
+                  <GestureHandlerRootView>
+                    <SafeKeyboardProvider>
+                      <RootLayoutNav />
+                    </SafeKeyboardProvider>
+                  </GestureHandlerRootView>
+                </UpdateCheckProvider>
               </FirebaseSyncProvider>
             </LockProvider>
             </SoundProvider>

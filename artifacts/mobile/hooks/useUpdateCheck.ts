@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
 import { get, ref } from "firebase/database";
 import { useEffect, useRef, useState } from "react";
-import { Alert, AppState, AppStateStatus, Platform } from "react-native";
+import { AppState, AppStateStatus, Platform } from "react-native";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 
 export interface UpdateInfo {
@@ -14,68 +14,47 @@ export interface UpdateInfo {
 export function useUpdateCheck() {
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  // hasUpdate stays true even after "Later" is pressed, until app is updated
+  const [hasUpdate, setHasUpdate] = useState(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const isChecking = useRef(false);
 
   const check = async () => {
-    // TEMPORARY DEBUG: visible alert at very start — remove after confirmed working
-    Alert.alert("🔍 DEBUG", `check() called. Platform: ${Platform.OS}\nisFirebaseConfigured: ${isFirebaseConfigured}\nisChecking: ${isChecking.current}`);
-
     if (Platform.OS === "web") return;
     if (isChecking.current) return;
-
-    if (!isFirebaseConfigured) {
-      Alert.alert("⛔ DEBUG", "Firebase not configured — update check skipped");
-      return;
-    }
+    if (!isFirebaseConfigured) return;
 
     const db = getFirebaseDb();
-    if (!db) {
-      Alert.alert("⛔ DEBUG", "No Firebase db instance");
-      return;
-    }
+    if (!db) return;
 
     isChecking.current = true;
     try {
       const currentVersionCode =
         Constants.expoConfig?.android?.versionCode ?? 0;
 
+      if (!currentVersionCode || currentVersionCode === 0) return;
+
       const snapshot = await get(ref(db, "app_config"));
       const config = snapshot.val();
-      const latestCode = Number(config?.latest_version_code ?? 0);
+      if (!config) return;
 
-      // --- TEMPORARY DEBUG ALERT: remove after confirmed working ---
-      Alert.alert(
-        "🔍 Update Check Debug",
-        `Platform: ${Platform.OS}\n` +
-          `currentVersionCode: ${currentVersionCode}\n` +
-          `Firebase config: ${JSON.stringify(config)}\n` +
-          `latestCode: ${latestCode}\n` +
-          `latestCode > current: ${latestCode > currentVersionCode}`
-      );
-      // --- END DEBUG ---
-
-      if (!currentVersionCode || currentVersionCode === 0) {
-        return;
-      }
-
-      if (!config) {
-        return;
-      }
+      const latestCode = Number(config.latest_version_code ?? 0);
 
       if (latestCode > currentVersionCode) {
-        setUpdateInfo({
+        const info: UpdateInfo = {
           required: config.force_update === true,
           message:
             config.update_message ??
             "A new version is available with important improvements.",
           url: config.update_url ?? "",
           latestVersionName: config.latest_version_name ?? "",
-        });
+        };
+        setUpdateInfo(info);
+        setHasUpdate(true);
         setShowUpdateModal(true);
       }
-    } catch (err) {
-      Alert.alert("💥 checkForUpdate error", String(err));
+    } catch {
+      // Silent — update check is non-critical
     } finally {
       isChecking.current = false;
     }
@@ -100,7 +79,13 @@ export function useUpdateCheck() {
     return () => sub.remove();
   }, []);
 
+  // "Later" — closes modal but hasUpdate stays true
   const dismiss = () => setShowUpdateModal(false);
 
-  return { showUpdateModal, updateInfo, dismiss };
+  // Settings screen taps version row → reopen modal
+  const reopenModal = () => {
+    if (hasUpdate) setShowUpdateModal(true);
+  };
+
+  return { showUpdateModal, updateInfo, dismiss, hasUpdate, reopenModal };
 }

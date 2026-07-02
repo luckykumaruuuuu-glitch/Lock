@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientBackground } from "@/components/ui/GradientBackground";
+import { useUpdateCheckContext } from "@/context/UpdateCheckContext";
 import { useLanguage, LANGUAGES } from "@/context/LanguageContext";
 import { useSounds } from "@/hooks/useSounds";
 
@@ -369,6 +370,7 @@ export default function SettingsScreen() {
   const [tosVisible, setTosVisible] = useState(false);
   const { muted, setMuted, playPreview } = useSounds();
   const { t, currentLanguage } = useLanguage();
+  const { hasUpdate, reopenModal } = useUpdateCheckContext();
 
   const topPad    = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 + 84 : 60 + insets.bottom;
@@ -398,7 +400,25 @@ export default function SettingsScreen() {
         {/* APPLICATION */}
         <SectionLabel label={t("application")} />
         <GlassCard padding={0}>
-          <SettingRow icon="info" label={t("version")} value={APP_VERSION} last />
+          <Pressable
+            onPress={hasUpdate ? reopenModal : undefined}
+            disabled={!hasUpdate}
+            style={({ pressed }) => [styles.row, { opacity: pressed ? 0.65 : 1 }]}
+          >
+            <FlatIcon name="info" />
+            <Text style={styles.rowLabel}>{t("version")}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Text style={styles.rowValue}>{APP_VERSION}</Text>
+              {hasUpdate && (
+                <View style={styles.updateBadge}>
+                  <Text style={styles.updateBadgeText}>Update Available</Text>
+                </View>
+              )}
+            </View>
+            {hasUpdate && (
+              <Feather name="chevron-right" size={15} color="#3A3A3C" />
+            )}
+          </Pressable>
         </GlassCard>
 
         {/* SUPPORT */}
@@ -562,5 +582,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 10,
     marginBottom: 4,
+  },
+
+  updateBadge: {
+    backgroundColor: "rgba(255,191,128,0.15)",
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: "rgba(255,191,128,0.35)",
+  },
+  updateBadgeText: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFBF80",
   },
 });
