@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, AppStateStatus, Platform } from "react-native";
 
+import { checkNativePermissions, NativePermissionStatus } from "@/lib/nativePermissionCheck";
 import { PermissionId } from "@/hooks/usePermissionStatus";
 
 const STORAGE_KEY = "focuslock_permissions_v2";
@@ -32,41 +33,93 @@ async function checkNotificationGranted(): Promise<boolean> {
   }
 }
 
+/**
+ * Sync real native permission results back into AsyncStorage so the setup
+ * screen (which reads AsyncStorage via usePermissionStatus) stays consistent.
+ */
+async function syncNativeStatusToStorage(native: NativePermissionStatus): Promise<void> {
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    const stored: Partial<Record<PermissionId, { granted: boolean; openedSettings: boolean }>> =
+      raw ? JSON.parse(raw) : {};
+
+    const nativeIds: Array<keyof NativePermissionStatus> = [
+      "usageAccess",
+      "overlay",
+      "deviceAdmin",
+      "battery",
+    ];
+    for (const id of nativeIds) {
+      stored[id] = {
+        granted: native[id],
+        openedSettings: stored[id]?.openedSettings ?? false,
+      };
+    }
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+  } catch {
+    // Non-critical — best effort sync
+  }
+}
+
+/**
+ * Real-time permission check. Calls actual Android OS APIs via the native
+ * PermissionCheckerModule — never trusts the AsyncStorage cache for the
+ * Android-specific permissions (usageAccess, overlay, deviceAdmin, battery).
+ *
+ * Falls back to AsyncStorage only when the native module is unavailable
+ * (e.g. Expo Go without a custom dev build).
+ */
 async function getMissingPermissions(): Promise<MissingPerm[]> {
   if (Platform.OS !== "android") return [];
 
   try {
-    const [raw, setupDone] = await Promise.all([
-      AsyncStorage.getItem(STORAGE_KEY),
-      AsyncStorage.getItem(SETUP_DONE_KEY),
-    ]);
-
+    const setupDone = await AsyncStorage.getItem(SETUP_DONE_KEY);
     if (setupDone !== "true") return [];
 
-    const stored: Partial<Record<PermissionId, { granted: boolean }>> = raw
-      ? JSON.parse(raw)
-      : {};
-
-    const notifGranted = await checkNotificationGranted();
+    const [nativeStatus, notifGranted] = await Promise.all([
+      checkNativePermissions(),
+      checkNotificationGranted(),
+    ]);
 
     const missing: MissingPerm[] = [];
 
-    const ids: PermissionId[] = [
-      "usageAccess",
-      "deviceAdmin",
-      "overlay",
-      "notification",
-      "battery",
-    ];
+    // Notification — expo-notifications real OS check (already worked correctly)
+    if (!notifGranted) {
+      missing.push({ id: "notification", label: PERM_LABELS["notification"] });
+    }
 
-    for (const id of ids) {
-      if (id === "notification") {
-        if (!notifGranted) {
-          missing.push({ id, label: PERM_LABELS[id] });
-        }
-      } else {
-        const granted = stored[id]?.granted ?? false;
-        if (!granted) {
+    if (nativeStatus !== null) {
+      // Real OS-level checks via native PermissionCheckerModule
+      if (!nativeStatus.usageAccess) {
+        missing.push({ id: "usageAccess", label: PERM_LABELS["usageAccess"] });
+      }
+      if (!nativeStatus.overlay) {
+        missing.push({ id: "overlay", label: PERM_LABELS["overlay"] });
+      }
+      if (!nativeStatus.deviceAdmin) {
+        missing.push({ id: "deviceAdmin", label: PERM_LABELS["deviceAdmin"] });
+      }
+      if (!nativeStatus.battery) {
+        missing.push({ id: "battery", label: PERM_LABELS["battery"] });
+      }
+
+      // Sync real status back to AsyncStorage so setup screen stays in sync (non-blocking)
+      syncNativeStatusToStorage(nativeStatus).catch(() => {});
+    } else {
+      // Native module unavailable — fall back to AsyncStorage cache
+      const raw = await AsyncStorage.getItem(STORAGE_KEY);
+      const stored: Partial<Record<PermissionId, { granted: boolean }>> = raw
+        ? JSON.parse(raw)
+        : {};
+
+      const fallbackIds: PermissionId[] = [
+        "usageAccess",
+        "deviceAdmin",
+        "overlay",
+        "battery",
+      ];
+      for (const id of fallbackIds) {
+        if (!stored[id]?.granted) {
           missing.push({ id, label: PERM_LABELS[id] });
         }
       }

@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as IntentLauncher from "expo-intent-launcher";
 import { router } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { checkNativePermissions } from "@/lib/nativePermissionCheck";
 import { PermissionId, usePermissionStatus } from "@/hooks/usePermissionStatus";
 
 const APP_PACKAGE = "com.focuslock.app";
@@ -106,17 +107,53 @@ export default function SetupScreen() {
     }).start();
   }, [allGranted]);
 
+  /**
+   * Called when the user returns from Settings.
+   * Performs a real OS-level check before marking granted — never assumes
+   * that opening Settings means the permission was actually turned on.
+   */
+  const verifyAndMarkPermission = useCallback(async (id: PermissionId) => {
+    let granted = false;
+
+    if (id === "notification") {
+      try {
+        const Notifications = require("expo-notifications");
+        const { status } = await Notifications.getPermissionsAsync();
+        granted = status === "granted";
+      } catch {
+        granted = false;
+      }
+    } else {
+      // usageAccess, overlay, deviceAdmin, battery — use real native OS check
+      const native = await checkNativePermissions();
+      if (native !== null) {
+        switch (id) {
+          case "usageAccess": granted = native.usageAccess; break;
+          case "overlay":     granted = native.overlay;     break;
+          case "deviceAdmin": granted = native.deviceAdmin; break;
+          case "battery":     granted = native.battery;     break;
+          default:            granted = false;
+        }
+      }
+      // If native module is unavailable, leave granted = false.
+      // User will see the permission still ungranted, which is correct.
+    }
+
+    await markGranted(id, granted);
+  }, [markGranted]);
+
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next: AppStateStatus) => {
       if (appStateRef.current !== "active" && next === "active" && lastOpenedRef.current) {
         const id = lastOpenedRef.current;
         lastOpenedRef.current = null;
-        markGranted(id, true);
+        // Real OS check — do NOT blindly mark as granted
+        verifyAndMarkPermission(id);
       }
       appStateRef.current = next;
     });
     return () => sub.remove();
-  }, [markGranted]);
+  }, [verifyAndMarkPermission]);
 
   function toggleWhy() {
     const isOpen = !whyOpen;

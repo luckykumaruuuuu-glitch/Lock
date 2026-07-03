@@ -1,0 +1,20 @@
+"App के Permission system में दो critical bugs हैं — दोनों debug करने हैं, guess नहीं करना, actual code check करके बताना।
+Bug 1 — Permission granted मान लिया जाता है बिना actually check किए:
+जब पहली बार Permission Setup screen पर किसी permission (जैसे Accessibility, Usage Access, Overlay, Device Admin) के 'Allow' button पर click करता हूँ, तो app Settings page पर redirect करता है। अगर मैं वहाँ जाकर permission को actually ON नहीं करता (बिना toggle किए वापस आ जाता हूँ), फिर भी app वापस आने पर उस permission को already granted/tick मान लेता है — जबकि असल में वो अभी भी OFF है।
+Check करना:
+जब user Settings से वापस app में आता है (onResume/AppState listener के through), क्या वहाँ actual permission status दोबारा verify हो रहा है (जैसे isAccessibilityServiceEnabled(), hasUsageStatsPermission(), Settings.canDrawOverlays() जैसे real native checks), या सिर्फ यह मान लिया जा रहा है कि 'user Settings पर गया मतलब उसने ON कर दिया होगा'?
+अगर कोई ऐसा code मिले जो सिर्फ 'button click हुआ' के आधार पर permission granted flag को true set कर देता है (actual OS-level verification के बिना), वो galat hai — use hatao
+Bug 2 — बाद में permission manually OFF करने पर कोई detection नहीं होता:
+Test किया — सारी permissions पहले properly ON कीं। फिर app को पूरी तरह बंद किया (force close, background से भी हटाया)। फिर phone की Settings में जाकर सारी permissions (Accessibility, Usage Access, Overlay, Device Admin — Notification को छोड़कर, वो सही काम कर रही है) manually OFF कर दीं। फिर app वापस खोला — कोई भी popup, कोई warning, कुछ भी नहीं आया, जैसे app को पता ही नहीं चला कि permissions OFF हो गई हैं।
+Check करना:
+App launch/resume के वक़्त जो permission-verification check चलता है, वो actually चल भी रहा है या नहीं — एक log/Alert लगाकर confirm करो कि function call हो रहा है
+हर individual permission (Accessibility अलग, Usage Access अलग, Overlay अलग, Device Admin अलग) का real-time status कैसे पढ़ा जा रहा है — हर एक के लिए सही native API इस्तेमाल हो रही है या नहीं (Notification के लिए जो तरीका काम कर रहा है, बाकियों के लिए वैसा तरीका इस्तेमाल नहीं हो रहा शायद)
+क्या यह check सिर्फ AsyncStorage/local cached value पढ़ रहा है (जो पुरानी 'granted: true' value रख रहा हो) बजाय हर बार OS से fresh, real-time status पूछने के — यही Bug 1 और Bug 2 दोनों की common वजह हो सकती है
+दोनों bugs का common root cause शायद यही है — app कहीं ना कहीं OS से real-time permission status ना पूछकर, एक बार cache/save किया हुआ 'granted' flag भरोसा कर रहा है, जो कभी update ही नहीं होता जब तक user खुद app के अंदर permission screen ना खोले।
+Fix यह होना चाहिए:
+App के हर launch और हर resume (foreground आने) पर, सभी permissions का actual, real-time OS-level status चेक हो (कोई cached/assumed value नहीं)
+अगर कोई भी permission missing/OFF मिले, तो तुरंत वही existing popup दिखे (जो पहले Usage Access, Overlay वगैरह के लिए बनाया था) जिसमें missing permissions की list हो aur 'Allow' button ho jo Settings par le jaaye
+Zaroori:
+Yeh sabse critical hai kyunki agar permission cheat/bypass ho sakti hai, to poora locking system hi bekaar ho jata hai
+Baaki koi existing UI/logic mat chhedna
+Fix karne ke baad exact batao ki har permission (Accessibility, Usage Access, Overlay, Device Admin) ke liye real-time status check karne ka konsa method use kiya"

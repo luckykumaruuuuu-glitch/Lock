@@ -821,11 +821,159 @@ class BootReceiver : BroadcastReceiver() {
   ]);
 
 /* ───────────────────────────────────────────────
+   Plugin: Native permission checker module
+   Adds a ReactNativeModule that exposes real
+   OS-level permission status to JS.
+─────────────────────────────────────────────── */
+const withPermissionChecker = (config) =>
+  withDangerousMod(config, [
+    "android",
+    (config) => {
+      const projectRoot = config.modRequest.platformProjectRoot;
+      const packagePath = PACKAGE_NAME.replace(/\./g, "/");
+      const kotlinDir = path.join(
+        projectRoot,
+        `app/src/main/java/${packagePath}`
+      );
+      fs.mkdirSync(kotlinDir, { recursive: true });
+
+      /* ── PermissionCheckerModule.kt ── */
+      fs.writeFileSync(
+        path.join(kotlinDir, "PermissionCheckerModule.kt"),
+`package ${PACKAGE_NAME}
+
+import android.app.AppOpsManager
+import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
+import android.content.Context
+import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
+import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.Promise
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod
+
+/**
+ * Exposes real OS-level permission checks to JavaScript.
+ * Each check calls the actual Android API — no cache, no assumptions.
+ *
+ * JS usage:
+ *   import { NativeModules } from 'react-native';
+ *   const result = await NativeModules.FocusLockPermissionChecker.checkPermissions();
+ *   // result: { usageAccess, overlay, deviceAdmin, battery } — all booleans
+ */
+class PermissionCheckerModule(private val ctx: ReactApplicationContext)
+    : ReactContextBaseJavaModule(ctx) {
+
+    override fun getName() = "FocusLockPermissionChecker"
+
+    @ReactMethod
+    fun checkPermissions(promise: Promise) {
+        try {
+            val map = Arguments.createMap()
+            map.putBoolean("usageAccess",  hasUsageStatsPermission())
+            map.putBoolean("overlay",      canDrawOverlays())
+            map.putBoolean("deviceAdmin",  isDeviceAdminActive())
+            map.putBoolean("battery",      isIgnoringBatteryOptimizations())
+            promise.resolve(map)
+        } catch (e: Exception) {
+            promise.reject("PERMISSION_CHECK_ERROR", e.message ?: "Unknown error", e)
+        }
+    }
+
+    /** AppOpsManager.checkOpNoThrow for PACKAGE_USAGE_STATS */
+    private fun hasUsageStatsPermission(): Boolean {
+        return try {
+            val appOps = ctx.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+            val uid    = ctx.applicationInfo.uid
+            val pkg    = ctx.packageName
+            val mode   = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, uid, pkg)
+            } else {
+                @Suppress("DEPRECATION")
+                appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, uid, pkg)
+            }
+            mode == AppOpsManager.MODE_ALLOWED
+        } catch (e: Exception) { false }
+    }
+
+    /** Settings.canDrawOverlays (API 23+) */
+    private fun canDrawOverlays(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(ctx)
+        } else true
+    }
+
+    /** DevicePolicyManager.isAdminActive for our DeviceAdminReceiver */
+    private fun isDeviceAdminActive(): Boolean {
+        return try {
+            val dpm       = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+            val component = ComponentName(ctx, "\${ctx.packageName}.DeviceAdminReceiver")
+            dpm.isAdminActive(component)
+        } catch (e: Exception) { false }
+    }
+
+    /** PowerManager.isIgnoringBatteryOptimizations */
+    private fun isIgnoringBatteryOptimizations(): Boolean {
+        return try {
+            val pm = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager
+            pm.isIgnoringBatteryOptimizations(ctx.packageName)
+        } catch (e: Exception) { true }
+    }
+}
+`
+      );
+
+      /* ── PermissionCheckerPackage.kt ── */
+      fs.writeFileSync(
+        path.join(kotlinDir, "PermissionCheckerPackage.kt"),
+`package ${PACKAGE_NAME}
+
+import com.facebook.react.ReactPackage
+import com.facebook.react.bridge.NativeModule
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.uimanager.ViewManager
+
+class PermissionCheckerPackage : ReactPackage {
+    override fun createNativeModules(ctx: ReactApplicationContext): List<NativeModule> =
+        listOf(PermissionCheckerModule(ctx))
+
+    override fun createViewManagers(ctx: ReactApplicationContext): List<ViewManager<*, *>> =
+        emptyList()
+}
+`
+      );
+
+      /* ── Patch MainApplication.kt to register the package ── */
+      const mainAppPath = path.join(kotlinDir, "MainApplication.kt");
+      if (fs.existsSync(mainAppPath)) {
+        let content = fs.readFileSync(mainAppPath, "utf8");
+        if (!content.includes("PermissionCheckerPackage")) {
+          // Insert after "PackageList(this).packages.apply {"
+          // This pattern is present in all Expo-generated MainApplication.kt files.
+          const patched = content.replace(
+            /(PackageList\(this\)\.packages\.apply\s*\{)/,
+            "$1\n              add(PermissionCheckerPackage())"
+          );
+          if (patched !== content) {
+            fs.writeFileSync(mainAppPath, patched, "utf8");
+          }
+        }
+      }
+
+      return config;
+    },
+  ]);
+
+/* ───────────────────────────────────────────────
    Compose and export
 ─────────────────────────────────────────────── */
 const withFocusLockAndroid = (config) => {
   config = withFocusLockManifest(config);
   config = withFocusLockNativeFiles(config);
+  config = withPermissionChecker(config);
   return config;
 };
 
