@@ -1,0 +1,28 @@
+"APK build करने से पहले, पूरे app का एक comprehensive sanity check चाहिए — यह verify करना है कि अब तक जितने भी fixes/features implement हुए हैं, वो सब अभी भी properly काम कर रहे हैं, कहीं कोई हालिया change किसी पुराने काम करते हुए feature को तोड़ तो नहीं गया।
+यह सारी चीज़ें एक-एक करके check करो (code-level review + जहाँ possible हो Expo Go/preview में actual test करके):
+Locking Core Flow:
+App selection screen — सिर्फ installed apps दिखें, हर बार screen खुलने पर fresh refresh हो
+Duration selection (1 Day, 7 Days, 30 Days, Custom) — सही duration calculate हो रहा है
+Custom/manual time picker — 12H/24H auto-detection सही काम कर रहा है, same-day duration calculation exact है (कोई off-by-one/1-minute-early bug नहीं)
+Confirm screen — installation check हो रहा है (uninstalled app पर lock ना लगे)
+Firebase पर lock data सही save हो रहा है (device ID based)
+Permission System:
+DEV_BYPASS_PERMISSIONS पूरी तरह हट चुका है — दोबारा grep करके confirm करो कहीं trace नहीं बचा
+Permission verification असली OS-level check कर रहा है (bypass हटने के बाद)
+Permission missing/revoked होने पर popup सही आता है
+UI/Visual:
+'Set Duration' screen — heading text ('How long?'), subtitle text, cards का background color, koi text overflow — sab abhi bhi sahi hai (jo hum abhi fix karva rahe the)
+Home screen duck/character icon — apni sahi position (title ke row mein, top-right) par hai
+Icons (Feather/FontAwesome5) sahi dikh rahe hain, koi khaali box (tofu) nahi
+Screen transitions mein koi white/black flash nahi
+Sound toggle aur duck animation smooth kaam kar rahe hain
+Force-Update System:
+Firebase se version check ho raha hai, 'Update Now'/'Later' dono buttons sahi kaam karte hain
+Settings mein version row par update-indicator sahi dikhta hai
+Foreground Notification (locking persistence ke liye):
+Notification service ka code intact hai (jo App Kill/Restart persistence ke liye add kiya tha)
+Har ek item ke against clearly batao: ✅ Working / ❌ Broken / ⚠️ Cannot verify without real APK (kyunki kuch cheezein — jaise actual accessibility blocking — sirf real native build par hi test ho sakti hain, Expo Go mein nahi).
+Zaroori:
+Yeh sirf ek verification/testing pass hai — koi naya feature mat jodna, koi UI 'improve' mat karna khud se
+Agar kahin koi cheez broken mile, use fix karo aur exact batao ki kya tha
+Agar sab sahi hai, to bhi poori list confirm karke do
