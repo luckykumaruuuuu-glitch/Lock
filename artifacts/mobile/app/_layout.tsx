@@ -5,6 +5,7 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
+import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, Stack, useSegments } from "expo-router";
@@ -207,6 +208,10 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    // @expo/vector-icons font files — required for native (Expo Go + APK).
+    // Web loads these automatically via CSS @font-face; native needs explicit loading.
+    ...Feather.font,
+    ...FontAwesome5.font,
   });
 
   useEffect(() => {
