@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from "react";
+import { NativeModules, Platform } from "react-native";
 import {
   getDurationLabel,
   getDurationMs,
@@ -7,6 +8,18 @@ import {
   LockEntry,
   saveLock,
 } from "@/hooks/useLockStorage";
+
+async function checkIsInstalled(packageName: string): Promise<boolean> {
+  if (Platform.OS === "web") return true;
+  try {
+    const result = await NativeModules.AppChecker?.isInstalled(packageName);
+    // null/undefined means native module missing — don't block the user
+    if (result === null || result === undefined) return true;
+    return Boolean(result);
+  } catch {
+    return true;
+  }
+}
 
 /* ───────────────────────────────────────────────
    App catalogue
@@ -37,6 +50,7 @@ export interface LockSelection {
 export interface LockCreationResult {
   entry: LockEntry;
   duplicatesSkipped: string[];
+  notInstalledSkipped: string[];
 }
 
 interface LockContextType {
@@ -123,13 +137,26 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
     });
 
     if (freshApps.length === 0) {
-      return {
-        entry: {} as LockEntry,
-        duplicatesSkipped,
-      };
+      return { entry: {} as LockEntry, duplicatesSkipped, notInstalledSkipped: [] };
     }
 
-    const apps: LockedAppEntry[] = freshApps.map((a) => ({
+    /* ── Real-time installation check: skip apps uninstalled since selection ── */
+    const notInstalledSkipped: string[] = [];
+    const verifiedApps: AppItem[] = [];
+    for (const app of freshApps) {
+      const installed = await checkIsInstalled(app.packageName);
+      if (!installed) {
+        notInstalledSkipped.push(app.name);
+      } else {
+        verifiedApps.push(app);
+      }
+    }
+
+    if (verifiedApps.length === 0) {
+      return { entry: {} as LockEntry, duplicatesSkipped, notInstalledSkipped };
+    }
+
+    const apps: LockedAppEntry[] = verifiedApps.map((a) => ({
       id: a.id,
       name: a.name,
       iconName: a.iconName,
@@ -147,7 +174,7 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
     };
 
     await saveLock(entry);
-    return { entry, duplicatesSkipped };
+    return { entry, duplicatesSkipped, notInstalledSkipped };
   };
 
   return (

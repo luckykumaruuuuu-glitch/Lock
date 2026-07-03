@@ -1,8 +1,8 @@
 import { FontAwesome5, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useRef, useState } from "react";
 import {
   Animated, FlatList, Image, Modal, NativeModules, Platform, Pressable,
   StyleSheet, Text, TextInput, View,
@@ -143,9 +143,13 @@ export default function SelectAppsScreen() {
   const [notFoundApp, setNotFoundApp] = useState<AppItem | null>(null);
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  useEffect(() => {
-    getActiveLocks().then((active) => setAlreadyLockedPkgs(new Set(active.flatMap((l) => l.apps.map((a) => a.packageName)))));
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      getActiveLocks().then((active) =>
+        setAlreadyLockedPkgs(new Set(active.flatMap((l) => l.apps.map((a) => a.packageName))))
+      );
+    }, [])
+  );
 
   const filtered = DUMMY_APPS.filter((a) => a.name.toLowerCase().includes(search.toLowerCase()));
   const selectedIds = new Set(selection.selectedApps.map((a) => a.id));

@@ -38,10 +38,10 @@ function getDisplayDuration(preset: string, customDays: string, customHours: str
 
 /* ── Success Screen ── */
 function SuccessScreen({
-  lockedExpiry, lockedAppCount, skippedApps, configured, online,
+  lockedExpiry, lockedAppCount, skippedApps, notInstalledSkipped, configured, online,
 }: {
   lockedExpiry: string; lockedAppCount: number; skippedApps: string[];
-  configured: boolean; online: boolean;
+  notInstalledSkipped: string[]; configured: boolean; online: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const shieldScale   = useRef(new Animated.Value(0)).current;
@@ -118,6 +118,17 @@ function SuccessScreen({
             <View style={successStyles.infoRow}>
               <Feather name="info" size={14} color="#FFA660" />
               <Text style={successStyles.skipText}>{skippedApps.join(", ")} already locked — skipped</Text>
+            </View>
+          </GlassCard>
+        )}
+
+        {notInstalledSkipped.length > 0 && (
+          <GlassCard padding={14} borderColor="rgba(255,69,58,0.2)">
+            <View style={successStyles.infoRow}>
+              <Feather name="alert-triangle" size={14} color="#FF453A" />
+              <Text style={[successStyles.skipText, { color: "#FF6B6B" }]}>
+                {notInstalledSkipped.join(", ")} {notInstalledSkipped.length === 1 ? "is" : "are"} not installed on your device — lock skipped
+              </Text>
             </View>
           </GlassCard>
         )}
@@ -316,12 +327,13 @@ export default function ConfirmScreen() {
   const { selection, confirmLock, resetSelection } = useLock();
   const { saveToFirebase, online, configured }     = useFirebaseSyncContext();
 
-  const [saving,          setSaving]          = useState(false);
-  const [locked,          setLocked]          = useState(false);
-  const [showAgreement,   setShowAgreement]   = useState(false);
-  const [lockedExpiry,    setLockedExpiry]    = useState("");
-  const [lockedAppCount,  setLockedAppCount]  = useState(0);
-  const [skippedApps,     setSkippedApps]     = useState<string[]>([]);
+  const [saving,               setSaving]               = useState(false);
+  const [locked,               setLocked]               = useState(false);
+  const [showAgreement,        setShowAgreement]        = useState(false);
+  const [lockedExpiry,         setLockedExpiry]         = useState("");
+  const [lockedAppCount,       setLockedAppCount]       = useState(0);
+  const [skippedApps,          setSkippedApps]          = useState<string[]>([]);
+  const [notInstalledSkipped,  setNotInstalledSkipped]  = useState<string[]>([]);
 
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -339,11 +351,12 @@ export default function ConfirmScreen() {
     try {
       const result = await confirmLock();
       if (!result) { setSaving(false); return; }
-      const { entry, duplicatesSkipped } = result;
+      const { entry, duplicatesSkipped, notInstalledSkipped: notInstalled } = result;
 
       if (configured && entry.id) saveToFirebase(entry).catch(() => {});
 
       setSkippedApps(duplicatesSkipped);
+      setNotInstalledSkipped(notInstalled);
       setLockedExpiry(formatExpiryDate(entry.endTime));
       setLockedAppCount(entry.apps?.length ?? 0);
       setLocked(true);
@@ -364,6 +377,7 @@ export default function ConfirmScreen() {
           lockedExpiry={lockedExpiry}
           lockedAppCount={lockedAppCount}
           skippedApps={skippedApps}
+          notInstalledSkipped={notInstalledSkipped}
           configured={configured}
           online={online}
         />
