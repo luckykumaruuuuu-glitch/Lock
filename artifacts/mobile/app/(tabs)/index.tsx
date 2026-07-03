@@ -162,14 +162,16 @@ function EmptyState() {
   }, [pulseAnim]);
 
   return (
-    <GlassCard style={styles.emptyCard} padding={32}>
-      <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-        <View style={styles.emptyIconBox}>
-          <Feather name="unlock" size={32} color="#FFBF80" />
-        </View>
-      </Animated.View>
-      <Text style={styles.emptyTitle}>{t("noActiveLocks")}</Text>
-      <Text style={styles.emptyBody}>{t("noActiveLocksBody")}</Text>
+    <GlassCard padding={32}>
+      <View style={styles.emptyCard}>
+        <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+          <View style={styles.emptyIconBox}>
+            <Feather name="unlock" size={32} color="#FFBF80" />
+          </View>
+        </Animated.View>
+        <Text style={styles.emptyTitle}>{t("noActiveLocks")}</Text>
+        <Text style={styles.emptyBody}>{t("noActiveLocksBody")}</Text>
+      </View>
     </GlassCard>
   );
 }
@@ -340,7 +342,7 @@ const styles = StyleSheet.create({
   loadingText: { color: "#8E8E93", fontSize: 14, fontFamily: "Inter_400Regular" },
   emptyCard: { alignItems: "center", gap: 12 },
   emptyIconBox: { width: 72, height: 72, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,203,142,0.12)" },
-  emptyTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  emptyTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#FFFFFF", textAlign: "center" },
   emptyBody: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center", lineHeight: 22 },
   warningCard: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 4 },
   warningText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#FF453A", lineHeight: 18 },
