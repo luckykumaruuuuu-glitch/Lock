@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import * as Localization from "expo-localization";
 import { router } from "expo-router";
@@ -28,6 +29,43 @@ const DURATION_OPTIONS = [
   { id: "30d" as DurationPreset, label: "30 Days",  sublabel: "Build a new habit",  icon: "award"    as const, colors: ["#FFBF80", "#FFA660"] as [string, string], glow: "#FFBF80" },
   { id: "custom" as DurationPreset, label: "Custom", sublabel: "Pick any date",     icon: "edit-2"   as const, colors: ["#32D74B", "#30C244"] as [string, string], glow: "#32D74B" },
 ];
+
+/* ── Duration card icons (SVG — no font dependency, works in Expo Go) ── */
+function DurationCardIcon({ name, size, color }: { name: "sun" | "calendar" | "award" | "edit-2"; size: number; color: string }) {
+  const s = size;
+  if (name === "sun") return (
+    <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Circle cx="12" cy="12" r="5" />
+      <Line x1="12" y1="1" x2="12" y2="3" />
+      <Line x1="12" y1="21" x2="12" y2="23" />
+      <Line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <Line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <Line x1="1" y1="12" x2="3" y2="12" />
+      <Line x1="21" y1="12" x2="23" y2="12" />
+      <Line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <Line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </Svg>
+  );
+  if (name === "calendar") return (
+    <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <Line x1="16" y1="2" x2="16" y2="6" />
+      <Line x1="8" y1="2" x2="8" y2="6" />
+      <Line x1="3" y1="10" x2="21" y2="10" />
+    </Svg>
+  );
+  if (name === "award") return (
+    <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Circle cx="12" cy="8" r="6" />
+      <Path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
+    </Svg>
+  );
+  return (
+    <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+    </Svg>
+  );
+}
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAY_LABELS  = ["Su","Mo","Tu","We","Th","Fr","Sa"];
@@ -593,7 +631,7 @@ export default function DurationScreen() {
                   padding={0}
                 >
                   <View style={[styles.iconBox, { backgroundColor: selected ? opt.colors[0] + "22" : "#2C2C2E" }]}>
-                    <Feather name={opt.icon} size={26} color={selected ? opt.colors[0] : "#8E8E93"} />
+                    <DurationCardIcon name={opt.icon} size={26} color={selected ? opt.colors[0] : "#8E8E93"} />
                   </View>
                   <Text style={[styles.optLabel, { color: selected ? "#FFFFFF" : "#8E8E93" }]}>
                     {opt.label}
