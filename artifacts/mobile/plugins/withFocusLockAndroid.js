@@ -247,7 +247,7 @@ class LockRepository(private val context: Context) {
             )
         }
         // ⚠️ DEBUG — remove before production
-        android.util.Log.d("DuckLock", "📋 Parsed ${result.size} active lock(s). Packages: ${result.flatMap { it.appPackageNames }}")
+        android.util.Log.d("DuckLock", "📋 Parsed \${result.size} active lock(s). Packages: \${result.flatMap { it.appPackageNames }}")
         return result
     }
 
@@ -262,7 +262,7 @@ class LockRepository(private val context: Context) {
     fun getActiveLocks(): List<NativeLock> {
         val file = dataFile()
         // ⚠️ DEBUG — remove before production
-        android.util.Log.d("DuckLock", "📂 Lock file: ${file.absolutePath} | exists: ${file.exists()}")
+        android.util.Log.d("DuckLock", "📂 Lock file: \${file.absolutePath} | exists: \${file.exists()}")
 
         // Primary file missing → JS hasn't written yet (very early cold start)
         // Fall back to startup cache so we don't allow locked apps through.
@@ -765,7 +765,7 @@ class AppBlockerAccessibilityService : AccessibilityService() {
 
         val endTime = repo.isPackageLocked(pkg)
         // ⚠️ DEBUG — remove before production
-        Log.d("DuckLock", "🔒 Is '$pkg' locked? ${endTime != null}")
+        Log.d("DuckLock", "🔒 Is '$pkg' locked? \${endTime != null}")
         if (endTime == null) return
 
         // ⚠️ DEBUG — remove before production
