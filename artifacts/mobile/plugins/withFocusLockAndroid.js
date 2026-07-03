@@ -26,6 +26,7 @@ function addPermissions(manifest) {
     "android.permission.FOREGROUND_SERVICE_SPECIAL_USE",
     "android.permission.PACKAGE_USAGE_STATS",
     "android.permission.POST_NOTIFICATIONS",
+    "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
   ];
   for (const name of toAdd) {
     if (!hasAttr(perms, "android:name", name)) {
@@ -870,6 +871,8 @@ import android.app.AppOpsManager
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
@@ -920,6 +923,75 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
             promise.resolve(null)
         } catch (e: Exception) {
             promise.reject("START_SERVICE_ERROR", e.message ?: "Unknown error", e)
+        }
+    }
+
+    /**
+     * Opens the Device Admin activation screen with the correct ComponentName.
+     * expo-intent-launcher cannot pass a ComponentName Parcelable from JS, so this
+     * native method creates it properly and calls startActivity directly.
+     */
+    @ReactMethod
+    fun openDeviceAdminSettings(promise: Promise) {
+        try {
+            val component = ComponentName(ctx.packageName, "\${ctx.packageName}.DeviceAdminReceiver")
+            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+                putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
+                putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                    "DuckLock needs device admin to prevent uninstall while a lock is active.")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            ctx.startActivity(intent)
+            promise.resolve(null)
+        } catch (e: Exception) {
+            // Fallback: open Security settings
+            try {
+                val fallback = Intent(Settings.ACTION_SECURITY_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                ctx.startActivity(fallback)
+                promise.resolve(null)
+            } catch (e2: Exception) {
+                promise.reject("OPEN_DEVICE_ADMIN_ERROR", e.message ?: "Unknown error", e)
+            }
+        }
+    }
+
+    /**
+     * Opens the Battery Optimization exemption screen for this app.
+     * Uses startActivity (not startActivityForResult) so FLAG_ACTIVITY_NEW_TASK is required.
+     * Manifest declares REQUEST_IGNORE_BATTERY_OPTIMIZATIONS permission so the primary
+     * intent works without SecurityException.
+     */
+    @ReactMethod
+    fun openBatterySettings(promise: Promise) {
+        try {
+            val intent = Intent(
+                Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                Uri.parse("package:\${ctx.packageName}")
+            ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+            ctx.startActivity(intent)
+            promise.resolve(null)
+        } catch (e: Exception) {
+            // Fallback 1: general battery optimization list
+            try {
+                val fallback = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                ctx.startActivity(fallback)
+                promise.resolve(null)
+            } catch (e2: Exception) {
+                // Fallback 2: general Settings
+                try {
+                    val last = Intent(Settings.ACTION_SETTINGS).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    ctx.startActivity(last)
+                    promise.resolve(null)
+                } catch (e3: Exception) {
+                    promise.reject("OPEN_BATTERY_ERROR", e.message ?: "Unknown error", e)
+                }
+            }
         }
     }
 

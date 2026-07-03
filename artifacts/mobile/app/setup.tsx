@@ -8,6 +8,7 @@ import {
   Animated,
   AppState,
   AppStateStatus,
+  NativeModules,
   Platform,
   Pressable,
   ScrollView,
@@ -29,14 +30,15 @@ async function openUsageAccess() {
 
 async function openDeviceAdmin() {
   if (Platform.OS !== "android") return;
+  // Native method creates ComponentName as Parcelable — expo-intent-launcher can only
+  // pass String extras, which causes ADD_DEVICE_ADMIN to silently ignore the component.
   try {
-    await IntentLauncher.startActivityAsync("android.app.action.ADD_DEVICE_ADMIN", {
-      extra: {
-        "android.app.extra.DEVICE_ADMIN": `${APP_PACKAGE}/.DeviceAdminReceiver`,
-        "android.app.extra.ADD_EXPLANATION": "DuckLock needs device admin to prevent uninstall while a lock is active.",
-      },
-    });
-  } catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
+    await NativeModules.FocusLockPermissionChecker?.openDeviceAdminSettings();
+  } catch {
+    // Fallback for Expo Go / native module not built yet
+    try { await IntentLauncher.startActivityAsync("android.settings.action.SECURITY_SETTINGS"); }
+    catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
+  }
 }
 
 async function openOverlay() {
@@ -59,8 +61,12 @@ async function openNotification() {
 
 async function openBattery() {
   if (Platform.OS !== "android") return;
-  try { await IntentLauncher.startActivityAsync("android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS", { data: `package:${APP_PACKAGE}` }); }
-  catch {
+  // Native method uses startActivity with FLAG_ACTIVITY_NEW_TASK and proper Uri —
+  // manifest now declares REQUEST_IGNORE_BATTERY_OPTIMIZATIONS permission so no SecurityException.
+  try {
+    await NativeModules.FocusLockPermissionChecker?.openBatterySettings();
+  } catch {
+    // Fallback for Expo Go / native module not built yet
     try { await IntentLauncher.startActivityAsync("android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"); }
     catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
   }

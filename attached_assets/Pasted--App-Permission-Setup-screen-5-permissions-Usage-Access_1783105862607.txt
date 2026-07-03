@@ -1,0 +1,18 @@
+"App के Permission Setup screen में 5 permissions हैं: Usage Access, Device Admin, Display Over Apps, Notifications, Battery Optimization. यह असली custom developer build (dev-client) पर test हो रहा है, Expo Go नहीं।
+Test किया गया result:
+Usage Access — 'Allow' दबाने पर सही Settings screen खुलती है ✅
+Display Over Apps — 'Allow' दबाने पर सही Settings screen खुलती है ✅
+Device Admin — 'Allow' दबाने पर बिल्कुल कुछ नहीं होता, कोई Settings screen नहीं खुलती, कोई error नहीं ❌
+Battery Optimization — 'Allow' दबाने पर बिल्कुल कुछ नहीं होता, silently कुछ भी नहीं ❌
+यह actual custom native build पर बग है, यह debug करना है — guess मत करना, actual code check करके बताना।
+Check करना है:
+Device Admin ke liye handler function dhoondo (jahan 'Allow' button ka onPress hai us permission ke liye). Yeh dekhna hai ki wahan Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN) jaisa kuch trigger ho raha hai ya nahi. Ek console.log/Toast lagao button press hote hi confirm karne ke liye ki function call bhi ho raha hai ya nahi.
+Battery Optimization ke liye similarly check karo — Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS) (ya jo bhi sahi action hai) trigger ho raha hai ya nahi. Waisa hi log/Toast lagao.
+Agar function call ho raha hai (log/Toast aata hai) lekin Intent launch nahi ho raha — to check karo kahin try/catch block mein error silently swallow to nahi ho raha. Us catch block mein bhi ek console.error/Toast lagao jo exact exception message dikhaye.
+Agar function hi call nahi ho raha (koi log/Toast bhi nahi aata button dabane par) — to check karo ki 'Allow' button ka onPress handler in dono specific permissions (Device Admin, Battery Optimization) ke liye sahi se wire hua hai ya nahi — shayad wahi wrong function ya missing binding ho.
+Compare karo — Usage Access aur Display Over Apps ka jo working implementation hai, uske structure se Device Admin aur Battery Optimization ka code kaise different hai. Ho sakta hai in dono mein Intent action string galat ho, ya required extra (jaise EXTRA_DEVICE_ADMIN component name Device Admin ke liye) missing ho, jiski wajah se Intent silently fail ho raha ho.
+Zaroori:
+Yeh sirf Device Admin aur Battery Optimization ke redirect logic ka bug hai
+Usage Access aur Display Over Apps already sahi kaam kar rahe hain, unhe mat chhedna
+Baaki koi existing function, UI, locking logic mat chhedna
+Fix karne ke baad exact batao ki root cause kya tha dono permissions mein"
