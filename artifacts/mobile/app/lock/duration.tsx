@@ -670,23 +670,25 @@ export default function DurationScreen() {
 
       {/* Footer */}
       <View style={[styles.footer, { paddingBottom: bottomPad + 20 }]}>
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push("/lock/confirm");
-          }}
-          disabled={!canProceed}
-          style={({ pressed }) => [{ opacity: !canProceed ? 0.32 : pressed ? 0.82 : 1 }]}
-        >
-          <LinearGradient
-            colors={["#FFBF80", "#FFA660"]}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-            style={styles.nextBtn}
+        <View style={styles.nextBtnShadow}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push("/lock/confirm");
+            }}
+            disabled={!canProceed}
+            style={({ pressed }) => [{ opacity: !canProceed ? 0.32 : pressed ? 0.82 : 1 }]}
           >
-            <Text style={styles.nextBtnText}>Next — Review & Confirm</Text>
-            <Feather name="arrow-right" size={18} color="#000000" />
-          </LinearGradient>
-        </Pressable>
+            <LinearGradient
+              colors={["#FFBF80", "#FFA660"]}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={styles.nextBtn}
+            >
+              <Text style={styles.nextBtnText}>Next — Review & Confirm</Text>
+              <Feather name="arrow-right" size={18} color="#000000" />
+            </LinearGradient>
+          </Pressable>
+        </View>
       </View>
     </GradientBackground>
   );
@@ -718,6 +720,7 @@ const styles = StyleSheet.create({
   summaryBold: { fontFamily: "Inter_700Bold" },
 
   footer:   { paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#2C2C2E", backgroundColor: "rgba(0,0,0,0.95)" },
-  nextBtn:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 18, borderRadius: 18, shadowColor: "#FFBF80", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 14, elevation: 10 },
+  nextBtnShadow: { borderRadius: 18, shadowColor: "#FFBF80", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 14, elevation: 10 },
+  nextBtn:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 18, borderRadius: 18 },
   nextBtnText: { color: "#000000", fontSize: 16, fontFamily: "Inter_700Bold" },
 });

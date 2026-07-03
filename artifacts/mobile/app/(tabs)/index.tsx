@@ -230,17 +230,19 @@ export default function HomeScreen() {
         </View>
 
         {/* CTA */}
-        <Pressable onPress={handleStartLock} style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}>
-          <LinearGradient
-            colors={["#FFBF80", "#FFA660"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.ctaBtn}
-          >
-            <Feather name="plus-circle" size={22} color="#000000" />
-            <Text style={styles.ctaBtnText}>{t("lockAppsNow")}</Text>
-          </LinearGradient>
-        </Pressable>
+        <View style={styles.ctaBtnShadow}>
+          <Pressable onPress={handleStartLock} style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}>
+            <LinearGradient
+              colors={["#FFBF80", "#FFA660"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.ctaBtn}
+            >
+              <Feather name="plus-circle" size={22} color="#000000" />
+              <Text style={styles.ctaBtnText}>{t("lockAppsNow")}</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
 
         {/* Active locks section */}
         <View style={styles.sectionRow}>
@@ -307,10 +309,13 @@ const styles = StyleSheet.create({
   statCard: { alignItems: "center" },
   statValue: { fontSize: 24, fontFamily: "Inter_700Bold", marginBottom: 3 },
   statLabel: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#8E8E93" },
+  ctaBtnShadow: {
+    borderRadius: 20,
+    shadowColor: "#FFBF80", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 10,
+  },
   ctaBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
     paddingVertical: 18, borderRadius: 20,
-    shadowColor: "#FFBF80", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 10,
   },
   ctaBtnText: { color: "#000000", fontSize: 17, fontFamily: "Inter_700Bold", letterSpacing: 0.2 },
   sectionRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },

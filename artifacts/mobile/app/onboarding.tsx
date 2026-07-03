@@ -164,26 +164,28 @@ export default function OnboardingScreen() {
 
         {/* Buttons */}
         <View style={[styles.footer, { paddingBottom: bottomPad + 16 }]}>
-          <Pressable
-            onPress={handleNext}
-            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
-          >
-            <LinearGradient
-              colors={slide.gradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[styles.nextBtn, { shadowColor: slide.glowColor }]}
+          <View style={[styles.nextBtnShadow, { shadowColor: slide.glowColor }]}>
+            <Pressable
+              onPress={handleNext}
+              style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
             >
-              <Text style={styles.nextBtnText}>
-                {currentIndex < SLIDES.length - 1 ? "Next" : "Get Started"}
-              </Text>
-              <Feather
-                name={currentIndex < SLIDES.length - 1 ? "arrow-right" : "check"}
-                size={20}
-                color="#000000"
-              />
-            </LinearGradient>
-          </Pressable>
+              <LinearGradient
+                colors={slide.gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.nextBtn}
+              >
+                <Text style={styles.nextBtnText}>
+                  {currentIndex < SLIDES.length - 1 ? "Next" : "Get Started"}
+                </Text>
+                <Feather
+                  name={currentIndex < SLIDES.length - 1 ? "arrow-right" : "check"}
+                  size={20}
+                  color="#000000"
+                />
+              </LinearGradient>
+            </Pressable>
+          </View>
 
           {currentIndex < SLIDES.length - 1 && (
             <Pressable onPress={handleFinish} style={styles.skipBtn}>
@@ -247,11 +249,20 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 6,
+    elevation: 4,
   },
   footer: {
     width: "100%",
     gap: 14,
     alignItems: "center",
+  },
+  nextBtnShadow: {
+    width: width - 48,
+    borderRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 10,
   },
   nextBtn: {
     width: width - 48,
@@ -261,10 +272,6 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 18,
     borderRadius: 18,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 10,
   },
   nextBtnText: {
     color: theme.buttonText,

@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  Platform,
   StyleProp,
   StyleSheet,
   View,
@@ -26,23 +25,28 @@ export function GlassCard({
   radius = 20,
   padding,
 }: GlassCardProps) {
-  const containerStyle: ViewStyle = {
-    borderRadius: radius,
-    borderWidth: 1,
-    borderColor,
-    overflow: "hidden",
-    ...(padding !== undefined ? { padding } : {}),
-  };
-
   return (
     <View
       style={[
-        containerStyle,
-        { backgroundColor },
+        {
+          borderRadius: radius,
+          borderWidth: 1,
+          borderColor,
+          backgroundColor,
+        },
         style,
       ]}
     >
-      {children}
+      <View
+        style={{
+          borderRadius: radius,
+          overflow: "hidden",
+          backgroundColor,
+          ...(padding !== undefined ? { padding } : {}),
+        }}
+      >
+        {children}
+      </View>
     </View>
   );
 }

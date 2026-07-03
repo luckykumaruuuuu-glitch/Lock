@@ -461,23 +461,25 @@ export default function ConfirmScreen() {
           <Text style={styles.cancelBtnText}>Cancel</Text>
         </Pressable>
 
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            setShowAgreement(true);
-          }}
-          disabled={saving}
-          style={({ pressed }) => [{ flex: 1, opacity: saving ? 0.7 : pressed ? 0.88 : 1 }]}
-        >
-          <LinearGradient
-            colors={["#FFBF80", "#FFA660"]}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-            style={styles.lockBtn}
+        <View style={styles.lockBtnShadow}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              setShowAgreement(true);
+            }}
+            disabled={saving}
+            style={({ pressed }) => [{ flex: 1, opacity: saving ? 0.7 : pressed ? 0.88 : 1 }]}
           >
-            <Feather name="lock" size={18} color="#000000" />
-            <Text style={styles.lockBtnText}>{saving ? "Locking…" : "Lock Forever"}</Text>
-          </LinearGradient>
-        </Pressable>
+            <LinearGradient
+              colors={["#FFBF80", "#FFA660"]}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={styles.lockBtn}
+            >
+              <Feather name="lock" size={18} color="#000000" />
+              <Text style={styles.lockBtnText}>{saving ? "Locking…" : "Lock Forever"}</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
       </View>
 
       {/* Final Agreement Popup */}
@@ -524,6 +526,7 @@ const styles = StyleSheet.create({
   cancelBtn:     { height: 56, borderRadius: 16, borderWidth: 1.5, borderColor: "#2C2C2E", backgroundColor: "#1C1C1E", alignItems: "center", justifyContent: "center", paddingHorizontal: 22 },
   cancelBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#8E8E93" },
 
-  lockBtn:     { height: 56, borderRadius: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, shadowColor: "#FFBF80", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 10 },
+  lockBtnShadow: { flex: 1, borderRadius: 16, shadowColor: "#FFBF80", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 10 },
+  lockBtn:     { height: 56, borderRadius: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   lockBtnText: { color: "#000000", fontSize: 16, fontFamily: "Inter_700Bold" },
 });

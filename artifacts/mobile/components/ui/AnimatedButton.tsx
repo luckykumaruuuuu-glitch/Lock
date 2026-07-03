@@ -180,7 +180,7 @@ function LoadingSpinner() {
 const styles = StyleSheet.create({
   wrapper: {
     borderRadius: 16,
-    overflow: Platform.OS === "android" ? "hidden" : "visible",
+    overflow: "visible",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 12,

@@ -2,7 +2,7 @@ import { FontAwesome5, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { router, useFocusEffect } from "expo-router";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated, FlatList, Image, Modal, NativeModules, Platform, Pressable,
   StyleSheet, Text, TextInput, View,
@@ -232,12 +232,14 @@ export default function SelectAppsScreen() {
       />
 
       <View style={[styles.footer, { paddingBottom: bottomPad + 20 }]}>
-        <Pressable onPress={handleNext} disabled={selection.selectedApps.length === 0} style={({ pressed }) => [{ opacity: selection.selectedApps.length === 0 ? 0.35 : pressed ? 0.85 : 1 }]}>
-          <LinearGradient colors={["#FFBF80", "#FFA660"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.nextBtn}>
-            <Text style={styles.nextBtnText}>Next — Set Duration</Text>
-            <Feather name="arrow-right" size={18} color="#000000" />
-          </LinearGradient>
-        </Pressable>
+        <View style={styles.nextBtnShadow}>
+          <Pressable onPress={handleNext} disabled={selection.selectedApps.length === 0} style={({ pressed }) => [{ opacity: selection.selectedApps.length === 0 ? 0.35 : pressed ? 0.85 : 1 }]}>
+            <LinearGradient colors={["#FFBF80", "#FFA660"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.nextBtn}>
+              <Text style={styles.nextBtnText}>Next — Set Duration</Text>
+              <Feather name="arrow-right" size={18} color="#000000" />
+            </LinearGradient>
+          </Pressable>
+        </View>
       </View>
     </GradientBackground>
   );
@@ -262,7 +264,8 @@ const styles = StyleSheet.create({
   checkFill: { width: 26, height: 26, alignItems: "center", justifyContent: "center" },
   lockedBadge: { width: 30, height: 30, borderRadius: 8, backgroundColor: "#2C2C2E", alignItems: "center", justifyContent: "center" },
   footer: { paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#2C2C2E", backgroundColor: "rgba(0,0,0,0.95)" },
-  nextBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 17, borderRadius: 18, shadowColor: "#FFBF80", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 14, elevation: 10 },
+  nextBtnShadow: { borderRadius: 18, shadowColor: "#FFBF80", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 14, elevation: 10 },
+  nextBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 17, borderRadius: 18 },
   nextBtnText: { color: "#000000", fontSize: 16, fontFamily: "Inter_700Bold" },
 });
 

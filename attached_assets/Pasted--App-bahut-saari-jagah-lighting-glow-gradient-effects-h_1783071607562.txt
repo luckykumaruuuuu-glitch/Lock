@@ -1,0 +1,14 @@
+"App में bahut saari jagah lighting/glow/gradient effects hain (buttons, cards, selected states, wagaira) jo web par crystal clear aur bright dikhte hain, lekin native (Expo Go + APK) par dull/muddy/washed-out dikhte hain — jaise abhi maine 'Next' button aur Duration cards mein dekha, lekin yeh sirf do example hain, poore app mein yeh pattern kahin bhi ho sakta hai.
+Mujhe individual jagah patch-fix nahi chahiye — mujhe poore codebase ka ek systematic audit chahiye taaki app HAR JAGAH web jaisa hi dikhe native par bhi, kahin bhi koi mismatch na rahe.
+Karna yeh hai:
+Poore codebase mein grep karo — jahan bhi boxShadow (CSS-style web property) use hui hai kisi bhi component/screen mein. Yeh property web par kaam karti hai lekin React Native native platforms (iOS/Android) par kaam nahi karti — isi wajah se glow/shadow effects native par gayab ya dull dikhte hain.
+Har jagah jahan boxShadow mile, wahan native-compatible shadow properties bhi add karo (dono ek saath rahenge — web ke liye boxShadow, native ke liye yeh naya):
+Javascript
+Agar kahin gradient backgrounds hain (jaise buttons mein) aur woh plain CSS gradient se bana hai (web-only), confirm karo ki expo-linear-gradient (jo already installed hai agar kahin use ho raha hai) properly har jagah use ho raha hai jahan gradient chahiye — na ki sirf flat backgroundColor native par fallback ho raha ho.
+Colors ka exact match bhi check karo — glow/shadow ka color, opacity, intensity — sab jagah native version web version ke saath visually match kare, koi jagah kam-saturated ya alag shade na dikhe.
+Yeh audit sirf 'Next' button aur Duration cards tak seemit mat rakho — poore app mein (Home screen, Settings, Active Locks list, Permission screens, Onboarding, jahan bhi koi visual glow/shadow/gradient hai) sab jagah check karo aur fix karo.
+Zaroori:
+Web version bilkul mat chhedna, wo already sahi hai
+Sirf native ke liye missing shadow/gradient properties add karni hain, saath mein, replace nahi
+Baaki koi existing layout, logic, animation, functionality mat chhedna
+Fix karne ke baad ek poori list do — kitni jagah (kaunse files/components) mein yeh fix apply hua, taaki main systematically har screen check kar sakoon"
