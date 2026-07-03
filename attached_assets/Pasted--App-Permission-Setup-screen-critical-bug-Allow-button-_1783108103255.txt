@@ -1,0 +1,16 @@
+"App के Permission Setup screen में एक अलग critical bug है — यह पहले वाले 'Allow button redirect ना होने' वाले issue से अलग है।
+Problem: जब कोई permission (जैसे Usage Access, Display Over Apps, या कोई भी) Settings में जाकर manually ON कर देता हूँ, फिर वापस app में आता हूँ — फिर भी app में उस permission के सामने 'Allow' button ही दिखता रहता है, green tick नहीं आता। यानी app को यह पता ही नहीं चल पा रहा कि Settings में permission actually granted हो चुकी है या नहीं — real-time status detection काम नहीं कर रहा।
+Yeh sabhi 5 permissions (Usage Access, Device Admin, Display Over Apps, Notifications, Battery Optimization) ke liye check karna hai, kyunki kabhi-kabhi Notification wali bhi (jo pehle sahi kaam kar rahi thi) ab tick nahi dikha rahi.
+Debug karna hai — guess mat karna, actual code check karke batao:
+Jab app Settings se wapas foreground mein aata hai (AppState listener ya onResume ke through), kya wahan actually har permission ka real OS-level status dobara check ho raha hai? Ek console.log/Toast lagao jo confirm kare ki yeh resume-check function call ho raha hai jab app foreground mein aata hai.
+Har individual permission ke liye jo real status-check function hai (jaise Usage Access ke liye AppOpsManager check, Accessibility ke liye Settings.Secure check, Overlay ke liye Settings.canDrawOverlays(), Device Admin ke liye DevicePolicyManager.isAdminActive(), Notification ke liye NotificationManagerCompat.areNotificationsEnabled()) — in sabko ek-ek karke test karo aur exact return value console mein print karo (true/false), taaki pata chale kaunsa function galat value de raha hai ya call hi nahi ho raha.
+Kya yeh possible hai ki status ek baar (app launch par) check hokar kahin cache/state mein save ho jaata hai, aur phir dobara refresh nahi hota jab tak app fully restart na ho? Agar aisa hai, to yeh cache/state ko har baar app foreground mein aane par force-refresh karna hai, purani cached value par bharosa nahi karna.
+Zaroori:
+Yeh sabhi 5 permissions ke real-time status-detection ka common issue lagta hai, isliye pehle common root cause dhoondo (jaise koi shared function jo sabke liye status check karta hai)
+Baaki koi existing function, UI, locking logic mat chhedna
+Fix karne ke baad exact batao root cause kya tha, aur confirm karo ki ab Settings se wapas aane par turant sahi tick status dikh raha hai har permission ke liye"
+"एक ज़रूरी clarification — expected behavior तीन states में होना चाहिए हर permission के लिए:
+Agar permission granted nahi hai → 'Allow' button dikhe
+Agar permission granted hai (Settings mein ON hai) → green tick dikhe
+Agar pehle granted thi lekin baad mein manually Settings se OFF kar di gayi → wapas 'Allow' button dikhna chahiye (tick hat jaana chahiye), na ki purani granted state cached rahe
+Yeh teeno states real-time OS status ke according dikhne chahiye, chahe user Settings se wapas turant aaye ya app ko kuch der baad resume kare. Fix isi three-state logic ko target karke karna hai."

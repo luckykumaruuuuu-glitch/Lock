@@ -22,6 +22,46 @@ import { checkNativePermissions } from "@/lib/nativePermissionCheck";
 import { PermissionId, usePermissionStatus } from "@/hooks/usePermissionStatus";
 const APP_PACKAGE = "com.focuslock.app";
 
+/**
+ * Checks real OS-level status for ALL 5 permissions in one shot.
+ * Returns a map of { permissionId → boolean }.
+ * Safe to call on every foreground resume — never throws.
+ */
+async function fetchAllPermissionStatus(): Promise<Partial<Record<PermissionId, boolean>>> {
+  const result: Partial<Record<PermissionId, boolean>> = {};
+
+  // Native check: usageAccess, overlay, deviceAdmin, battery
+  const native = await checkNativePermissions();
+  if (native !== null) {
+    result.usageAccess = native.usageAccess;
+    result.overlay     = native.overlay;
+    result.deviceAdmin = native.deviceAdmin;
+    result.battery     = native.battery;
+    console.log(
+      "[PermSetup] Native status →",
+      `usageAccess=${native.usageAccess}`,
+      `overlay=${native.overlay}`,
+      `deviceAdmin=${native.deviceAdmin}`,
+      `battery=${native.battery}`,
+    );
+  } else {
+    console.log("[PermSetup] Native module unavailable — skipping native checks");
+  }
+
+  // Notification: expo-notifications JS check
+  try {
+    const Notifications = require("expo-notifications");
+    const { status } = await Notifications.getPermissionsAsync();
+    result.notification = status === "granted";
+    console.log("[PermSetup] Notification status →", status, `(granted=${result.notification})`);
+  } catch (e) {
+    console.log("[PermSetup] Notification check failed:", e);
+    result.notification = false;
+  }
+
+  return result;
+}
+
 async function openUsageAccess() {
   if (Platform.OS !== "android") return;
   try { await IntentLauncher.startActivityAsync("android.settings.USAGE_ACCESS_SETTINGS"); }
@@ -89,7 +129,7 @@ const PERMS: PermItem[] = [
 
 export default function SetupScreen() {
   const insets = useSafeAreaInsets();
-  const { permissions, markOpened, markGranted, completeSetup } = usePermissionStatus();
+  const { permissions, markOpened, markGranted, refreshGranted, completeSetup } = usePermissionStatus();
 
   const [whyOpen, setWhyOpen]   = useState(false);
   const [opening, setOpening]   = useState<PermissionId | null>(null);
@@ -97,7 +137,9 @@ export default function SetupScreen() {
   const continueAnim            = useRef(new Animated.Value(0)).current;
 
   const appStateRef   = useRef<AppStateStatus>(AppState.currentState);
-  const lastOpenedRef = useRef<PermissionId | null>(null);
+  // Monotonic counter — incremented before every async permission check so that
+  // a slow, older check cannot overwrite a newer one's result.
+  const checkTokenRef = useRef(0);
 
   const isWeb        = Platform.OS === "web";
   const grantedCount = isWeb ? PERMS.length : PERMS.filter(p => permissions[p.id]?.granted).length;
@@ -113,52 +155,43 @@ export default function SetupScreen() {
   }, [allGranted]);
 
   /**
-   * Called when the user returns from Settings.
-   * Performs a real OS-level check before marking granted — never assumes
-   * that opening Settings means the permission was actually turned on.
+   * Checks real OS status for ALL 5 permissions and atomically updates state.
+   * Called on mount and every time the app returns to foreground — this is the
+   * single source of truth for permission state (not AsyncStorage cache).
+   *
+   * Uses a monotonic token so that a slow, stale check cannot overwrite the
+   * result of a newer check that resolved first.
    */
-  const verifyAndMarkPermission = useCallback(async (id: PermissionId) => {
-    let granted = false;
-
-    if (id === "notification") {
-      try {
-        const Notifications = require("expo-notifications");
-        const { status } = await Notifications.getPermissionsAsync();
-        granted = status === "granted";
-      } catch {
-        granted = false;
-      }
-    } else {
-      // usageAccess, overlay, deviceAdmin, battery — use real native OS check
-      const native = await checkNativePermissions();
-      if (native !== null) {
-        switch (id) {
-          case "usageAccess": granted = native.usageAccess; break;
-          case "overlay":     granted = native.overlay;     break;
-          case "deviceAdmin": granted = native.deviceAdmin; break;
-          case "battery":     granted = native.battery;     break;
-          default:            granted = false;
-        }
-      }
-      // If native module is unavailable, leave granted = false.
-      // User will see the permission still ungranted, which is correct.
+  const verifyAllPermissions = useCallback(async () => {
+    if (Platform.OS === "web") return;
+    const token = ++checkTokenRef.current;
+    console.log("[PermSetup] verifyAllPermissions called — token", token);
+    const statusMap = await fetchAllPermissionStatus();
+    if (token !== checkTokenRef.current) {
+      console.log("[PermSetup] Stale check (token", token, "< current", checkTokenRef.current, ") — discarding result");
+      return;
     }
+    await refreshGranted(statusMap);
+  }, [refreshGranted]);
 
-    await markGranted(id, granted);
-  }, [markGranted]);
+  // Check real OS status on mount (fixes stale AsyncStorage cache on first load)
+  useEffect(() => {
+    verifyAllPermissions();
+  }, [verifyAllPermissions]);
 
+  // Re-check ALL permissions every time the app comes back to foreground.
+  // This handles: grant, revoke, and any state change made in Settings —
+  // regardless of which permission the user opened or how they got there.
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next: AppStateStatus) => {
-      if (appStateRef.current !== "active" && next === "active" && lastOpenedRef.current) {
-        const id = lastOpenedRef.current;
-        lastOpenedRef.current = null;
-        // Real OS check — do NOT blindly mark as granted
-        verifyAndMarkPermission(id);
+      if (appStateRef.current !== "active" && next === "active") {
+        console.log("[PermSetup] App resumed — re-checking all permissions");
+        verifyAllPermissions();
       }
       appStateRef.current = next;
     });
     return () => sub.remove();
-  }, [verifyAndMarkPermission]);
+  }, [verifyAllPermissions]);
 
   function toggleWhy() {
     const isOpen = !whyOpen;
@@ -173,16 +206,16 @@ export default function SetupScreen() {
 
   async function handleAllow(perm: PermItem) {
     setOpening(perm.id);
-    lastOpenedRef.current = perm.id;
     await markOpened(perm.id);
 
     if (Platform.OS !== "android") {
+      // Web/iOS simulator: no real Settings to open, offer a manual toggle for testing
       Alert.alert(
         "Android Permission",
         perm.whyNeeded,
         [
           { text: "Mark as Granted", onPress: () => markGranted(perm.id, true) },
-          { text: "Cancel", style: "cancel", onPress: () => { lastOpenedRef.current = null; } },
+          { text: "Cancel", style: "cancel" },
         ]
       );
       setOpening(null);
