@@ -143,7 +143,11 @@ export default function OnboardingScreen() {
         {/* Dots */}
         <View style={styles.dotsRow}>
           {SLIDES.map((s, i) => (
-            <Pressable key={i} onPress={() => goTo(i)}>
+            <Pressable
+              key={i}
+              onPress={() => goTo(i)}
+              hitSlop={{ top: 18, bottom: 18, left: 12, right: 12 }}
+            >
               <View
                 style={[
                   styles.dot,
