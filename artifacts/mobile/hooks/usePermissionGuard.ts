@@ -4,6 +4,7 @@ import { AppState, AppStateStatus, Platform } from "react-native";
 
 import { checkNativePermissions, NativePermissionStatus } from "@/lib/nativePermissionCheck";
 import { PermissionId } from "@/hooks/usePermissionStatus";
+import { DEV_BYPASS_PERMISSIONS } from "@/lib/devBypass"; // DEV_BYPASS_PERMISSIONS
 
 const STORAGE_KEY = "focuslock_permissions_v2";
 const SETUP_DONE_KEY = "focuslock_setup_complete";
@@ -70,6 +71,12 @@ async function syncNativeStatusToStorage(native: NativePermissionStatus): Promis
  * (e.g. Expo Go without a custom dev build).
  */
 async function getMissingPermissions(): Promise<MissingPerm[]> {
+  // DEV_BYPASS_PERMISSIONS
+  if (DEV_BYPASS_PERMISSIONS) {
+    console.log("⚠️ DEV BYPASS ACTIVE — permissions skip ho rahi hain (usePermissionGuard → getMissingPermissions)");
+    return [];
+  }
+
   if (Platform.OS !== "android") return [];
 
   try {
