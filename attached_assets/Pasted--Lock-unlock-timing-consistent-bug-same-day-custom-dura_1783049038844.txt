@@ -1,0 +1,19 @@
+"Lock unlock timing में एक consistent bug है — same-day custom duration (manual time picker से) में lock हमेशा ठीक 1 मिनट पहले खुल जाता है, targeted time पर नहीं।
+Exact reproduction case:
+Current time: 1:10 PM
+User selects target time: 1:15 PM (यानी 5 मिनट का lock चाहिए)
+Expected: lock 1:15 PM पर खुलना चाहिए
+Actual: lock 1:14 PM पर ही खुल जाता है (ठीक 1 मिनट पहले)
+यह pattern हमेशा consistent है — हर बार exactly 1 मिनट पहले, ना ज़्यादा ना कम। यह किसी fixed off-by-one calculation bug जैसा लगता है, network delay जैसी random चीज़ नहीं।
+Debug करने के लिए यह जगहें check करो, guess मत करना:
+Duration calculation में (handleTimeConfirm या जहाँ भी durationMs बनता है same-day custom time के लिए) — exact milliseconds की गणना दिखाओ। क्या कहीं Math.floor() या कोई truncation लग रहा है जो 1 मिनट (60000ms) काट रहा हो?
+Lock का actual end/expiry timestamp (jo Firebase ya local storage mein save hota hai) — usko print/log karke dikhao ki wo exact target time (1:15:00) match kar raha hai ya 1 minute pehle (1:14:00) ka time save ho raha hai. Isse pata chalega ki bug duration-calculation mein hai ya sirf countdown-display mein.
+Countdown timer/interval जो har second/minute check karta hai ki lock expire hua ya nahi — uska comparison logic dikhao. Kahin aisa to nahi ki wo "remaining minutes" ko floor/round karke check kar raha hai, jisse ek minute ka boundary galat trigger ho raha ho (jaise agar remainingMs bahut chhota ho jaye jaise 59999ms, aur code use '0 minutes remaining, isliye expired maan lo' samajh raha ho jabki asal mein abhi kuch seconds bache hain)?
+Jo function actual blocking/unlock trigger karta hai (Accessibility Service ya jo bhi lock ko 'expired' maan kar hata deta hai) — uska comparison bhi dikhao, Date.now() >= lockEndTime jaisa kuch hoga, exact operator aur values confirm karo
+Test case jo sahi hona chahiye:
+1:10 par 5-minute lock lagao (target 1:15)
+Lock exactly 1:15:00 par khulna chahiye, 1:14 par nahi
+Zaroori:
+Yeh sirf same-day custom time duration ka issue hai, quick options (1 day, 7 days) mein yeh problem nahi hai (agar hai to bhi batana)
+Baaki koi existing function, UI, logic mat chhedna
+Fix karne ke baad exact root cause batao — kahan off-by-one ho raha tha"

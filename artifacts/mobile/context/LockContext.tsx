@@ -31,6 +31,7 @@ export interface LockSelection {
   customDays: string;
   customHours: string;
   customMinutes: string;
+  customEndTime: number | null;
 }
 
 export interface LockCreationResult {
@@ -45,6 +46,7 @@ interface LockContextType {
   setCustomDays: (v: string) => void;
   setCustomHours: (v: string) => void;
   setCustomMinutes: (v: string) => void;
+  setCustomEndTime: (v: number | null) => void;
   resetSelection: () => void;
   confirmLock: () => Promise<LockCreationResult | null>;
 }
@@ -55,6 +57,7 @@ const defaultSelection: LockSelection = {
   customDays: "1",
   customHours: "0",
   customMinutes: "0",
+  customEndTime: null,
 };
 
 const LockContext = createContext<LockContextType>({
@@ -64,6 +67,7 @@ const LockContext = createContext<LockContextType>({
   setCustomDays: () => {},
   setCustomHours: () => {},
   setCustomMinutes: () => {},
+  setCustomEndTime: () => {},
   resetSelection: () => {},
   confirmLock: async () => null,
 });
@@ -86,15 +90,22 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
   const setCustomMinutes = (v: string) =>
     setSelection((s) => ({ ...s, customMinutes: v }));
 
+  const setCustomEndTime = (v: number | null) =>
+    setSelection((s) => ({ ...s, customEndTime: v }));
+
   const resetSelection = () => setSelection(defaultSelection);
 
   const confirmLock = async (): Promise<LockCreationResult | null> => {
-    const { selectedApps, durationPreset, customDays, customHours, customMinutes } = selection;
+    const { selectedApps, durationPreset, customDays, customHours, customMinutes, customEndTime } = selection;
     if (selectedApps.length === 0) return null;
 
     const now = Date.now();
-    const durationMs = getDurationMs(durationPreset, customDays, customHours, customMinutes);
-    const endTime = now + durationMs;
+    // For same-day custom time picks, use the exact target timestamp stored at
+    // picker-confirm time — avoids floor truncation and fresh-now drift.
+    const endTime =
+      durationPreset === "custom" && customEndTime !== null
+        ? customEndTime
+        : now + getDurationMs(durationPreset, customDays, customHours, customMinutes);
 
     /* ── Duplicate detection: skip apps already locked ── */
     const activeLocks = await getActiveLocks();
@@ -148,6 +159,7 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
         setCustomDays,
         setCustomHours,
         setCustomMinutes,
+        setCustomEndTime,
         resetSelection,
         confirmLock,
       }}

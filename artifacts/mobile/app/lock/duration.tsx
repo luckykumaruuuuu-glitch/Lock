@@ -478,7 +478,7 @@ const tpStyles = StyleSheet.create({
 /* ── Main Duration Screen ── */
 export default function DurationScreen() {
   const insets = useSafeAreaInsets();
-  const { selection, setDurationPreset, setCustomDays, setCustomHours, setCustomMinutes } = useLock();
+  const { selection, setDurationPreset, setCustomDays, setCustomHours, setCustomMinutes, setCustomEndTime } = useLock();
   const { playClick } = useSounds();
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -494,6 +494,7 @@ export default function DurationScreen() {
       setPickedDate(null);
       setCustomDays("0");
       setCustomHours("0");
+      setCustomEndTime(null);
     }
   }
 
@@ -506,13 +507,14 @@ export default function DurationScreen() {
       return;
     }
 
-    // Future date → existing logic
+    // Future date → day-based duration; no absolute timestamp needed
     const today = startOfToday();
     if (date <= today) return;
     setPickedDate(date);
     const days = msToDays(date.getTime() - Date.now());
     setCustomDays(String(Math.max(1, days)));
     setCustomHours("0");
+    setCustomEndTime(null);
   }
 
   function handleTimeConfirm(hours: number, minutes: number) {
@@ -522,15 +524,13 @@ export default function DurationScreen() {
 
     if (target <= now) return; // validation already done in modal, safety guard
 
-    const durationMs    = target.getTime() - now.getTime();
-    const totalMinutes  = Math.floor(durationMs / (60 * 1000));
-    const wholeHours    = Math.floor(totalMinutes / 60);
-    const remMinutes    = totalMinutes % 60;
-
+    // Store the exact target timestamp — confirmLock will use this directly
+    // as endTime, so no floor/truncation or fresh-now drift can occur.
     setPickedDate(target);
     setCustomDays("0");
-    setCustomHours(String(wholeHours));
-    setCustomMinutes(String(remMinutes));
+    setCustomHours("0");
+    setCustomMinutes("0");
+    setCustomEndTime(target.getTime());
     setShowTimePicker(false);
   }
 
