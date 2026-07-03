@@ -1,0 +1,19 @@
+"App का सबसे critical feature (locking) actually काम नहीं कर रहा। यह पूरी तरह से debug करना है, तुरंत, guess नहीं करना — यह top priority है।
+Problem:
+जब किसी app पर lock लगाता हूँ, Active Locks screen में सही दिखता है (timer, duration सब सही), लेकिन असल में उस locked app को खोलने पर कुछ नहीं होता — वो normally खुल जाता है और इस्तेमाल हो जाता है, जैसे कोई lock है ही नहीं। Blocking बिल्कुल भी काम नहीं कर रही।
+Expected behavior: locked app जितनी बार भी खोलने की कोशिश करूं, हर बार तुरंत बंद हो जाए / home पर redirect हो जाए (block हो), चाहे कितनी भी बार try करूं।
+Step-by-step debug करना है, हर एक step का जवाब चाहिए:
+Accessibility Service actually enabled है या नहीं — Android Settings → Accessibility में जाकर यह app दिख रहा है और ON है या नहीं, यह पहले manually verify करने को बोलो मुझे, aur code mein bhi ek check lagao jo confirm kare ki service runtime par active hai (jaise isAccessibilityServiceEnabled() jaisa function ho to uska result Alert se dikhao)
+Service ka event listener actually trigger ho raha hai ya nahi — jab bhi koi app foreground mein aata hai, kya onAccessibilityEvent (ya jo bhi function hai) call ho raha hai? Isme ek temporary log/Toast lagao jo har app-switch par current foreground package name print kare, taaki pata chale service chal bhi rahi hai ya bilkul silent hai
+Locked apps ki list kahan se read ho rahi hai service ke andar — yeh AsyncStorage/local file se aa rahi hai ya kisi purani/cached jagah se? Yeh confirm karo ki jo list UI mein 'Active Locks' mein dikhti hai, wahi exact list Accessibility Service bhi padh rahi hai (same storage key, same format)
+Package name comparison sahi ho raha hai ya nahi — jo app lock kiya (jaise Instagram ka package com.instagram.android) aur jo currently foreground mein detect hua package name, dono print karke dikhao ki woh exactly match kar rahe hain ya nahi (typo, case-mismatch, ya wrong field jaisi koi chhoti si galti ho sakti hai)
+Agar sab kuch match ho raha hai to bhi block nahi ho raha — to check karo ki jo actual blocking action hai (jaise performGlobalAction(GLOBAL_ACTION_HOME) ya jo bhi tarika use ho raha hai app ko band karne ka), woh function call ho bhi raha hai ya nahi, aur uska koi error/exception to nahi aa raha silently
+Test karne ka tarika: temporary Toast/log lagakar (jaise pehle bhi lagaya tha permission wale case mein) yeh dikhao:
+App switch hote hi: 'Foreground app: com.xyz.package'
+Uske baad: 'Is this locked? true/false'
+Agar true hai to: 'Blocking triggered' ya koi error
+Yeh sab exact output mujhe dikhao — kahan exactly chain toot rahi hai, wahi bataana, guess mat karna.
+Zaroori:
+Yeh sabse critical hai, bina isske poora app bekaar hai
+Baaki koi existing UI, duration, Firebase sync, animation mat chhedna
+Root cause milne ke baad fix karo aur exact batao kya tha"

@@ -246,6 +246,8 @@ class LockRepository(private val context: Context) {
                 endTime = endTime,
             )
         }
+        // ⚠️ DEBUG — remove before production
+        android.util.Log.d("DuckLock", "📋 Parsed ${result.size} active lock(s). Packages: ${result.flatMap { it.appPackageNames }}")
         return result
     }
 
@@ -259,6 +261,8 @@ class LockRepository(private val context: Context) {
      */
     fun getActiveLocks(): List<NativeLock> {
         val file = dataFile()
+        // ⚠️ DEBUG — remove before production
+        android.util.Log.d("DuckLock", "📂 Lock file: ${file.absolutePath} | exists: ${file.exists()}")
 
         // Primary file missing → JS hasn't written yet (very early cold start)
         // Fall back to startup cache so we don't allow locked apps through.
@@ -691,7 +695,9 @@ class LockOverlayActivity : Activity() {
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Intent
+import android.util.Log
 import android.view.accessibility.AccessibilityEvent
+import android.widget.Toast
 
 /**
  * Core enforcement service.
@@ -738,6 +744,10 @@ class AppBlockerAccessibilityService : AccessibilityService() {
         }
 
         FocusLockNotificationService.cancelTamperNotification(applicationContext)
+        // ⚠️ DEBUG — remove before production
+        val lockFilePath = applicationContext.filesDir.absolutePath + "/focuslock_data.json"
+        Log.d("DuckLock", "✅ Service connected. Lock file path: $lockFilePath")
+        Toast.makeText(applicationContext, "DuckLock service started ✅", Toast.LENGTH_SHORT).show()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -750,7 +760,17 @@ class AppBlockerAccessibilityService : AccessibilityService() {
         val now = System.currentTimeMillis()
         if (pkg == lastBlockedPkg && now - lastBlockedTime < DEBOUNCE_MS) return
 
-        val endTime = repo.isPackageLocked(pkg) ?: return
+        // ⚠️ DEBUG — remove before production
+        Log.d("DuckLock", "📱 Foreground app detected: $pkg")
+
+        val endTime = repo.isPackageLocked(pkg)
+        // ⚠️ DEBUG — remove before production
+        Log.d("DuckLock", "🔒 Is '$pkg' locked? ${endTime != null}")
+        if (endTime == null) return
+
+        // ⚠️ DEBUG — remove before production
+        Log.d("DuckLock", "🚫 Blocking triggered for: $pkg")
+        Toast.makeText(applicationContext, "🚫 Blocking: $pkg", Toast.LENGTH_SHORT).show()
 
         lastBlockedPkg  = pkg
         lastBlockedTime = now
