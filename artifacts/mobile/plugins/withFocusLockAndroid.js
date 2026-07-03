@@ -1011,11 +1011,40 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
         } catch (e: Exception) { false }
     }
 
-    /** Settings.canDrawOverlays (API 23+) */
+    /**
+     * Checks the SYSTEM_ALERT_WINDOW ("Display Over Apps") permission.
+     *
+     * WHY NOT Settings.canDrawOverlays(ctx):
+     *   Settings.canDrawOverlays() calls ctx.getOpPackageName() internally to
+     *   resolve the package name. ReactApplicationContext can return an unexpected
+     *   value from getOpPackageName() on some OEM ROMs (Samsung, MIUI), causing
+     *   the check to always return false even when the permission is granted.
+     *
+     * FIX: Call AppOpsManager directly with ctx.packageName (explicit, reliable)
+     *   instead of relying on ctx.getOpPackageName() indirectly via Settings API.
+     *   This is the same underlying Android check, just with the package name forced.
+     *   Falls back to Settings.canDrawOverlays() on API < 23.
+     */
     private fun canDrawOverlays(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
+        return try {
+            val appOps = ctx.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+            val uid    = ctx.applicationInfo.uid
+            val pkg    = ctx.packageName   // explicit — bypasses getOpPackageName() quirks
+            val mode   = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW, uid, pkg)
+            } else {
+                @Suppress("DEPRECATION")
+                appOps.checkOpNoThrow(AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW, uid, pkg)
+            }
+            val result = mode == AppOpsManager.MODE_ALLOWED
+            android.util.Log.d("DuckLock", "canDrawOverlays: AppOpsManager mode=\${mode}, granted=\${result}, pkg=\${pkg}")
+            result
+        } catch (e: Exception) {
+            // Absolute last-resort fallback
+            android.util.Log.d("DuckLock", "canDrawOverlays: AppOpsManager failed (\${e.message}), fallback to Settings API")
             Settings.canDrawOverlays(ctx)
-        } else true
+        }
     }
 
     /** DevicePolicyManager.isAdminActive for our DeviceAdminReceiver */
