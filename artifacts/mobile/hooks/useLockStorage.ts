@@ -108,12 +108,7 @@ export async function refreshExpiredLocks(): Promise<LockEntry[]> {
 async function syncToNativeFile(locks: LockEntry[]): Promise<void> {
   try {
     const filePath = getNativeFilePath();
-    // ⚠️ DEBUG — remove before production
-    console.log("[DuckLock] syncToNativeFile → path:", filePath);
-    if (!filePath) {
-      console.log("[DuckLock] ❌ filePath is null — documentDirectory unavailable");
-      return;
-    }
+    if (!filePath) return;
 
     const activeLocks = locks
       .filter((l) => l.status === "ACTIVE" && l.endTime > Date.now())
@@ -129,17 +124,11 @@ async function syncToNativeFile(locks: LockEntry[]): Promise<void> {
       startupVerified: true,
     };
 
-    const payloadStr = JSON.stringify(nativePayload);
-    // ⚠️ DEBUG — remove before production
-    console.log("[DuckLock] Writing to native file:", payloadStr);
-
     await FileSystem.writeAsStringAsync(
       filePath,
-      payloadStr,
+      JSON.stringify(nativePayload),
       { encoding: FileSystem.EncodingType.UTF8 }
     );
-    // ⚠️ DEBUG — remove before production
-    console.log("[DuckLock] ✅ Native file written successfully");
 
     // Start the foreground notification service so Android won't kill the
     // AccessibilityService on aggressive OEMs (MIUI, OPPO, OnePlus, etc.).
@@ -157,9 +146,8 @@ async function syncToNativeFile(locks: LockEntry[]): Promise<void> {
     // Keep startup cache fresh so AccessibilityService has a
     // conservative fallback on the next cold start.
     await writeStartupCache(activeLocks);
-  } catch (e) {
-    // ⚠️ DEBUG — remove before production
-    console.log("[DuckLock] ❌ syncToNativeFile ERROR:", e);
+  } catch {
+    // Silent — failure to sync native file should not crash the JS layer
   }
 }
 
