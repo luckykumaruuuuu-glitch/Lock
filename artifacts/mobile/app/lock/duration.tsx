@@ -608,7 +608,7 @@ export default function DurationScreen() {
   return (
     <GradientBackground>
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 120 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 160 }]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.heading}>How long?</Text>
@@ -625,19 +625,21 @@ export default function DurationScreen() {
                 style={({ pressed }) => [styles.gridCell, { opacity: pressed ? 0.82 : 1 }]}
               >
                 <GlassCard
-                  style={[styles.optCard, selected && { shadowColor: opt.glow, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 16, elevation: 10 }]}
+                  style={[styles.optCardOuter, selected && { shadowColor: opt.glow, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 16, elevation: 10 }]}
                   borderColor={selected ? opt.colors[0] + "80" : "rgba(255,255,255,0.1)"}
                   backgroundColor={selected ? "rgba(255,214,10,0.08)" : "#1C1C1E"}
                   padding={0}
                 >
-                  <View style={[styles.iconBox, { backgroundColor: selected ? opt.colors[0] + "22" : "#2C2C2E" }]}>
-                    <DurationCardIcon name={opt.icon} size={26} color={selected ? opt.colors[0] : "#8E8E93"} />
+                  <View style={styles.optCardInner}>
+                    {selected && <View style={[styles.selectedDot, { backgroundColor: opt.colors[0] }]} />}
+                    <View style={[styles.iconBox, { backgroundColor: selected ? opt.colors[0] + "22" : "#2C2C2E" }]}>
+                      <DurationCardIcon name={opt.icon} size={26} color={selected ? opt.colors[0] : "#8E8E93"} />
+                    </View>
+                    <Text style={[styles.optLabel, { color: selected ? "#FFFFFF" : "#8E8E93" }]}>
+                      {opt.label}
+                    </Text>
+                    <Text style={styles.optSublabel}>{opt.sublabel}</Text>
                   </View>
-                  <Text style={[styles.optLabel, { color: selected ? "#FFFFFF" : "#8E8E93" }]}>
-                    {opt.label}
-                  </Text>
-                  <Text style={styles.optSublabel}>{opt.sublabel}</Text>
-                  {selected && <View style={[styles.selectedDot, { backgroundColor: opt.colors[0] }]} />}
                 </GlassCard>
               </Pressable>
             );
@@ -739,11 +741,12 @@ const styles = StyleSheet.create({
 
   grid:      { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   gridCell:  { width: "47.5%" },
-  optCard:   { alignItems: "center", minHeight: 148, justifyContent: "center", position: "relative", gap: 10, paddingVertical: 22, paddingHorizontal: 12, borderRadius: 20 },
+  optCardOuter: { borderRadius: 20, minHeight: 165 },
+  optCardInner: { alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 20, paddingHorizontal: 12 },
   iconBox:   { width: 60, height: 60, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   optLabel:  { fontSize: 17, fontFamily: "Inter_700Bold", textAlign: "center" },
-  optSublabel:{ fontSize: 11, fontFamily: "Inter_400Regular", color: "#3A3A3C", textAlign: "center", lineHeight: 15 },
-  selectedDot:{ position: "absolute", top: 12, right: 12, width: 8, height: 8, borderRadius: 4 },
+  optSublabel:{ fontSize: 11, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center", lineHeight: 16 },
+  selectedDot:{ position: "absolute", top: 10, right: 10, width: 8, height: 8, borderRadius: 4 },
 
   customTitle:{ fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#FFFFFF", marginBottom: 4 },
   customHint: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93", lineHeight: 17, marginBottom: 14 },

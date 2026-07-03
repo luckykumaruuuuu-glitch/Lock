@@ -299,6 +299,9 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     overflow: "visible",
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
   },
   duckVideo: {
     width: 72,
