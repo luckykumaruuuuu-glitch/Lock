@@ -12,7 +12,7 @@
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0F172A"
+      "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": false,
@@ -24,7 +24,7 @@
       "backgroundColor": "#000000",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#0F172A"
+        "backgroundColor": "#000000"
       },
       "minSdkVersion": 26,
       "targetSdkVersion": 34,
