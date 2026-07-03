@@ -153,6 +153,40 @@ export function useFirebaseSync() {
     (async () => {
       await requestNotificationPermissions();
 
+      /* ── Web fast path ──────────────────────────────────────────────
+         On web there is no Kotlin AccessibilityService to protect, so
+         the blocking startup verification is unnecessary. Resolve
+         immediately and let Firebase sync run in the background.
+      ─────────────────────────────────────────────────────────────────── */
+      if (Platform.OS === "web") {
+        const localActive = await getActiveLocks();
+        if (mounted) {
+          setState((s) => ({
+            ...s,
+            startupSyncStatus: localActive.length > 0 ? "synced" : "no-locks",
+          }));
+        }
+        // Background Firebase sync (non-blocking on web)
+        if (isFirebaseConfigured) {
+          const deviceId = await getDeviceId();
+          if (!mounted) return;
+          deviceIdRef.current = deviceId;
+          setState((s) => ({ ...s, deviceId }));
+          runSync(deviceId);
+          unsubLocks.current = listenForLockChanges(deviceId, (result) => {
+            applyFirebaseSync(result);
+          });
+          unsubConn.current = listenForConnectionState((online) => {
+            setState((s) => ({ ...s, online }));
+            if (online && deviceIdRef.current) runSync(deviceIdRef.current);
+          });
+          syncIntervalRef.current = setInterval(() => {
+            if (deviceIdRef.current) runSync(deviceIdRef.current);
+          }, SYNC_INTERVAL_MS);
+        }
+        return;
+      }
+
       /* ── Step 1: Startup verification ────────────────────────────────
          Before anything else, ensure that the 1-3s Firebase sync window
          cannot be exploited after a Clear Data / fresh install.
