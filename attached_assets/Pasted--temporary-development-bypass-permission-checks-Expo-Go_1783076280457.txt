@@ -1,0 +1,21 @@
+"मुझे एक temporary development bypass चाहिए permission checks के लिए। Expo Go में special native permissions (Accessibility Service, Usage Access, Overlay, Device Admin) properly grant नहीं हो पातीं, इसलिए मैं app के बाकी हिस्से (Home screen, Duration cards, Select Apps, UI fixes) को Expo Go में test नहीं कर पा रहा क्योंकि permission screen से आगे ही नहीं बढ़ पाता। यह सिर्फ TEMPORARY testing के लिए है — production/final APK में यह बिल्कुल नहीं जाना चाहिए, इसलिए इसे बहुत साफ़-सुथरे, clearly-marked तरीके से implement करना है ताकि बाद में आसानी से पूरी तरह हटाया जा सके।
+Implementation exactly इस तरह चाहिए:
+एक नई file बनाओ: lib/devBypass.ts (या project का जो भी existing folder structure हो उसके according सही जगह) — इसमें सिर्फ एक clearly-marked constant हो:
+Javascript
+// ⚠️ TEMPORARY DEV BYPASS — REMOVE BEFORE PRODUCTION BUILD ⚠️
+// यह पूरा block/file हटाना है जब final APK बनानी हो
+export const DEV_BYPASS_PERMISSIONS = true;
+App में जहाँ-जहाँ भी permission verification होती है (permission guard hook, setup/onboarding screen में मौजूद permission-check logic, resume/foreground पर चलने वाला re-verification), वहाँ इस flag के according bypass करो:
+Javascript
+const checkPermissions = async () => {
+  if (DEV_BYPASS_PERMISSIONS) {
+    console.log('⚠️ DEV BYPASS ACTIVE — permissions skip ho rahi hain');
+    setAllPermissionsGranted(true); // ya jo bhi state variable relevant ho
+    return;
+  }
+  // ... asli check logic yahan waisa hi rahega, chheda nahi jaayega
+};
+बहुत ज़रूरी — हर जगह जहाँ यह bypass लगाओ, वहाँ एक साफ़ comment // DEV_BYPASS_PERMISSIONS ज़रूर लिखना, और आख़िर में मुझे एक पूरी list दो — exactly कौन-कौन सी files/functions में यह bypass code जोड़ा गया है (file name + function name), ताकि मैं बाद में एक-एक करके सब जगह से आसानी से हटवा सकूं।
+यह flag सिर्फ permission-checking logic को bypass करे — बाकी सब कुछ (locking mechanism, duration, Firebase sync, UI, animations) बिल्कुल वैसे ही चले जैसे चल रहा है, कोई और चीज़ मत छेड़ना।
+Console में हर बार यह bypass trigger हो तो एक warning log ज़रूर आए (⚠️ DEV BYPASS ACTIVE) ताकि यह कभी भूलने ना पाए कि bypass अभी भी on है।
+Implement करने के बाद मुझे exact list दो — कौन-कौन सी files में यह bypass code जोड़ा गया है, ताकि मैं बाद में सब जगह से सही तरीके से हटवा सकूं
