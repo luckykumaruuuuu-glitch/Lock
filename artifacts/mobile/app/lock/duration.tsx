@@ -745,7 +745,7 @@ const styles = StyleSheet.create({
   optCardInner: { alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 20, paddingHorizontal: 12 },
   iconBox:   { width: 60, height: 60, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   optLabel:  { fontSize: 17, fontFamily: "Inter_700Bold", textAlign: "center" },
-  optSublabel:{ fontSize: 11, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center", lineHeight: 16 },
+  optSublabel:{ fontSize: 11, fontFamily: "Inter_400Regular", color: "#3A3A3C", textAlign: "center", lineHeight: 16 },
   selectedDot:{ position: "absolute", top: 10, right: 10, width: 8, height: 8, borderRadius: 4 },
 
   customTitle:{ fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#FFFFFF", marginBottom: 4 },
