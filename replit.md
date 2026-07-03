@@ -1,60 +1,45 @@
-# FocusLock
+# DuckLock
 
-A focus app that helps users manage distractions by locking specific apps for set durations.
-
-## Run & Operate
-
-- `pnpm --filter @workspace/mobile run dev` — run the Expo mobile app (main workflow)
-- `pnpm --filter @workspace/api-server run dev` — run the API server
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string (auto-provisioned by Replit)
+A focus / screen-time locker mobile app built with **Expo (React Native)** + **Firebase Realtime Database**. Once a lock session starts, there's no way to bypass it early.
 
 ## Stack
 
-- pnpm workspaces, Node.js 20, TypeScript 5.9
-- Mobile: Expo 54 + React Native 0.81, expo-router
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- Sync: Firebase Realtime Database (data sync only, no auth)
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+| Layer | Tech |
+|---|---|
+| Mobile app | Expo ~54, React Native 0.81, expo-router |
+| State / data | Firebase Realtime Database (firebase ^12) |
+| Styling | react-native-reanimated, expo-linear-gradient |
+| i18n | i18next / react-i18next |
+| Monorepo | pnpm workspaces |
 
-## Where things live
+## Running on Replit
 
-- `artifacts/mobile/` — Expo mobile app (main user-facing app)
-- `artifacts/api-server/` — Express API server
-- `artifacts/ui-design/` — Design system / Vite sandbox
-- `artifacts/mockup-sandbox/` — Component prototyping
-- `lib/db/` — Drizzle schema and migrations
-- `lib/api-spec/` — OpenAPI contract (source of truth)
-- `lib/api-client-react/` — Generated TanStack Query hooks
-- `lib/api-zod/` — Generated Zod schemas
+```
+pnpm install          # install all workspace deps
+# then use the "Start application" workflow (port 5000)
+```
 
-## Architecture decisions
+The `start-all` script runs three things in parallel:
+1. **Static file server** on port 5000 (immediate, serves a loading page then the built web export)
+2. **Expo web export** (`expo export --platform web`) — output lands in `artifacts/mobile/web-dist/`
+3. **Metro dev server** on port 8081 — for Expo Go / native builds
 
-- Firebase is used only for Realtime Database sync (not auth). Device-local UUID used as RTDB path for isolation without auth tokens.
-- App works in "local-only" mode when Firebase env vars are not set — all locking still works.
-- No login/auth flow — app is single-user, device-local.
-- PostgreSQL (Replit-managed) for server-side persistence; Firebase for cross-device sync.
+The preview pane shows the web version. For the native app, scan the QR code printed in the workflow logs with Expo Go.
 
-## Product
+## Firebase config
 
-FocusLock lets users lock distracting apps for a set period with no way to bypass early. Features an interactive duck character, glassmorphism UI, and cross-device sync via Firebase.
+All Firebase public config keys are stored as `EXPO_PUBLIC_*` environment variables in `.replit` under `[userenv.shared]`. No secrets are required for the web/preview build.
+
+## Artifacts
+
+| Name | Path | Purpose |
+|---|---|---|
+| FocusLock (mobile) | `artifacts/mobile` | Main Expo app |
+| API Server | `artifacts/api-server` | Express API (TypeScript, esbuild) |
+| App UI Design | `artifacts/ui-design` | Vite/React design exploration |
+| Canvas / Mockup Sandbox | `artifacts/mockup-sandbox` | Component preview server |
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
-
-## Gotchas
-
-- The mobile dev script passes several Replit-specific env vars (REPLIT_EXPO_DEV_DOMAIN, REPLIT_DEV_DOMAIN, REPL_ID) to Expo for proxying.
-- Firebase keys live in `.replit` `[userenv.shared]` — they're public-facing Expo env vars (EXPO_PUBLIC_*) and intentionally not secret.
-- Always run `pnpm --filter @workspace/api-spec run codegen` after changing the OpenAPI spec.
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Keep the existing monorepo structure (pnpm workspaces).
+- Do not restructure or migrate the project unless explicitly asked.
