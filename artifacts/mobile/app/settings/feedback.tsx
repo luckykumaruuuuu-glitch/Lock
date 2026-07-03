@@ -133,16 +133,18 @@ export default function FeedbackScreen() {
             <>
               {/* Selected Type Badge */}
               <GlassCard style={styles.badgeCard} padding={12}>
-                <View style={styles.badgeIcon}>
-                  <Feather
-                    name={selected === "issue" ? "alert-circle" : selected === "idea" ? "zap" : "heart"}
-                    size={14}
-                    color={theme.accent}
-                  />
+                <View style={styles.badgeRow}>
+                  <View style={styles.badgeIcon}>
+                    <Feather
+                      name={selected === "issue" ? "alert-circle" : selected === "idea" ? "zap" : "heart"}
+                      size={14}
+                      color={theme.accent}
+                    />
+                  </View>
+                  <Text style={styles.badgeLabel}>
+                    {selected === "issue" ? t("reportIssue") : selected === "idea" ? t("shareIdea") : t("appreciateTeam")}
+                  </Text>
                 </View>
-                <Text style={styles.badgeLabel}>
-                  {selected === "issue" ? t("reportIssue") : selected === "idea" ? t("shareIdea") : t("appreciateTeam")}
-                </Text>
               </GlassCard>
 
               <GlassCard style={styles.textBoxCard} padding={0}>
@@ -197,7 +199,7 @@ const styles = StyleSheet.create({
     lineHeight: 34,
   },
 
-  optionsCard: { gap: 0, paddingVertical: 4 },
+  optionsCard: {},
 
   radioRow: {
     flexDirection: "row",
@@ -258,7 +260,12 @@ const styles = StyleSheet.create({
   },
   continueBtnTextDisabled: { color: theme.secondaryText },
 
-  badgeCard: { flexDirection: "row", alignItems: "center", gap: 10 },
+  badgeCard: {},
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   badgeIcon: {
     width: 28,
     height: 28,
