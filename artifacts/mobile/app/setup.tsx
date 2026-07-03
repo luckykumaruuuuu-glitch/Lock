@@ -18,7 +18,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { checkNativePermissions } from "@/lib/nativePermissionCheck";
-import { DEV_BYPASS_PERMISSIONS } from "@/lib/devBypass";
 import { PermissionId, usePermissionStatus } from "@/hooks/usePermissionStatus";
 
 const APP_PACKAGE = "com.focuslock.app";
@@ -108,26 +107,12 @@ export default function SetupScreen() {
     }).start();
   }, [allGranted]);
 
-  // DEV_BYPASS_PERMISSIONS — mark all permissions as granted on mount
-  useEffect(() => {
-    if (!DEV_BYPASS_PERMISSIONS) return;
-    console.log("⚠️ DEV BYPASS ACTIVE — saari permissions granted mark ho rahi hain (setup mount)");
-    Promise.all(PERMS.map((p) => markGranted(p.id, true))).catch(() => {});
-  }, [markGranted]);
-
   /**
    * Called when the user returns from Settings.
    * Performs a real OS-level check before marking granted — never assumes
    * that opening Settings means the permission was actually turned on.
    */
   const verifyAndMarkPermission = useCallback(async (id: PermissionId) => {
-    // DEV_BYPASS_PERMISSIONS
-    if (DEV_BYPASS_PERMISSIONS) {
-      console.log("⚠️ DEV BYPASS ACTIVE — permission resume-check skip ho raha hai (setup.tsx verifyAndMarkPermission)");
-      await markGranted(id, true);
-      return;
-    }
-
     let granted = false;
 
     if (id === "notification") {
