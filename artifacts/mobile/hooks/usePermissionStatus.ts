@@ -2,8 +2,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, AppStateStatus, Platform } from "react-native";
 
-import { DEV_BYPASS_PERMISSIONS } from "@/lib/devBypass"; // DEV_BYPASS_PERMISSIONS
-
 export type PermissionId =
   | "usageAccess"
   | "deviceAdmin"
@@ -95,12 +93,7 @@ export function usePermissionStatus() {
     setSetupComplete(false);
   }, []);
 
-  // DEV_BYPASS_PERMISSIONS
-  if (DEV_BYPASS_PERMISSIONS) {
-    console.log("⚠️ DEV BYPASS ACTIVE — permissions skip ho rahi hain (usePermissionStatus → allGranted)");
-  }
   const allGranted =
-    DEV_BYPASS_PERMISSIONS ||   // DEV_BYPASS_PERMISSIONS
     Platform.OS !== "android" ||
     Object.values(permissions).every((p) => p.granted);
 

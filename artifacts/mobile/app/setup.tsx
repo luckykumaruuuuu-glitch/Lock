@@ -19,8 +19,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { checkNativePermissions } from "@/lib/nativePermissionCheck";
 import { PermissionId, usePermissionStatus } from "@/hooks/usePermissionStatus";
-import { DEV_BYPASS_PERMISSIONS } from "@/lib/devBypass"; // DEV_BYPASS_PERMISSIONS
-
 const APP_PACKAGE = "com.focuslock.app";
 
 async function openUsageAccess() {
@@ -96,9 +94,8 @@ export default function SetupScreen() {
   const lastOpenedRef = useRef<PermissionId | null>(null);
 
   const isWeb        = Platform.OS === "web";
-  // DEV_BYPASS_PERMISSIONS
-  const grantedCount = (DEV_BYPASS_PERMISSIONS || isWeb) ? PERMS.length : PERMS.filter(p => permissions[p.id]?.granted).length;
-  const allGranted   = DEV_BYPASS_PERMISSIONS || isWeb || grantedCount === PERMS.length; // DEV_BYPASS_PERMISSIONS
+  const grantedCount = isWeb ? PERMS.length : PERMS.filter(p => permissions[p.id]?.granted).length;
+  const allGranted   = isWeb || grantedCount === PERMS.length;
 
   useEffect(() => {
     Animated.spring(continueAnim, {
@@ -115,13 +112,6 @@ export default function SetupScreen() {
    * that opening Settings means the permission was actually turned on.
    */
   const verifyAndMarkPermission = useCallback(async (id: PermissionId) => {
-    // DEV_BYPASS_PERMISSIONS
-    if (DEV_BYPASS_PERMISSIONS) {
-      console.log("⚠️ DEV BYPASS ACTIVE — permissions skip ho rahi hain (setup → verifyAndMarkPermission)");
-      await markGranted(id, true);
-      return;
-    }
-
     let granted = false;
 
     if (id === "notification") {
