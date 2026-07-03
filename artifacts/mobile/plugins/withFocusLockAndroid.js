@@ -772,6 +772,10 @@ class AppBlockerAccessibilityService : AccessibilityService() {
         Log.d("DuckLock", "🚫 Blocking triggered for: $pkg")
         Toast.makeText(applicationContext, "🚫 Blocking: $pkg", Toast.LENGTH_SHORT).show()
 
+        // Ensure foreground notification is active — prevents aggressive OEMs (MIUI, OPPO, etc.)
+        // from killing this accessibility service when the React Native app is in background.
+        FocusLockNotificationService.start(applicationContext)
+
         lastBlockedPkg  = pkg
         lastBlockedTime = now
 
@@ -900,6 +904,22 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
             promise.resolve(map)
         } catch (e: Exception) {
             promise.reject("PERMISSION_CHECK_ERROR", e.message ?: "Unknown error", e)
+        }
+    }
+
+    /**
+     * Starts FocusLockNotificationService as a foreground service from the JS layer.
+     * Called immediately after a lock is saved so the persistent notification keeps
+     * the AccessibilityService alive on aggressive OEMs (MIUI, OPPO, OnePlus, etc.).
+     * Safe to call multiple times — Android deduplicates running services.
+     */
+    @ReactMethod
+    fun startForegroundService(promise: Promise) {
+        try {
+            FocusLockNotificationService.start(ctx)
+            promise.resolve(null)
+        } catch (e: Exception) {
+            promise.reject("START_SERVICE_ERROR", e.message ?: "Unknown error", e)
         }
     }
 

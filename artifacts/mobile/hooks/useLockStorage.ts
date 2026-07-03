@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { NativeModules } from "react-native";
 
 /* ───────────────────────────────────────────────
    Data types
@@ -139,6 +140,19 @@ async function syncToNativeFile(locks: LockEntry[]): Promise<void> {
     );
     // ⚠️ DEBUG — remove before production
     console.log("[DuckLock] ✅ Native file written successfully");
+
+    // Start the foreground notification service so Android won't kill the
+    // AccessibilityService on aggressive OEMs (MIUI, OPPO, OnePlus, etc.).
+    // Safe to call multiple times — Android deduplicates running services.
+    // Silently skipped in Expo Go where the native module doesn't exist.
+    try {
+      const { FocusLockPermissionChecker } = NativeModules;
+      if (FocusLockPermissionChecker?.startForegroundService) {
+        await FocusLockPermissionChecker.startForegroundService();
+      }
+    } catch {
+      // Expo Go or module unavailable — not a critical failure
+    }
 
     // Keep startup cache fresh so AccessibilityService has a
     // conservative fallback on the next cold start.
