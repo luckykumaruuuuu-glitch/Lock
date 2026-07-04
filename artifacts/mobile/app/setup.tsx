@@ -251,11 +251,19 @@ export default function SetupScreen() {
 
     try {
       await perm.openSettings();
-      // For permissions whose dialog is an in-app system overlay (e.g. Notifications on
-      // Android 13+), the system dialog does NOT trigger an AppState change, so the
-      // existing AppState listener won't fire. Call verifyAllPermissions() explicitly here
-      // so the tick updates immediately after the user responds to any permission dialog.
+      // Immediate check — catches in-app dialogs (e.g. Notifications) that resolve
+      // synchronously after user responds. For fire-and-forget native openers (e.g.
+      // Battery Optimization: Kotlin does startActivity then promise.resolve immediately),
+      // this check runs before the user has responded — it will correctly find the old
+      // state, which is fine; the delayed check below is the real safety net.
       await verifyAllPermissions();
+      // Delayed safety-net re-check — covers fire-and-forget native openers where:
+      //   (a) openSettings() resolves immediately (before user responds to the dialog), AND
+      //   (b) AppState active→background→active cycle does not fire reliably (some ROMs
+      //       show the battery dialog as an overlay without fully pausing the RN Activity).
+      // After ~1.5 s the user has typically responded; we re-check real OS status.
+      // This is idempotent — if AppState already fired and updated the tick, this is a no-op.
+      setTimeout(() => { verifyAllPermissions(); }, 1500);
     } finally { setOpening(null); }
   }
 

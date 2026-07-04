@@ -24,10 +24,21 @@ const { FocusLockPermissionChecker } = NativeModules;
  */
 export async function checkNativePermissions(): Promise<NativePermissionStatus | null> {
   if (Platform.OS !== "android") return null;
-  if (!FocusLockPermissionChecker?.checkPermissions) return null;
+  if (!FocusLockPermissionChecker?.checkPermissions) {
+    console.log("[NativePermCheck] FocusLockPermissionChecker.checkPermissions not available — native module absent (Expo Go?)");
+    return null;
+  }
   try {
-    return (await FocusLockPermissionChecker.checkPermissions()) as NativePermissionStatus;
-  } catch {
+    const raw = await FocusLockPermissionChecker.checkPermissions();
+    console.log(
+      "[NativePermCheck] Raw result from native module:",
+      JSON.stringify(raw),
+      "| battery type:", typeof raw?.battery,
+      "| battery value:", raw?.battery,
+    );
+    return raw as NativePermissionStatus;
+  } catch (e) {
+    console.log("[NativePermCheck] checkPermissions threw:", e);
     return null;
   }
 }
