@@ -1,0 +1,17 @@
+"android.settings.action.SECURITY_SETTINGS"), वो एक generic Security Settings page खोलता है, ना कि specific Device Admin activation screen। असली सही action होना चाहिए ACTION_ADD_DEVICE_ADMIN, जिसके साथ एक specific ComponentName extra भी देना पड़ता है (अपने खुद के DeviceAdminReceiver class का नाम बताते हुए) — बिना उस component name extra के, यह सही targeted screen नहीं खुलती।
+Replit को यह exact prompt दो:
+"Device Admin ka redirect ab kaam kar raha hai, lekin galat jagah le ja raha hai — yeh sirf general Settings/Security Settings ka generic page khol raha hai, jahan mujhe khud dhundhna padta hai Device Admin ka option. Yeh sahi nahi hai.
+Expected behavior: 'Allow' dabane par seedha ek specific confirmation screen khulni chahiye jisme likha ho 'Activate this device admin app?' ke saath 'Activate'/'Cancel' buttons — yeh Android ka standard Device Admin activation dialog hota hai, generic Settings page nahi.
+Fix karna hai:
+Fallback mein jo IntentLauncher.startActivityAsync('android.settings.action.SECURITY_SETTINGS') use ho raha hai, use replace karo sahi specific Intent se:
+javascript
+const intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName);
+intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "DuckLock needs this to prevent uninstall while a lock is active.");
+Yahan componentName wo actual ComponentName object hai jo tumhare custom DeviceAdminReceiver class ko point karta hai (jo already project mein defined hai kahin — DeviceAdminReceiver.kt jaisi file mein).
+Yeh ACTION_ADD_DEVICE_ADMIN Intent native module ke through hi trigger karni hogi (JS se IntentLauncher se generic action string se nahi ho sakta, kyunki isko ComponentName extra chahiye jo native side par hi properly construct ho sakta hai) — isliye native Kotlin function (jo openDeviceAdminSettings() hai) ke andar hi is sahi Intent ko banao, JS-side fallback ko generic Security Settings se hatao.
+Expo Go mein yeh native call available nahi hoga (undefined), isliye Expo Go mein fallback zaroor chahiye — lekin wahan bhi at least koi meaningful message dikhao user ko ('Yeh feature sirf real APK mein test ho sakta hai') bajaye generic Settings kholne ke, taaki confusion na ho ki yeh 'kaam kar raha hai' jabki actually galat jagah le ja raha hai.
+Zaroori:
+Yeh sirf Device Admin ke targeted-Intent ka fix hai
+Baaki koi existing function mat chhedna
+Fix ke baad exact batao ki componentName kahan se aa raha hai (kaunsi file mein DeviceAdminReceiver defined hai)"

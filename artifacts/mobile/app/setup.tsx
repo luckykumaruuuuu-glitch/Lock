@@ -70,25 +70,32 @@ async function openUsageAccess() {
 
 async function openDeviceAdmin() {
   if (Platform.OS !== "android") return;
-  // Native method creates ComponentName as Parcelable — expo-intent-launcher can only
-  // pass String extras, which causes ADD_DEVICE_ADMIN to silently ignore the component.
-  //
-  // BUG FIX: Previously used optional chaining (?.) on the native module call.
-  // In Expo Go the module is undefined, so ?. returns undefined silently — no exception
-  // is thrown, so the catch block and IntentLauncher fallback never ran.
-  // Fix: explicitly check module availability first; only if present, call and await it.
+  // ACTION_ADD_DEVICE_ADMIN requires a ComponentName Parcelable extra.
+  // expo-intent-launcher can only pass String extras from JS, so the targeted
+  // activation screen MUST be opened through the native module (Kotlin builds the
+  // ComponentName properly). The native module is NOT present in Expo Go.
   if (NativeModules.FocusLockPermissionChecker?.openDeviceAdminSettings) {
+    // Real APK path — opens "Activate device admin app?" confirmation dialog directly.
     try {
       await NativeModules.FocusLockPermissionChecker.openDeviceAdminSettings();
       return;
     } catch (e) {
       console.error("[openDeviceAdmin] Native call failed:", e);
-      // fall through to IntentLauncher fallback
+      // Rare APK-only edge case: native method threw after module was present.
+      // Fall back to generic Security Settings so the user can at least navigate manually.
+      try { await IntentLauncher.startActivityAsync("android.settings.action.SECURITY_SETTINGS"); }
+      catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
     }
+  } else {
+    // Expo Go: native module is not bundled — there is no JS-only way to open the
+    // targeted Device Admin activation screen. Show a clear message instead of
+    // silently opening the wrong generic Settings page.
+    Alert.alert(
+      "Expo Go mein available nahi",
+      "Device Admin permission sirf real APK build mein activate ho sakti hai. Expo Go is feature ko support nahi karta.\n\nAPK build karo aur wahan test karo.",
+      [{ text: "OK" }]
+    );
   }
-  // Fallback: Expo Go / native module not built
-  try { await IntentLauncher.startActivityAsync("android.settings.action.SECURITY_SETTINGS"); }
-  catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
 }
 
 async function openOverlay() {
