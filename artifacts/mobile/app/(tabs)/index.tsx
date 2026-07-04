@@ -35,7 +35,8 @@ const DUCK_IDLE = require("../../assets/duck-idle.mp4");
 const DUCK_TOUCH = require("../../assets/duck-touch.mp4");
 
 function DuckCharacter() {
-  const isTouchedRef = useRef(false);
+  // Tracks which source is currently loaded: 'idle' or 'touch'
+  const currentSourceRef = useRef<'idle' | 'touch'>('idle');
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const player = useVideoPlayer(DUCK_IDLE, (p) => {
@@ -64,9 +65,9 @@ function DuckCharacter() {
 
   useEffect(() => {
     const sub = player.addListener("playToEnd", () => {
-      if (!isTouchedRef.current) return;
+      if (currentSourceRef.current !== 'touch') return;
       // Touch video khatam — wapas idle par switch
-      isTouchedRef.current = false;
+      currentSourceRef.current = 'idle';
       switchVideo(DUCK_IDLE).then(() => {
         player.loop = true;
         player.muted = true;
@@ -77,13 +78,19 @@ function DuckCharacter() {
   }, [player]);
 
   function handlePress() {
-    if (isTouchedRef.current) return; // already playing touch
-    isTouchedRef.current = true;
-    switchVideo(DUCK_TOUCH).then(() => {
-      player.loop = false;
-      player.muted = false;
+    if (currentSourceRef.current === 'touch') {
+      // Touch video already loaded — sirf shuru se restart karo, replace ki zaroorat nahi
+      player.currentTime = 0;
       player.play();
-    });
+    } else {
+      // Idle se touch par switch karo (cross-fade + replace)
+      currentSourceRef.current = 'touch';
+      switchVideo(DUCK_TOUCH).then(() => {
+        player.loop = false;
+        player.muted = false;
+        player.play();
+      });
+    }
   }
 
   return (
