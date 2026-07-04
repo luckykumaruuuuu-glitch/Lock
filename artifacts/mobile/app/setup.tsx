@@ -130,23 +130,13 @@ async function openBattery() {
   if (Platform.OS !== "android") return;
   // Native method uses startActivity with FLAG_ACTIVITY_NEW_TASK and proper Uri —
   // manifest now declares REQUEST_IGNORE_BATTERY_OPTIMIZATIONS permission so no SecurityException.
-  //
-  // BUG FIX: Same issue as openDeviceAdmin — optional chaining on undefined module
-  // returns undefined silently in Expo Go, bypassing the catch and fallback entirely.
-  if (NativeModules.FocusLockPermissionChecker?.openBatterySettings) {
-    try {
-      await NativeModules.FocusLockPermissionChecker.openBatterySettings();
-      return;
-    } catch (e) {
-      console.error("[openBattery] Native call failed:", e);
-      // fall through to IntentLauncher fallback
-    }
+  try {
+    await NativeModules.FocusLockPermissionChecker?.openBatterySettings();
+  } catch {
+    // Fallback for Expo Go / native module not built yet
+    try { await IntentLauncher.startActivityAsync("android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"); }
+    catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
   }
-  // Fallback: Expo Go / native module not built.
-  // ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS (+ package Uri) → direct quick dialog.
-  // ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS (no Uri) → generic list — wrong, was used before.
-  try { await IntentLauncher.startActivityAsync("android.settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS", { data: `package:${APP_PACKAGE}` }); }
-  catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
 }
 
 interface PermItem {
