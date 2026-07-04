@@ -37,7 +37,7 @@ const DUCK_TOUCH = require("../../assets/duck-touch.mp4");
 function DuckCharacter() {
   // Tracks which source is currently loaded: 'idle' or 'touch'
   const currentSourceRef = useRef<'idle' | 'touch'>('idle');
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const player = useVideoPlayer(DUCK_IDLE, (p) => {
     p.loop = true;
@@ -45,20 +45,21 @@ function DuckCharacter() {
     p.play();
   });
 
-  // Cross-fade helper: fade overlay in → swap source → fade overlay out
-  // Only covers the 72×72 duck area, not the full screen.
-  async function switchVideo(newSource: VideoSource) {
+  // Bounce transition: compress → run action at peak squeeze → spring back
+  // Hides the video-switch gap behind the compress keyframe (scale 0.85 = smallest frame).
+  async function bounceTransition(action: () => Promise<void> | void) {
     await new Promise<void>((resolve) => {
-      Animated.timing(fadeAnim, {
-        toValue: 1,
+      Animated.timing(scaleAnim, {
+        toValue: 0.85,
         duration: 80,
         useNativeDriver: true,
       }).start(() => resolve());
     });
-    await player.replaceAsync(newSource);
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 80,
+    await action();
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 3,
+      tension: 120,
       useNativeDriver: true,
     }).start();
   }
@@ -68,7 +69,8 @@ function DuckCharacter() {
       if (currentSourceRef.current !== 'touch') return;
       // Touch video khatam — wapas idle par switch
       currentSourceRef.current = 'idle';
-      switchVideo(DUCK_IDLE).then(() => {
+      bounceTransition(async () => {
+        await player.replaceAsync(DUCK_IDLE);
         player.loop = true;
         player.muted = true;
         player.play();
@@ -80,12 +82,15 @@ function DuckCharacter() {
   function handlePress() {
     if (currentSourceRef.current === 'touch') {
       // Touch video already loaded — sirf shuru se restart karo, replace ki zaroorat nahi
-      player.currentTime = 0;
-      player.play();
+      bounceTransition(async () => {
+        player.currentTime = 0;
+        player.play();
+      });
     } else {
-      // Idle se touch par switch karo (cross-fade + replace)
+      // Idle se touch par switch karo
       currentSourceRef.current = 'touch';
-      switchVideo(DUCK_TOUCH).then(() => {
+      bounceTransition(async () => {
+        await player.replaceAsync(DUCK_TOUCH);
         player.loop = false;
         player.muted = false;
         player.play();
@@ -95,17 +100,14 @@ function DuckCharacter() {
 
   return (
     <TouchableOpacity onPress={handlePress} activeOpacity={0.85} style={styles.duckContainer}>
-      <VideoView
-        player={player}
-        style={styles.duckVideo}
-        contentFit="contain"
-        nativeControls={false}
-      />
-      {/* Cross-fade overlay — covers only the duck's 72×72 area during source switch */}
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.duckFadeOverlay, { opacity: fadeAnim }]}
-      />
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <VideoView
+          player={player}
+          style={styles.duckVideo}
+          contentFit="contain"
+          nativeControls={false}
+        />
+      </Animated.View>
     </TouchableOpacity>
   );
 }
@@ -339,13 +341,6 @@ const styles = StyleSheet.create({
   duckVideo: {
     width: 72,
     height: 72,
-  },
-  duckFadeOverlay: {
-    position: "absolute",
-    width: 72,
-    height: 72,
-    backgroundColor: "#000000", // matches page background
-    borderRadius: 0,
   },
   statsRow: { flexDirection: "row", gap: 10 },
   statWrapper: { flex: 1 },
