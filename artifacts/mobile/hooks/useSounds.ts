@@ -4,20 +4,42 @@ import { Platform } from "react-native";
 
 import { useSoundContext } from "@/context/SoundContext";
 
+// Singleton AudioContext — browsers hard-cap concurrent instances (Chrome: 6,
+// Safari: ~4). Creating a new one per playTone() call exhausted the cap after
+// rapid taps, causing silent failures. One shared instance + lightweight
+// per-tone OscillatorNodes is the correct Web Audio pattern.
+let _audioCtx: AudioContext | null = null;
+
+function getAudioContext(): AudioContext | null {
+  if (Platform.OS !== "web") return null;
+  try {
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext;
+    if (!AudioCtx) return null;
+    if (!_audioCtx || _audioCtx.state === "closed") {
+      _audioCtx = new AudioCtx();
+    }
+    // Browsers auto-suspend idle contexts; resume before use.
+    if (_audioCtx.state === "suspended") {
+      _audioCtx.resume().catch(() => {});
+    }
+    return _audioCtx;
+  } catch {
+    return null;
+  }
+}
+
 function playTone(
   freq: number,
   duration: number,
   type: OscillatorType = "sine",
   volume = 0.08
 ): void {
-  if (Platform.OS !== "web") return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
   try {
-    const AudioCtx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
