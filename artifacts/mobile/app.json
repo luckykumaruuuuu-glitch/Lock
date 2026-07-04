@@ -23,7 +23,7 @@
       "versionCode": 1,
       "backgroundColor": "#000000",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
+        "foregroundImage": "./assets/images/icon-adaptive-fg.png",
         "backgroundColor": "#000000"
       },
       "minSdkVersion": 26,
