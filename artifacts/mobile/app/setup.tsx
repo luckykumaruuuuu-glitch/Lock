@@ -106,14 +106,24 @@ async function openOverlay() {
 
 async function openNotification() {
   if (Platform.OS !== "android") return;
-  try {
-    const Notifications = require("expo-notifications");
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status === "granted") return;
-    await IntentLauncher.startActivityAsync("android.settings.APP_NOTIFICATION_SETTINGS", {
-      extra: { "android.provider.extra.APP_PACKAGE": APP_PACKAGE },
-    });
-  } catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
+  // POST_NOTIFICATIONS is a runtime permission (Android 13+) — requestPermissionsAsync()
+  // shows Android's native in-app system dialog directly, same as Camera/Location.
+  // No IntentLauncher / Settings redirect needed at all.
+  //
+  // WHY THE OLD CODE WAS WRONG:
+  //   1. requestPermissionsAsync() was called first — correct so far.
+  //   2. But if status !== "granted" (e.g. user tapped Deny, or permission was undetermined
+  //      and the dialog had already closed), it fell through to IntentLauncher and opened the
+  //      Notification Settings page instead — a Settings redirect the user never asked for.
+  //   The dialog appeared, user interacted, and THEN Settings opened on top — confusing.
+  //
+  // CORRECT FLOW: just call requestPermissionsAsync() and return. The system dialog appears
+  // inline. After the user responds, verifyAllPermissions() is called by handleAllow to
+  // update the tick immediately (see comment there).
+  const Notifications = require("expo-notifications");
+  await Notifications.requestPermissionsAsync();
+  // Return value intentionally ignored: verifyAllPermissions() in handleAllow does the
+  // authoritative live check after this resolves.
 }
 
 async function openBattery() {
@@ -247,8 +257,14 @@ export default function SetupScreen() {
       return;
     }
 
-    try { await perm.openSettings(); }
-    finally { setOpening(null); }
+    try {
+      await perm.openSettings();
+      // For permissions whose dialog is an in-app system overlay (e.g. Notifications on
+      // Android 13+), the system dialog does NOT trigger an AppState change, so the
+      // existing AppState listener won't fire. Call verifyAllPermissions() explicitly here
+      // so the tick updates immediately after the user responds to any permission dialog.
+      await verifyAllPermissions();
+    } finally { setOpening(null); }
   }
 
   async function handleContinue() {
