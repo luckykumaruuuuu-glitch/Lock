@@ -385,7 +385,7 @@ function TimePickerModal({
             <View style={tpStyles.col}>
               <Text style={tpStyles.colLabel}>Hour</Text>
               <Pressable
-                onPress={() => adjustHour(1)}
+                onPress={() => adjustHour(-1)}
                 style={({ pressed }) => [tpStyles.arrow, { opacity: pressed ? 0.55 : 1 }]}
               >
                 <Feather name="chevron-up" size={26} color="#FFBF80" />
@@ -394,7 +394,7 @@ function TimePickerModal({
                 <Text style={tpStyles.valueText}>{pad(displayHour)}</Text>
               </View>
               <Pressable
-                onPress={() => adjustHour(-1)}
+                onPress={() => adjustHour(1)}
                 style={({ pressed }) => [tpStyles.arrow, { opacity: pressed ? 0.55 : 1 }]}
               >
                 <Feather name="chevron-down" size={26} color="#FFBF80" />
@@ -407,7 +407,7 @@ function TimePickerModal({
             <View style={tpStyles.col}>
               <Text style={tpStyles.colLabel}>Minute</Text>
               <Pressable
-                onPress={() => adjustMinute(5)}
+                onPress={() => adjustMinute(-5)}
                 style={({ pressed }) => [tpStyles.arrow, { opacity: pressed ? 0.55 : 1 }]}
               >
                 <Feather name="chevron-up" size={26} color="#FFBF80" />
@@ -416,7 +416,7 @@ function TimePickerModal({
                 <Text style={tpStyles.valueText}>{pad(minute)}</Text>
               </View>
               <Pressable
-                onPress={() => adjustMinute(-5)}
+                onPress={() => adjustMinute(5)}
                 style={({ pressed }) => [tpStyles.arrow, { opacity: pressed ? 0.55 : 1 }]}
               >
                 <Feather name="chevron-down" size={26} color="#FFBF80" />
