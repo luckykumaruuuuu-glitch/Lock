@@ -68,9 +68,12 @@ const server = http.createServer((req, res) => {
   // Decode URI (handle %2F etc.)
   try { urlPath = decodeURIComponent(urlPath); } catch (_) {}
 
-  // Prevent directory traversal
-  const safePath = path.normalize(urlPath).replace(/^(\.\.(\/|\\|$))+/, "");
-  let filePath = path.join(OUT_DIR, safePath);
+  // Prevent directory traversal — confine all reads to OUT_DIR
+  const normalized = path.normalize(urlPath).replace(/^[/\\]+/, "");
+  let filePath = path.resolve(OUT_DIR, normalized);
+  if (!filePath.startsWith(OUT_DIR + path.sep) && filePath !== OUT_DIR) {
+    filePath = path.join(OUT_DIR, "index.html");
+  }
 
   // If path is a directory, try index.html inside it
   if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {

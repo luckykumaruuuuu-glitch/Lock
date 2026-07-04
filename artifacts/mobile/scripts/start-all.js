@@ -94,9 +94,12 @@ const staticServer = nodeHttp.createServer((req, res) => {
     return;
   }
 
-  // Build is ready — serve static files
-  const safe = path.normalize(urlPath).replace(/^(\.\.(\/|\\|$))+/, "");
-  let filePath = path.join(WEBDIST, safe);
+  // Build is ready — serve static files (confine to WEBDIST to prevent path traversal)
+  const normalized = path.normalize(urlPath).replace(/^[/\\]+/, "");
+  let filePath = path.resolve(WEBDIST, normalized);
+  if (!filePath.startsWith(WEBDIST + path.sep) && filePath !== WEBDIST) {
+    filePath = path.join(WEBDIST, "index.html");
+  }
 
   if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
     filePath = path.join(filePath, "index.html");
