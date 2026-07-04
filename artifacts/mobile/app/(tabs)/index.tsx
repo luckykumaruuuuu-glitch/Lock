@@ -2,7 +2,7 @@ import { FontAwesome5, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import { useVideoPlayer, VideoView } from "expo-video";
+import { useVideoPlayer, VideoView, VideoSource } from "expo-video";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -36,6 +36,7 @@ const DUCK_TOUCH = require("../../assets/duck-touch.mp4");
 
 function DuckCharacter() {
   const isTouchedRef = useRef(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const player = useVideoPlayer(DUCK_IDLE, (p) => {
     p.loop = true;
@@ -43,12 +44,30 @@ function DuckCharacter() {
     p.play();
   });
 
+  // Cross-fade helper: fade overlay in → swap source → fade overlay out
+  // Only covers the 72×72 duck area, not the full screen.
+  async function switchVideo(newSource: VideoSource) {
+    await new Promise<void>((resolve) => {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 80,
+        useNativeDriver: true,
+      }).start(() => resolve());
+    });
+    await player.replaceAsync(newSource);
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 80,
+      useNativeDriver: true,
+    }).start();
+  }
+
   useEffect(() => {
     const sub = player.addListener("playToEnd", () => {
       if (!isTouchedRef.current) return;
       // Touch video khatam — wapas idle par switch
       isTouchedRef.current = false;
-      player.replaceAsync(DUCK_IDLE).then(() => {
+      switchVideo(DUCK_IDLE).then(() => {
         player.loop = true;
         player.muted = true;
         player.play();
@@ -60,7 +79,7 @@ function DuckCharacter() {
   function handlePress() {
     if (isTouchedRef.current) return; // already playing touch
     isTouchedRef.current = true;
-    player.replaceAsync(DUCK_TOUCH).then(() => {
+    switchVideo(DUCK_TOUCH).then(() => {
       player.loop = false;
       player.muted = false;
       player.play();
@@ -74,6 +93,11 @@ function DuckCharacter() {
         style={styles.duckVideo}
         contentFit="contain"
         nativeControls={false}
+      />
+      {/* Cross-fade overlay — covers only the duck's 72×72 area during source switch */}
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.duckFadeOverlay, { opacity: fadeAnim }]}
       />
     </TouchableOpacity>
   );
@@ -308,6 +332,13 @@ const styles = StyleSheet.create({
   duckVideo: {
     width: 72,
     height: 72,
+  },
+  duckFadeOverlay: {
+    position: "absolute",
+    width: 72,
+    height: 72,
+    backgroundColor: "#000000", // matches page background
+    borderRadius: 0,
   },
   statsRow: { flexDirection: "row", gap: 10 },
   statWrapper: { flex: 1 },
