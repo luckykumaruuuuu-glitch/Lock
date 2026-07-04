@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as IntentLauncher from "expo-intent-launcher";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -60,6 +60,36 @@ async function fetchAllPermissionStatus(): Promise<Partial<Record<PermissionId, 
   }
 
   return result;
+}
+
+/**
+ * Polls `checkFn` with exponential backoff until it returns true or maxDuration
+ * is exhausted. Industry-standard approach used by Screen Time / Digital Wellbeing
+ * managers for permissions (like Battery Optimization) whose OS dialogs resolve
+ * fire-and-forget — the caller's promise resolves before the user has responded.
+ *
+ * Gaps grow exponentially so we don't hammer the native bridge: 1 s → 2 s → 4 s → 8 s.
+ * Early-exits the moment the grant is detected, wasting no more time.
+ * Idempotent with the AppState listener — whichever detects the grant first updates
+ * the UI; both reaching the same result is harmless (refreshGranted is atomic).
+ *
+ * Not awaited by callers — runs entirely in the background alongside all other
+ * listeners (AppState, useFocusEffect).
+ */
+async function verifyWithBackoff(
+  checkFn: () => Promise<boolean>,
+  maxDuration = 15000,
+): Promise<boolean> {
+  const delays = [1000, 2000, 4000, 8000]; // ms — exponentially growing gaps
+  let elapsed = 0;
+  for (const delay of delays) {
+    if (elapsed >= maxDuration) break;
+    await new Promise<void>((resolve) => setTimeout(resolve, delay));
+    elapsed += delay;
+    const granted = await checkFn();
+    if (granted) return true; // early-exit: grant detected, stop polling
+  }
+  return false; // AppState / useFocusEffect are still running as backstop
 }
 
 async function openUsageAccess() {
@@ -207,18 +237,39 @@ export default function SetupScreen() {
   }, [verifyAllPermissions]);
 
   // Re-check ALL permissions every time the app comes back to foreground.
-  // This handles: grant, revoke, and any state change made in Settings —
-  // regardless of which permission the user opened or how they got there.
+  // Condition: `next === "active"` (guard on prev removed) so that ROMs which
+  // occasionally re-emit "active" without a proper background transition are
+  // still caught. verifyAllPermissions() has a monotonic token guard, so
+  // duplicate calls are safe — stale results are silently discarded.
+  //
+  // Limitation: if the battery dialog shows as a full-screen overlay that does NOT
+  // change AppState at all (some Xiaomi / Oppo / Vivo ROMs), this listener may
+  // never fire. The exponential-backoff in handleAllow covers that gap.
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next: AppStateStatus) => {
-      if (appStateRef.current !== "active" && next === "active") {
-        console.log("[PermSetup] App resumed — re-checking all permissions");
+      if (next === "active") {
+        console.log(
+          "[PermSetup] AppState →", next,
+          "(prev:", appStateRef.current, ") — re-checking all permissions",
+        );
         verifyAllPermissions();
       }
       appStateRef.current = next;
     });
     return () => sub.remove();
   }, [verifyAllPermissions]);
+
+  // Navigation-level focus listener — fires when this screen gains focus in the
+  // navigation stack. Complements AppState: covers cases where navigating back
+  // from an Android Settings Activity restores navigation focus before (or instead
+  // of) triggering an AppState "active" event. Especially useful on ROMs where
+  // the Settings screen and the RN Activity share the same task stack.
+  useFocusEffect(
+    useCallback(() => {
+      console.log("[PermSetup] Screen focused (useFocusEffect) — re-checking all permissions");
+      verifyAllPermissions();
+    }, [verifyAllPermissions]),
+  );
 
   function toggleWhy() {
     const isOpen = !whyOpen;
@@ -251,19 +302,50 @@ export default function SetupScreen() {
 
     try {
       await perm.openSettings();
+
       // Immediate check — catches in-app dialogs (e.g. Notifications) that resolve
-      // synchronously after user responds. For fire-and-forget native openers (e.g.
-      // Battery Optimization: Kotlin does startActivity then promise.resolve immediately),
-      // this check runs before the user has responded — it will correctly find the old
-      // state, which is fine; the delayed check below is the real safety net.
+      // synchronously after the user responds. For fire-and-forget native openers
+      // (e.g. Battery Optimization: Kotlin fires startActivity then resolves immediately),
+      // this check runs before the user has even seen the dialog — correct old state is
+      // returned; the safety nets below are the authoritative path.
       await verifyAllPermissions();
-      // Delayed safety-net re-check — covers fire-and-forget native openers where:
-      //   (a) openSettings() resolves immediately (before user responds to the dialog), AND
-      //   (b) AppState active→background→active cycle does not fire reliably (some ROMs
-      //       show the battery dialog as an overlay without fully pausing the RN Activity).
-      // After ~1.5 s the user has typically responded; we re-check real OS status.
-      // This is idempotent — if AppState already fired and updated the tick, this is a no-op.
-      setTimeout(() => { verifyAllPermissions(); }, 1500);
+
+      if (perm.id === "battery") {
+        // ── Battery Optimization: production-grade exponential-backoff detection ──
+        //
+        // WHY THIS IS NECESSARY:
+        //   openBatterySettings() is fire-and-forget — the Kotlin side calls
+        //   startActivity() then immediately resolves the JS promise. The user has not
+        //   yet interacted with the dialog. On many ROMs (Xiaomi MIUI, Oppo ColorOS,
+        //   Samsung OneUI) the battery overlay does NOT transition AppState to background,
+        //   so the AppState "change" listener may never fire after the user responds.
+        //
+        // APPROACH (industry standard — matches Screen Time managers, Digital Wellbeing):
+        //   Poll with exponentially growing gaps: 1 s → 2 s → 4 s → 8 s.
+        //   Early-exits the instant the OS confirms the grant — wastes no extra time.
+        //   Idempotent with AppState listener and useFocusEffect: whichever fires first
+        //   updates the UI; concurrent arrivals at the same result are harmless.
+        //
+        // NOT awaited — runs entirely in the background alongside all other listeners.
+        //
+        // checkFn design: calls verifyAllPermissions() (the same token-guarded updater
+        // used by AppState and useFocusEffect) so ALL writes go through one shared
+        // monotonic path — no separate refreshGranted() call that could race with a
+        // concurrent full-map write and transiently overwrite a freshly-detected grant.
+        // checkNativePermissions() is called once more only to read the battery value
+        // for the early-exit decision (cheap read-only native call; no state mutation).
+        verifyWithBackoff(async () => {
+          await verifyAllPermissions();                   // token-guarded; safe to call concurrently
+          const native = await checkNativePermissions();  // read-only: just needs battery status
+          return native?.battery === true;                // true → early-exit, backoff stops
+        });
+      } else {
+        // Other fire-and-forget openers (usageAccess, overlay, deviceAdmin):
+        // Single 1.5 s delayed re-check is sufficient — their Settings screens always
+        // background the Activity, so AppState reliably fires when the user returns.
+        // This is just a belt-and-suspenders fallback.
+        setTimeout(() => { verifyAllPermissions(); }, 1500);
+      }
     } finally { setOpening(null); }
   }
 
