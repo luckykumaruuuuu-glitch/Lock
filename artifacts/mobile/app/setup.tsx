@@ -142,8 +142,10 @@ async function openBattery() {
       // fall through to IntentLauncher fallback
     }
   }
-  // Fallback: Expo Go / native module not built
-  try { await IntentLauncher.startActivityAsync("android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"); }
+  // Fallback: Expo Go / native module not built.
+  // ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS (+ package Uri) → direct quick dialog.
+  // ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS (no Uri) → generic list — wrong, was used before.
+  try { await IntentLauncher.startActivityAsync("android.settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS", { data: `package:${APP_PACKAGE}` }); }
   catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
 }
 
