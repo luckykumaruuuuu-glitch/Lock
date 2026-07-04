@@ -70,7 +70,9 @@ function DuckCharacter() {
       // Touch video khatam — wapas idle par switch
       currentSourceRef.current = 'idle';
       bounceTransition(async () => {
+        console.time('[duck] replaceAsync(IDLE)');
         await player.replaceAsync(DUCK_IDLE);
+        console.timeEnd('[duck] replaceAsync(IDLE)');
         player.loop = true;
         player.muted = true;
         player.play();
@@ -90,7 +92,9 @@ function DuckCharacter() {
       // Idle se touch par switch karo
       currentSourceRef.current = 'touch';
       bounceTransition(async () => {
+        console.time('[duck] replaceAsync(TOUCH)');
         await player.replaceAsync(DUCK_TOUCH);
+        console.timeEnd('[duck] replaceAsync(TOUCH)');
         player.loop = false;
         player.muted = false;
         player.play();
