@@ -72,13 +72,23 @@ async function openDeviceAdmin() {
   if (Platform.OS !== "android") return;
   // Native method creates ComponentName as Parcelable — expo-intent-launcher can only
   // pass String extras, which causes ADD_DEVICE_ADMIN to silently ignore the component.
-  try {
-    await NativeModules.FocusLockPermissionChecker?.openDeviceAdminSettings();
-  } catch {
-    // Fallback for Expo Go / native module not built yet
-    try { await IntentLauncher.startActivityAsync("android.settings.action.SECURITY_SETTINGS"); }
-    catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
+  //
+  // BUG FIX: Previously used optional chaining (?.) on the native module call.
+  // In Expo Go the module is undefined, so ?. returns undefined silently — no exception
+  // is thrown, so the catch block and IntentLauncher fallback never ran.
+  // Fix: explicitly check module availability first; only if present, call and await it.
+  if (NativeModules.FocusLockPermissionChecker?.openDeviceAdminSettings) {
+    try {
+      await NativeModules.FocusLockPermissionChecker.openDeviceAdminSettings();
+      return;
+    } catch (e) {
+      console.error("[openDeviceAdmin] Native call failed:", e);
+      // fall through to IntentLauncher fallback
+    }
   }
+  // Fallback: Expo Go / native module not built
+  try { await IntentLauncher.startActivityAsync("android.settings.action.SECURITY_SETTINGS"); }
+  catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
 }
 
 async function openOverlay() {
@@ -103,13 +113,21 @@ async function openBattery() {
   if (Platform.OS !== "android") return;
   // Native method uses startActivity with FLAG_ACTIVITY_NEW_TASK and proper Uri —
   // manifest now declares REQUEST_IGNORE_BATTERY_OPTIMIZATIONS permission so no SecurityException.
-  try {
-    await NativeModules.FocusLockPermissionChecker?.openBatterySettings();
-  } catch {
-    // Fallback for Expo Go / native module not built yet
-    try { await IntentLauncher.startActivityAsync("android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"); }
-    catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
+  //
+  // BUG FIX: Same issue as openDeviceAdmin — optional chaining on undefined module
+  // returns undefined silently in Expo Go, bypassing the catch and fallback entirely.
+  if (NativeModules.FocusLockPermissionChecker?.openBatterySettings) {
+    try {
+      await NativeModules.FocusLockPermissionChecker.openBatterySettings();
+      return;
+    } catch (e) {
+      console.error("[openBattery] Native call failed:", e);
+      // fall through to IntentLauncher fallback
+    }
   }
+  // Fallback: Expo Go / native module not built
+  try { await IntentLauncher.startActivityAsync("android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"); }
+  catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
 }
 
 interface PermItem {

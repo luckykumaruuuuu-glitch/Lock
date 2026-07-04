@@ -1,0 +1,13 @@
+"Device Admin aur Battery Optimization dono permissions ke 'Allow' button abhi bhi Settings par redirect nahi kar rahe — yeh maine Expo Go mein test kiya, aur yeh valid test hai kyunki redirect/Linking wala part native module par nirbhar nahi karta, yeh pehle bhi Usage Access aur Display Over Apps ke liye Expo Go mein sahi test hua tha.
+Yeh whi purani problem hai jo pehle report hui thi — 'Allow' button dabane par kuchh nahi hota, na koi Settings screen khulti hai, na koi error/log.
+Debug karo, guess mat karo:
+Device Admin ke 'Allow' button ka onPress handler dhoondo — check karo Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN) ya jo bhi tarika hai, wo actually trigger ho raha hai ya nahi. Ek console.log/Alert lagao confirm karne ke liye ki button dabane par function call bhi ho raha hai ya nahi.
+Battery Optimization ke liye bhi waisa hi check karo — Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS) trigger ho raha hai ya nahi, waisa hi log/Alert lagao.
+Agar function call ho raha hai (log aata hai) lekin Intent launch nahi ho raha — check karo try/catch mein koi error silently swallow to nahi ho raha. Us catch block mein console.error lagao jo exact exception dikhaye.
+Agar function hi call nahi ho raha (koi log nahi aata) — to onPress handler in dono specific buttons ke liye sahi wire hua hai ya nahi, yeh check karo. Shayad button ka onClick kisi wrong ya missing function se juda hai.
+Usage Access aur Display Over Apps ka jo working redirect-code hai, uske structure se Device Admin aur Battery Optimization ka redirect-code kaise different hai — line-by-line compare karke dikhao.
+Zaroori:
+Yeh purani, pehle se report ki gayi problem hai jo abhi tak fix nahi hui — is baar thoroughly debug karke fix karo, guess-based fix nahi
+Usage Access aur Display Over Apps ko mat chhedna, wo sahi kaam kar rahe hain
+Baaki koi existing function mat chhedna
+Fix ke baad exact batao root cause kya tha, aur confirm karo ki ab Expo Go mein bhi 'Allow' dabane par Settings screen khul rahi hai dono permissions ke liye"
