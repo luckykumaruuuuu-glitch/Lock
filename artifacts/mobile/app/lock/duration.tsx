@@ -625,7 +625,7 @@ export default function DurationScreen() {
                 style={({ pressed }) => [styles.gridCell, { opacity: pressed ? 0.82 : 1 }]}
               >
                 <GlassCard
-                  style={[styles.optCardOuter, selected && { shadowColor: opt.glow, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 16, elevation: 10 }]}
+                  style={[styles.optCardOuter, selected && { shadowColor: opt.glow, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 16 }]}
                   borderColor={selected ? opt.colors[0] + "80" : "rgba(255,255,255,0.1)"}
                   backgroundColor={selected ? "rgba(255,191,128,0.05)" : "#1C1C1E"}
                   padding={0}
