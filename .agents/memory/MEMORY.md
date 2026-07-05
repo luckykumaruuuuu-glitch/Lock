@@ -1,2 +1,3 @@
 - [Firebase device-UUID approach](firebase-device-uuid.md) — Firebase 12.x removed getReactNativePersistence; use device UUID in AsyncStorage as RTDB path instead of auth.
 - [expo-file-system v19 legacy import](expo-file-system-legacy.md) — expo-file-system v19 dropped legacy API from main module; use `expo-file-system/legacy` for documentDirectory, writeAsStringAsync, EncodingType etc.
+- [Android app-block debounce/overlay bypass](android-block-debounce-bypass.md) — global debounce vars + missing onNewIntent on singleTask overlay Activities can silently let a blocked app through.

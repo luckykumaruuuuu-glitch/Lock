@@ -571,6 +571,7 @@ class LockOverlayActivity : Activity() {
     }
 
     private var countDown: CountDownTimer? = null
+    private lateinit var countdownLabel: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -590,8 +591,33 @@ class LockOverlayActivity : Activity() {
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
         )
 
-        val appName = intent.getStringExtra(EXTRA_APP_NAME) ?: "This app"
-        val endTime = intent.getLongExtra(EXTRA_END_TIME, 0L)
+        renderLockScreen(intent)
+    }
+
+    /**
+     * Called by Android when this Activity is already on top (singleTask)
+     * and a NEW locked-app trigger comes in — e.g. the user opened a
+     * different locked app while this overlay was still showing.
+     *
+     * Without this override, the new intent's extras were silently
+     * discarded and the original countdown kept running unaffected,
+     * which let the accessibility service mark the new package's
+     * debounce as "handled" even though no overlay was ever shown for
+     * it — creating a bypass window. We now always adopt the latest
+     * intent and fully refresh the screen + countdown.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        renderLockScreen(intent)
+    }
+
+    private fun renderLockScreen(sourceIntent: Intent) {
+        // Discard any in-flight countdown from a previous (now stale) trigger.
+        countDown?.cancel()
+
+        val appName = sourceIntent.getStringExtra(EXTRA_APP_NAME) ?: "This app"
+        val endTime = sourceIntent.getLongExtra(EXTRA_END_TIME, 0L)
         val density = resources.displayMetrics.density
         fun dp(v: Int) = (v * density).toInt()
 
@@ -635,7 +661,7 @@ class LockOverlayActivity : Activity() {
             it.setPadding(0, 0, 0, dp(40))
         }
 
-        val countdownLabel = textView("Redirecting in 3s\\u2026", 13f, "#475569")
+        countdownLabel = textView("Redirecting in 3s\\u2026", 13f, "#475569")
         root += countdownLabel
 
         setContentView(root)
@@ -708,8 +734,10 @@ import android.widget.Toast
 class AppBlockerAccessibilityService : AccessibilityService() {
 
     private lateinit var repo: LockRepository
-    private var lastBlockedPkg  = ""
-    private var lastBlockedTime = 0L
+    // Per-package debounce state — each locked app tracks its OWN last-blocked
+    // timestamp. A trigger for one package must never affect the debounce
+    // state of a different package (that previously caused a bypass window).
+    private val lastBlockedTimes = mutableMapOf<String, Long>()
     private val DEBOUNCE_MS     = 2_000L
 
     private val HOME_LAUNCHERS = setOf(
@@ -759,7 +787,8 @@ class AppBlockerAccessibilityService : AccessibilityService() {
         if (pkg in HOME_LAUNCHERS) return
 
         val now = System.currentTimeMillis()
-        if (pkg == lastBlockedPkg && now - lastBlockedTime < DEBOUNCE_MS) return
+        val lastTimeForPkg = lastBlockedTimes[pkg]
+        if (lastTimeForPkg != null && now - lastTimeForPkg < DEBOUNCE_MS) return
 
         // ⚠️ DEBUG — remove before production
         Log.d("DuckLock", "📱 Foreground app detected: $pkg")
@@ -777,8 +806,7 @@ class AppBlockerAccessibilityService : AccessibilityService() {
         // from killing this accessibility service when the React Native app is in background.
         FocusLockNotificationService.start(applicationContext)
 
-        lastBlockedPkg  = pkg
-        lastBlockedTime = now
+        lastBlockedTimes[pkg] = now
 
         val appName = repo.getAppName(pkg)
 
