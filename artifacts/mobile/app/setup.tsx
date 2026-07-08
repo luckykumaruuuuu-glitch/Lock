@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Toast } from "@/components/ui/Toast";
 import { checkNativePermissions } from "@/lib/nativePermissionCheck";
+import { openBatteryOptimizationSettings } from "@/lib/openBatteryOptimizationSettings";
 import { PermissionId, usePermissionStatus } from "@/hooks/usePermissionStatus";
 const APP_PACKAGE = "com.focuslock.app";
 
@@ -189,18 +190,7 @@ async function openNotification() {
   }
 }
 
-async function openBattery() {
-  if (Platform.OS !== "android") return;
-  // Native method uses startActivity with FLAG_ACTIVITY_NEW_TASK and proper Uri —
-  // manifest now declares REQUEST_IGNORE_BATTERY_OPTIMIZATIONS permission so no SecurityException.
-  try {
-    await NativeModules.FocusLockPermissionChecker?.openBatterySettings();
-  } catch {
-    // Fallback for Expo Go / native module not built yet
-    try { await IntentLauncher.startActivityAsync("android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"); }
-    catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
-  }
-}
+// openBattery moved to @/lib/openBatteryOptimizationSettings (shared with PermissionGuardPopup).
 
 interface PermItem {
   id: PermissionId;
@@ -215,7 +205,7 @@ const PERMS: PermItem[] = [
   { id: "accessibility",  label: "Accessibility Service",  whyNeeded: "Sabse zaroori permission — isi se DuckLock detect karta hai ki koi locked app open hui hai aur usko block karta hai. Iske bina locking bilkul kaam nahi karegi.", openSettings: openAccessibility },
   { id: "overlay",        label: "Display Over Apps",      whyNeeded: "Block screen dikhane ke liye — locked app ke upar DuckLock ka screen aayega.",             openSettings: openOverlay },
   { id: "notification",   label: "Notifications",          whyNeeded: "Reminders ke liye — lock expire hone par aur session updates ke liye notifications aayenge.", openSettings: openNotification },
-  { id: "battery",        label: "Battery Optimization",   whyNeeded: "Background mein chalne ke liye — Android app ko band na kare jab screen off ho.",           openSettings: openBattery },
+  { id: "battery",        label: "Battery Optimization",   whyNeeded: "Background mein chalne ke liye — Android app ko band na kare jab screen off ho.",           openSettings: openBatteryOptimizationSettings },
 ];
 
 export default function SetupScreen() {

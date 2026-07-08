@@ -16,6 +16,7 @@ import {
 
 import { MissingPerm } from "@/hooks/usePermissionGuard";
 import { PermissionId } from "@/hooks/usePermissionStatus";
+import { openBatteryOptimizationSettings } from "@/lib/openBatteryOptimizationSettings";
 
 const APP_PACKAGE = "com.focuslock.app";
 
@@ -72,16 +73,7 @@ async function openSettingsForPerm(id: PermissionId): Promise<void> {
         );
         break;
       case "battery":
-        try {
-          await IntentLauncher.startActivityAsync(
-            "android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
-            { data: `package:${APP_PACKAGE}` }
-          );
-        } catch {
-          await IntentLauncher.startActivityAsync(
-            "android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"
-          );
-        }
+        await openBatteryOptimizationSettings();
         break;
       default:
         await IntentLauncher.startActivityAsync(
