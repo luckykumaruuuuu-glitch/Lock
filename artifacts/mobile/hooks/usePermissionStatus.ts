@@ -34,6 +34,10 @@ export function usePermissionStatus() {
   const [setupComplete, setSetupComplete] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const lastAppState = useRef<AppStateStatus>("active");
+  // Mirrors `permissions` synchronously (not via a post-render effect) so
+  // refreshGranted can diff old-vs-new `granted` values reliably even across
+  // back-to-back calls, without waiting a render cycle for a ref to catch up.
+  const permissionsRef = useRef<PermissionsMap>(DEFAULT_STATE);
 
   useEffect(() => {
     (async () => {
@@ -60,6 +64,7 @@ export function usePermissionStatus() {
                   parsed[id]!.openedSettings || prev[id].openedSettings;
               }
             });
+            permissionsRef.current = next;
             return next;
           });
         }
@@ -74,6 +79,7 @@ export function usePermissionStatus() {
 
   const save = useCallback(async (next: PermissionsMap) => {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    permissionsRef.current = next;
     setPermissions(next);
   }, []);
 
@@ -107,21 +113,35 @@ export function usePermissionStatus() {
    *
    * Pass only the IDs whose real OS status you have just checked.
    * IDs not included in the map keep their existing state unchanged.
+   *
+   * `onNewlyGranted`, if provided, fires once per permission that just
+   * transitioned false → true in THIS call (diffed against permissionsRef,
+   * which is kept in sync with every write). This is the single shared
+   * "grant detected" point for both auto-return (watcher-driven) and
+   * manual-return (AppState/backoff-driven) permission checks, since both
+   * paths funnel through refreshGranted.
    */
   const refreshGranted = useCallback(
-    async (grantedMap: Partial<Record<PermissionId, boolean>>) => {
-      // Use functional updater via a ref-captured latest value so we always
-      // merge into the most recent state, not a stale closure snapshot.
-      setPermissions((prev) => {
-        const next: PermissionsMap = { ...prev };
-        (Object.keys(grantedMap) as PermissionId[]).forEach((id) => {
-          next[id] = { ...prev[id], granted: grantedMap[id]! };
-        });
-        // Persist asynchronously — fire-and-forget so the state update is
-        // synchronous and the UI re-renders immediately.
-        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
-        return next;
+    async (
+      grantedMap: Partial<Record<PermissionId, boolean>>,
+      onNewlyGranted?: (id: PermissionId) => void
+    ) => {
+      const prev = permissionsRef.current;
+      const next: PermissionsMap = { ...prev };
+      const newlyGranted: PermissionId[] = [];
+      (Object.keys(grantedMap) as PermissionId[]).forEach((id) => {
+        const wasGranted = prev[id]?.granted;
+        next[id] = { ...prev[id], granted: grantedMap[id]! };
+        if (grantedMap[id] === true && !wasGranted) newlyGranted.push(id);
       });
+      permissionsRef.current = next;
+      setPermissions(next);
+      // Persist asynchronously — fire-and-forget so the state update is
+      // synchronous and the UI re-renders immediately.
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+      if (onNewlyGranted) {
+        newlyGranted.forEach((id) => onNewlyGranted(id));
+      }
     },
     []
   );
@@ -133,6 +153,7 @@ export function usePermissionStatus() {
 
   const resetSetup = useCallback(async () => {
     await AsyncStorage.multiRemove([STORAGE_KEY, SETUP_DONE_KEY]);
+    permissionsRef.current = DEFAULT_STATE;
     setPermissions(DEFAULT_STATE);
     setSetupComplete(false);
   }, []);

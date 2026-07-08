@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import * as IntentLauncher from "expo-intent-launcher";
 import { router, useFocusEffect } from "expo-router";
@@ -18,6 +19,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Toast } from "@/components/ui/Toast";
 import { checkNativePermissions } from "@/lib/nativePermissionCheck";
 import { PermissionId, usePermissionStatus } from "@/hooks/usePermissionStatus";
 const APP_PACKAGE = "com.focuslock.app";
@@ -225,6 +227,21 @@ export default function SetupScreen() {
   const whyHeight               = useRef(new Animated.Value(0)).current;
   const continueAnim            = useRef(new Animated.Value(0)).current;
 
+  // Consistent grant-detected feedback (haptic + toast) for ALL 6 permissions,
+  // regardless of whether the grant was caught by the native watcher (auto-return)
+  // or by the AppState/backoff resume-check (manual-return). See
+  // `handlePermissionGranted` below — it's the single trigger point for both.
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+
+  const handlePermissionGranted = useCallback((id: PermissionId) => {
+    const perm = PERMS.find((p) => p.id === id);
+    console.log("[PermSetup] Grant detected for", id, "— firing haptic + toast feedback");
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setToastMessage(`Auto-detected! ${perm?.label ?? "Permission"} enabled`);
+    setToastVisible(true);
+  }, []);
+
   const appStateRef   = useRef<AppStateStatus>(AppState.currentState);
   // Monotonic counter — incremented before every async permission check so that
   // a slow, older check cannot overwrite a newer one's result.
@@ -271,8 +288,8 @@ export default function SetupScreen() {
       console.log("[PermSetup] Stale check (token", token, "< current", checkTokenRef.current, ") — discarding result");
       return;
     }
-    await refreshGranted(statusMap);
-  }, [refreshGranted]);
+    await refreshGranted(statusMap, handlePermissionGranted);
+  }, [refreshGranted, handlePermissionGranted]);
 
   // Check real OS status on mount (fixes stale AsyncStorage cache on first load)
   useEffect(() => {
@@ -423,6 +440,12 @@ export default function SetupScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: topPad, paddingBottom: botPad }]}>
+      <Toast
+        visible={toastVisible}
+        message={toastMessage}
+        type="success"
+        onHide={() => setToastVisible(false)}
+      />
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}

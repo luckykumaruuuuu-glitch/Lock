@@ -1,0 +1,15 @@
+"Permission system mein feedback ko sabhi 6 permissions ke liye CONSISTENT banana hai. Poora context clearly samjha raha hoon:
+Current status (jo already implement hai):
+4 permissions (Accessibility Service, Usage Access, Overlay, Notifications) — inke liye ek watcher system implement hai jo automatically detect karta hai jab user Settings mein permission ON kare, aur turant DuckLock ko front par le aata hai (bina manual back-press ke)
+2 permissions (Device Admin, Battery Optimization) — inke liye Android koi automatic-watch mechanism provide nahi karta (genuine platform limitation), isliye yeh AppState/backoff-based resume-detection par depend karte hain — yaani jab user KHUD manually wapas aata hai (back dabakar), tab detection hoti hai
+Ab yeh add karna hai — haptic + toast feedback, sabhi 6 permissions ke liye:
+Jab bhi koi permission grant detect ho (chahe kisi bhi tarike se detect hui ho), turant ek haptic vibration + chhota 'Auto-detected!' (ya jo bhi appropriate text ho) toast dikhna chahiye — yeh confirmation hai user ke liye ki permission successfully grant ho gayi.
+Yeh feedback do alag scenarios mein trigger hoga (dono ka end-result — feedback — same/consistent dikhna chahiye):
+Scenario A — 4 auto-return permissions ke liye: Jab watcher-system khud detect kare grant hona (user ke wapas aane se pehle hi), usi watcher-callback ke andar haptic + toast trigger karo
+Scenario B — 2 manual-return permissions (Device Admin, Battery Optimization) ke liye: Jab user khud wapas aaye aur AppState/backoff-detection confirm kare ki permission ab grant ho chuki hai, usi confirmation-point par bhi wahi haptic + toast trigger karo
+Zaroori:
+Feedback (haptic style, toast design/text) sabhi 6 permissions ke liye EK JAISA hona chahiye — user ko dikhne mein koi farak nahi hona chahiye ki kaunsi automatic thi kaunsi manual
+Yeh sirf ek chhota feedback-layer add karna hai existing detection-triggers ke upar — watcher-logic aur AppState-resume-logic (jo already sahi kaam kar rahe hain) ko bilkul mat chhedna, sirf unke 'grant detect hua' wale point par yeh feedback jodo
+Redirect-Intents (jo sabhi 6 permissions ko unki exact, targeted Settings location par le jaate hain) — yeh bhi bilkul mat chhedna, wo already sahi hain
+Baaki koi existing function (locking, duck icon, sound, animations, bypass-fix, lock screen) bilkul mat chhedna
+Fix ke baad exact batao — sabhi 6 permissions mein feedback trigger ho raha hai ya nahi, aur har ek ke liye kaunsa trigger-point use hua (watcher-callback ya AppState-resume)"
