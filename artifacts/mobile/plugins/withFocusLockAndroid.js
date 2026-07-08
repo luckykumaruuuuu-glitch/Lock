@@ -1267,16 +1267,73 @@ class PermissionCheckerPackage : ReactPackage {
       if (fs.existsSync(mainAppPath)) {
         let content = fs.readFileSync(mainAppPath, "utf8");
         if (!content.includes("PermissionCheckerPackage")) {
-          // Insert after "PackageList(this).packages.apply {"
-          // This pattern is present in all Expo-generated MainApplication.kt files.
-          const patched = content.replace(
-            /(PackageList\(this\)\.packages\.apply\s*\{)/,
-            "$1\n              add(PermissionCheckerPackage())"
-          );
-          if (patched !== content) {
-            fs.writeFileSync(mainAppPath, patched, "utf8");
+          //
+          // Try multiple patterns — Expo/RN template changes across SDK versions.
+          //
+          // Pattern A (confirmed Expo 54 / RN 0.81):
+          //   override fun getPackages(): List<ReactPackage> =
+          //       PackageList(this).packages.apply {
+          //         // add(MyPackage())
+          //       }
+          //
+          // Pattern B (some RN 0.73+ variants using .also instead of .apply):
+          //   PackageList(this).packages.also { ... }
+          //
+          // Pattern C (explicit val style, some future templates):
+          //   val packages = PackageList(this).packages
+          //   return packages
+          //
+          const PATTERNS = [
+            {
+              // A — primary: confirmed working for Expo 54 / RN 0.81
+              regex: /(PackageList\(this\)\.packages\.apply\s*\{)/,
+              replacement: "$1\n              add(PermissionCheckerPackage())",
+            },
+            {
+              // B — .also block variant
+              regex: /(PackageList\(this\)\.packages\.also\s*\{)/,
+              replacement: "$1\n              add(PermissionCheckerPackage())",
+            },
+            {
+              // C — explicit val style: insert add() after the val declaration
+              regex: /(val packages = PackageList\(this\)\.packages)/,
+              replacement: "$1\n          packages.add(PermissionCheckerPackage())",
+            },
+          ];
+
+          let patched = content;
+          let matchedPattern = null;
+          for (const { regex, replacement } of PATTERNS) {
+            const result = content.replace(regex, replacement);
+            if (result !== content) {
+              patched = result;
+              matchedPattern = regex.toString();
+              break;
+            }
           }
+
+          if (!matchedPattern) {
+            // None of the known patterns matched — fail loudly so the developer
+            // knows the registration was skipped instead of silently passing.
+            throw new Error(
+              "[withFocusLockAndroid] PermissionCheckerPackage was NOT registered in MainApplication.kt.\n" +
+              "None of the known PackageList patterns matched the generated file.\n" +
+              "Open android/app/src/main/java/com/focuslock/app/MainApplication.kt,\n" +
+              "find the getPackages() method, and add: add(PermissionCheckerPackage())\n" +
+              "Then add the new pattern to withFocusLockAndroid.js PATTERNS array."
+            );
+          }
+
+          fs.writeFileSync(mainAppPath, patched, "utf8");
+          console.log(`[withFocusLockAndroid] PermissionCheckerPackage registered via pattern: ${matchedPattern}`);
+        } else {
+          console.log("[withFocusLockAndroid] PermissionCheckerPackage already present in MainApplication.kt — skipping patch.");
         }
+      } else {
+        throw new Error(
+          "[withFocusLockAndroid] MainApplication.kt not found at: " + mainAppPath + "\n" +
+          "Make sure expo prebuild generates the Android project first."
+        );
       }
 
       return config;
