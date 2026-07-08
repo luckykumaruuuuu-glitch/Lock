@@ -1,0 +1,18 @@
+"Permission Setup screen mein ek important UX improvement chahiye — jab user 'Allow' dabaye kisi permission ke liye aur Settings mein jaake permission ON kare, to DuckLock ki Permission Setup screen AUTOMATICALLY wapas front par aa jaani chahiye — user ko manually back dabane ki zaroorat nahi honi chahiye.
+Exact flow jo chahiye:
+User Permission Setup screen par hai
+'Allow' dabata hai kisi permission (jaise Notifications) ke liye → Settings screen khulti hai
+User Settings mein us permission ko ON karta hai
+USER KUCH NAHI KARTA (na back dabata hai, na kuch) — turant, automatically, DuckLock ki Permission Setup screen wapas front par aa jaati hai, aur us specific permission par tick lag chuka dikhta hai
+User agli permission ke liye 'Allow' dabata hai → wahi cycle phir se: Settings khule, ON karo, automatically wapas DuckLock par aa jaaye
+Technical implementation: Jab bhi 'Allow' button dabaya jaaye, Settings Intent launch karne ke saath-saath ek ContentObserver register karo jo us specific permission ki underlying Settings value ko watch kare. Jaise hi value change ho (yaani ON ho gayi), turant apni MainActivity ko front par le aao:
+kotlin
+val intent = Intent(context, MainActivity::class.java).apply {
+flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP
+}
+context.startActivity(intent)
+Har permission ke liye jahan ek reliable, watchable Settings URI available ho (jaise Notifications ke liye, Accessibility Service ke liye), wahan yeh ContentObserver approach implement karo. Jin permissions ke liye Android koi reliable watch-URI provide nahi karta (jaise Device Admin, Usage Access, Overlay, Battery Optimization — inke liye koi standard observable Settings key nahi hoti), un ke liye yeh exact automatic-return possible nahi ho sakta — un ke liye existing AppState resume-detection hi kaam karega jab user khud (back dabakar) wapas aayega.
+Zaroori:
+Jitni permissions ke liye yeh technically possible ho, sabke liye implement karo
+Jin permissions ke liye yeh na ho paye, unke liye clearly bata do ki kyon possible nahi (Android limitation), taaki hum jaan sakein kaunsi permissions is naye behavior se cover hongi aur kaunsi purane (manual-back) tarike se hi rahengi
+Baaki koi existing function (locking, duck icon, sound, animations, bypass-fix) bilkul mat chhedna

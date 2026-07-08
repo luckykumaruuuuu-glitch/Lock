@@ -896,12 +896,16 @@ const withPermissionChecker = (config) =>
 `package ${PACKAGE_NAME}
 
 import android.app.AppOpsManager
+import android.app.NotificationManager
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.database.ContentObserver
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
 import com.facebook.react.bridge.Arguments
@@ -924,6 +928,13 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
 
     override fun getName() = "FocusLockPermissionChecker"
 
+    // Active watchers keyed by permissionId — at most one per id at a time.
+    // ContentObserver is used for Accessibility (has a real Settings.Secure key);
+    // AppOpsManager.OnOpChangedListener is used for Usage Access / Overlay / Notifications
+    // (all three are backed by an AppOps op we can watch for our own package).
+    private val activeObservers   = mutableMapOf<String, ContentObserver>()
+    private val activeOpListeners = mutableMapOf<String, AppOpsManager.OnOpChangedListener>()
+
     @ReactMethod
     fun checkPermissions(promise: Promise) {
         try {
@@ -937,6 +948,117 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
         } catch (e: Exception) {
             promise.reject("PERMISSION_CHECK_ERROR", e.message ?: "Unknown error", e)
         }
+    }
+
+    /**
+     * Registers a live watcher for the given permission's underlying OS state so DuckLock can
+     * bring itself back to the foreground the INSTANT the user grants it in Settings — no
+     * manual back-navigation needed.
+     *
+     * - "accessibility": ContentObserver on Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES —
+     *   this is a real, documented, watchable Settings key.
+     * - "notification", "usageAccess", "overlay": AppOpsManager.OnOpChangedListener on our own
+     *   package's op (POST_NOTIFICATION / GET_USAGE_STATS / SYSTEM_ALERT_WINDOW respectively) —
+     *   Android lets any app watch its own AppOps op changes without extra privileges.
+     * - "deviceAdmin", "battery": Android exposes NO public observable Settings key or AppOps op
+     *   for these two — DevicePolicyManager admin-active state and the battery-optimization
+     *   allowlist are not backed by anything a ContentObserver or AppOpsManager can watch. This
+     *   is an OS limitation, not a bug — these two keep relying on the existing AppState-resume /
+     *   useFocusEffect re-check (manual back-navigation) instead.
+     *
+     * Resolves true if a watcher was successfully registered, false if this permission
+     * has no watchable OS key (so the JS side knows to keep using the manual-return fallback).
+     */
+    @ReactMethod
+    fun startWatchingPermission(permissionId: String, promise: Promise) {
+        try {
+            stopWatchingPermissionInternal(permissionId)
+            val supported = when (permissionId) {
+                "accessibility" -> {
+                    val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+                        override fun onChange(selfChange: Boolean) {
+                            if (isAccessibilityServiceEnabled()) {
+                                stopWatchingPermissionInternal(permissionId)
+                                bringAppToFront()
+                            }
+                        }
+                    }
+                    ctx.contentResolver.registerContentObserver(
+                        Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),
+                        false,
+                        observer
+                    )
+                    activeObservers[permissionId] = observer
+                    true
+                }
+                "notification" -> watchAppOp(permissionId, AppOpsManager.OPSTR_POST_NOTIFICATION) { hasNotificationPermission() }
+                "usageAccess"  -> watchAppOp(permissionId, AppOpsManager.OPSTR_GET_USAGE_STATS) { hasUsageStatsPermission() }
+                "overlay"      -> watchAppOp(permissionId, AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW) { canDrawOverlays() }
+                else -> false // deviceAdmin, battery — no observable OS key exists (Android limitation)
+            }
+            promise.resolve(supported)
+        } catch (e: Exception) {
+            promise.resolve(false)
+        }
+    }
+
+    /** Unregisters the watcher for this permissionId, if any is active. Safe to call anytime. */
+    @ReactMethod
+    fun stopWatchingPermission(permissionId: String, promise: Promise) {
+        stopWatchingPermissionInternal(permissionId)
+        promise.resolve(null)
+    }
+
+    private fun watchAppOp(permissionId: String, op: String, isGranted: () -> Boolean): Boolean {
+        return try {
+            val appOps = ctx.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+            val listener = AppOpsManager.OnOpChangedListener { _, _ ->
+                if (isGranted()) {
+                    stopWatchingPermissionInternal(permissionId)
+                    bringAppToFront()
+                }
+            }
+            appOps.startWatchingMode(op, ctx.packageName, listener)
+            activeOpListeners[permissionId] = listener
+            true
+        } catch (e: Exception) { false }
+    }
+
+    private fun stopWatchingPermissionInternal(permissionId: String) {
+        activeObservers.remove(permissionId)?.let {
+            try { ctx.contentResolver.unregisterContentObserver(it) } catch (e: Exception) {}
+        }
+        activeOpListeners.remove(permissionId)?.let {
+            try {
+                val appOps = ctx.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+                appOps.stopWatchingMode(it)
+            } catch (e: Exception) {}
+        }
+    }
+
+    /** NotificationManager.areNotificationsEnabled — real OS check for the app-level toggle. */
+    private fun hasNotificationPermission(): Boolean {
+        return try {
+            val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.areNotificationsEnabled()
+        } catch (e: Exception) { false }
+    }
+
+    /**
+     * Brings DuckLock back to the foreground without the user touching anything, exactly like
+     * pressing the app icon again — reorders the existing task to front instead of creating a
+     * new Activity instance, so all existing screen state (setup progress, animations) survives.
+     */
+    private fun bringAppToFront() {
+        try {
+            val launchIntent = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
+            launchIntent?.addFlags(
+                Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                Intent.FLAG_ACTIVITY_NEW_TASK
+            )
+            launchIntent?.let { ctx.startActivity(it) }
+        } catch (e: Exception) {}
     }
 
     /**

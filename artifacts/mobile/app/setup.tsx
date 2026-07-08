@@ -229,6 +229,17 @@ export default function SetupScreen() {
   // Monotonic counter — incremented before every async permission check so that
   // a slow, older check cannot overwrite a newer one's result.
   const checkTokenRef = useRef(0);
+  // Tracks which permission (if any) currently has a native ContentObserver /
+  // AppOpsManager watcher registered, so it can be stopped once we're back in
+  // the foreground (either via the watcher's own auto-return, or a manual back-press).
+  const watchingPermRef = useRef<PermissionId | null>(null);
+
+  function stopWatchingCurrentPerm() {
+    const id = watchingPermRef.current;
+    if (!id) return;
+    watchingPermRef.current = null;
+    NativeModules.FocusLockPermissionChecker?.stopWatchingPermission?.(id)?.catch?.(() => {});
+  }
 
   const isWeb        = Platform.OS === "web";
   const grantedCount = isWeb ? PERMS.length : PERMS.filter(p => permissions[p.id]?.granted).length;
@@ -285,6 +296,9 @@ export default function SetupScreen() {
           "(prev:", appStateRef.current, ") — re-checking all permissions",
         );
         verifyAllPermissions();
+        // We're back in the foreground (auto-return or manual back) — no need to
+        // keep the native watcher registered any more.
+        stopWatchingCurrentPerm();
       }
       appStateRef.current = next;
     });
@@ -300,8 +314,15 @@ export default function SetupScreen() {
     useCallback(() => {
       console.log("[PermSetup] Screen focused (useFocusEffect) — re-checking all permissions");
       verifyAllPermissions();
+      stopWatchingCurrentPerm();
     }, [verifyAllPermissions]),
   );
+
+  // Safety net: if the screen unmounts while a watcher is still registered
+  // (e.g. user navigates away entirely), unregister it so it doesn't leak.
+  useEffect(() => {
+    return () => stopWatchingCurrentPerm();
+  }, []);
 
   function toggleWhy() {
     const isOpen = !whyOpen;
@@ -333,6 +354,14 @@ export default function SetupScreen() {
     }
 
     try {
+      // Register the native watcher BEFORE opening Settings so there's no race window.
+      // Supported for usageAccess / overlay / notification / accessibility (all have a
+      // watchable OS key); resolves false for deviceAdmin / battery (no watchable key
+      // exists — Android limitation), in which case the existing AppState-resume check
+      // remains the only detection path for those two.
+      watchingPermRef.current = perm.id;
+      NativeModules.FocusLockPermissionChecker?.startWatchingPermission?.(perm.id)?.catch?.(() => {});
+
       await perm.openSettings();
 
       // Immediate check — catches in-app dialogs (e.g. Notifications) that resolve
