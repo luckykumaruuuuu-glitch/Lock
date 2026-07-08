@@ -11,56 +11,108 @@ import { NativeModules, Platform } from "react-native";
  * 1. If the native module's openBatterySettings is present (real APK build),
  *    call it — it uses FLAG_ACTIVITY_NEW_TASK + correct Uri, and the manifest
  *    already declares REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, so no SecurityException.
- * 2. Otherwise (Expo Go / native module absent), JS-only fallback chain:
- *    a. REQUEST_IGNORE_BATTERY_OPTIMIZATIONS + runtime package name
+ *    If that fails for any reason, also attempt IntentLauncher step A below.
+ * 2. IntentLauncher fallback:
+ *    A. REQUEST_IGNORE_BATTERY_OPTIMIZATIONS + runtime package name
  *       (Application.applicationId = "host.exp.exponent" in Expo Go, real
  *        package in production — never the hardcoded string).
- *       May still throw in Expo Go if the permission is absent from host manifest.
- *    b. IGNORE_BATTERY_OPTIMIZATION_SETTINGS (general list, no permission needed).
- *    c. Generic Android Settings as last resort.
+ *       *** ONLY attempted when native module IS present (real APK) — Expo Go
+ *       does NOT declare this permission in its manifest, so the OS silently
+ *       resolves the intent without opening any UI, causing a false-success
+ *       that prevents steps B and C from running. ***
+ *    B. IGNORE_BATTERY_OPTIMIZATION_SETTINGS (general list, no permission needed).
+ *       Safe in both Expo Go and real APK.
+ *    C. Generic Android Settings as last resort.
  */
 export async function openBatteryOptimizationSettings(): Promise<void> {
-  if (Platform.OS !== "android") return;
+  console.log("[Battery] openBatteryOptimizationSettings() called");
 
-  // Path 1 — real APK: native module present and method available.
-  // Explicit existence check (not ?. call) so the catch only fires on real errors,
-  // not on undefined returning silently.
-  if (NativeModules.FocusLockPermissionChecker?.openBatterySettings) {
+  if (Platform.OS !== "android") {
+    console.log("[Battery] Not Android — skipping");
+    return;
+  }
+
+  // Track whether the native module is present.
+  // Absence = Expo Go (manifest lacks REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).
+  // Presence = real APK (permission declared, step A is safe to attempt).
+  const hasNativeModule =
+    typeof NativeModules.FocusLockPermissionChecker?.openBatterySettings ===
+    "function";
+
+  console.log(
+    `[Battery] hasNativeModule=${hasNativeModule}, pkg=${Application.applicationId}`,
+  );
+
+  // ── Path 1: real APK — native module present ────────────────────────────
+  if (hasNativeModule) {
+    console.log("[Battery] Path 1: trying native openBatterySettings()");
     try {
       await NativeModules.FocusLockPermissionChecker.openBatterySettings();
+      console.log("[Battery] Path 1: native openBatterySettings() succeeded");
       return;
     } catch (e) {
-      console.error("[Battery] Native openBatterySettings failed:", e);
-      // Fall through to IntentLauncher fallback below.
+      console.error(
+        "[Battery] Path 1: native openBatterySettings() failed — falling through to IntentLauncher:",
+        e,
+      );
     }
   }
 
-  // Path 2 — Expo Go / native module absent: IntentLauncher fallback chain.
-  // Use the runtime package name so Expo Go gets "host.exp.exponent" and the
-  // real APK gets "com.focuslock.app" — never a hardcoded string.
   const pkg = Application.applicationId ?? "com.focuslock.app";
 
-  try {
-    // Targeted dialog: "Do you want to exempt <app> from battery optimizations?"
-    // Requires REQUEST_IGNORE_BATTERY_OPTIMIZATIONS in the caller's manifest.
-    // Works in the real APK; may throw SecurityException in Expo Go.
-    await IntentLauncher.startActivityAsync(
-      "android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
-      { data: `package:${pkg}` },
+  // ── IntentLauncher step A ────────────────────────────────────────────────
+  // Targeted "Do you want to exempt <app>?" dialog.
+  // Requires REQUEST_IGNORE_BATTERY_OPTIMIZATIONS in the CALLER'S manifest.
+  //
+  // In Expo Go this permission is absent. Android resolves the intent
+  // immediately without opening any UI — a silent "success" that would cause
+  // the function to return here, skipping steps B and C. So we only attempt
+  // this when we know the manifest has the permission (= native module present).
+  if (hasNativeModule) {
+    console.log(
+      `[Battery] Step A: REQUEST_IGNORE_BATTERY_OPTIMIZATIONS for pkg=${pkg}`,
     );
-    return;
-  } catch {}
+    try {
+      await IntentLauncher.startActivityAsync(
+        "android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+        { data: `package:${pkg}` },
+      );
+      console.log("[Battery] Step A: succeeded");
+      return;
+    } catch (e) {
+      console.error("[Battery] Step A: failed:", e);
+      // Fall through to step B.
+    }
+  } else {
+    console.log(
+      "[Battery] Step A: SKIPPED — Expo Go has no REQUEST_IGNORE_BATTERY_OPTIMIZATIONS in manifest; would silently succeed without opening any UI",
+    );
+  }
 
+  // ── IntentLauncher step B ────────────────────────────────────────────────
+  // General battery optimization list — no special permission required.
+  // Safe in both Expo Go and real APK.
+  console.log("[Battery] Step B: IGNORE_BATTERY_OPTIMIZATION_SETTINGS");
   try {
-    // General battery optimization list — no special permission required.
     await IntentLauncher.startActivityAsync(
       "android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS",
     );
+    console.log("[Battery] Step B: succeeded");
     return;
-  } catch {}
+  } catch (e) {
+    console.error("[Battery] Step B: failed:", e);
+    // Fall through to step C.
+  }
 
+  // ── IntentLauncher step C ────────────────────────────────────────────────
+  // Last resort: main Android Settings.
+  console.log("[Battery] Step C: generic SETTINGS (last resort)");
   try {
-    // Last resort: main Android Settings.
-    await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS);
-  } catch {}
+    await IntentLauncher.startActivityAsync(
+      IntentLauncher.ActivityAction.SETTINGS,
+    );
+    console.log("[Battery] Step C: succeeded");
+  } catch (e) {
+    console.error("[Battery] Step C: generic SETTINGS also failed:", e);
+  }
 }
