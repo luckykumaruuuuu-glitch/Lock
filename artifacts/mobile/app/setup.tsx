@@ -30,18 +30,20 @@ const APP_PACKAGE = "com.focuslock.app";
 async function fetchAllPermissionStatus(): Promise<Partial<Record<PermissionId, boolean>>> {
   const result: Partial<Record<PermissionId, boolean>> = {};
 
-  // Native check: usageAccess, overlay, deviceAdmin, battery
+  // Native check: usageAccess, overlay, deviceAdmin, accessibility, battery
   const native = await checkNativePermissions();
   if (native !== null) {
-    result.usageAccess = native.usageAccess;
-    result.overlay     = native.overlay;
-    result.deviceAdmin = native.deviceAdmin;
-    result.battery     = native.battery;
+    result.usageAccess   = native.usageAccess;
+    result.overlay       = native.overlay;
+    result.deviceAdmin   = native.deviceAdmin;
+    result.accessibility = native.accessibility;
+    result.battery       = native.battery;
     console.log(
       "[PermSetup] Native status →",
       `usageAccess=${native.usageAccess}`,
       `overlay=${native.overlay}`,
       `deviceAdmin=${native.deviceAdmin}`,
+      `accessibility=${native.accessibility}`,
       `battery=${native.battery}`,
     );
   } else {
@@ -128,6 +130,15 @@ async function openDeviceAdmin() {
   }
 }
 
+async function openAccessibility() {
+  if (Platform.OS !== "android") return;
+  // There is no ComponentName-targeted Intent for accessibility activation —
+  // the OS always opens the full Accessibility Settings list, and the user
+  // must find "DuckLock" in it and toggle it ON manually.
+  try { await IntentLauncher.startActivityAsync("android.settings.ACCESSIBILITY_SETTINGS"); }
+  catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
+}
+
 async function openOverlay() {
   if (Platform.OS !== "android") return;
   try { await IntentLauncher.startActivityAsync("android.settings.action.MANAGE_OVERLAY_PERMISSION", { data: `package:${APP_PACKAGE}` }); }
@@ -177,11 +188,12 @@ interface PermItem {
 }
 
 const PERMS: PermItem[] = [
-  { id: "usageAccess",  label: "Usage Access",        whyNeeded: "App usage track karne ke liye — DuckLock ko pata chal sake kaunsa app open hai.",         openSettings: openUsageAccess },
-  { id: "deviceAdmin",  label: "Device Admin",         whyNeeded: "Uninstall block karne ke liye — lock active hone par app delete nahi ho sakti.",            openSettings: openDeviceAdmin },
-  { id: "overlay",      label: "Display Over Apps",    whyNeeded: "Block screen dikhane ke liye — locked app ke upar DuckLock ka screen aayega.",             openSettings: openOverlay },
-  { id: "notification", label: "Notifications",        whyNeeded: "Reminders ke liye — lock expire hone par aur session updates ke liye notifications aayenge.", openSettings: openNotification },
-  { id: "battery",      label: "Battery Optimization", whyNeeded: "Background mein chalne ke liye — Android app ko band na kare jab screen off ho.",           openSettings: openBattery },
+  { id: "usageAccess",    label: "Usage Access",          whyNeeded: "App usage track karne ke liye — DuckLock ko pata chal sake kaunsa app open hai.",         openSettings: openUsageAccess },
+  { id: "deviceAdmin",    label: "Device Admin",           whyNeeded: "Uninstall block karne ke liye — lock active hone par app delete nahi ho sakti.",            openSettings: openDeviceAdmin },
+  { id: "accessibility",  label: "Accessibility Service",  whyNeeded: "Sabse zaroori permission — isi se DuckLock detect karta hai ki koi locked app open hui hai aur usko block karta hai. Iske bina locking bilkul kaam nahi karegi.", openSettings: openAccessibility },
+  { id: "overlay",        label: "Display Over Apps",      whyNeeded: "Block screen dikhane ke liye — locked app ke upar DuckLock ka screen aayega.",             openSettings: openOverlay },
+  { id: "notification",   label: "Notifications",          whyNeeded: "Reminders ke liye — lock expire hone par aur session updates ke liye notifications aayenge.", openSettings: openNotification },
+  { id: "battery",        label: "Battery Optimization",   whyNeeded: "Background mein chalne ke liye — Android app ko band na kare jab screen off ho.",           openSettings: openBattery },
 ];
 
 export default function SetupScreen() {

@@ -1,0 +1,24 @@
+"CONFIRMED — Permission Setup screen mein Accessibility Service ki koi alag entry nahi hai (screenshot se verify kiya — sirf 5 permissions hain: Usage Access, Device Admin, Display Over Apps, Notifications, Battery Optimization). Yeh CRITICAL missing item hai, kyunki poora locking mechanism AppBlockerAccessibilityService par depend karta hai, jise bina manually Settings mein enable kiye (Settings → Accessibility → DuckLock → ON), locking bilkul kaam nahi karegi.
+Accessibility Service ko 6th permission ke roop mein add karo, exactly usi pattern/style mein jaise baaki 5 permissions hain:
+UI mein naya row add karo — 'Accessibility Service' naam se, baaki permissions jaisa hi 'Allow' button ke saath
+Redirect logic — 'Allow' dabane par seedha Settings.ACTION_ACCESSIBILITY_SETTINGS Intent trigger ho, jo Android ki Accessibility Settings list khole (jahan se user DuckLock ko dhoondh kar manually ON kar sake)
+Detection logic — real-time status-check jo confirm kare ki DuckLock ki Accessibility Service actually enabled hai ya nahi. Yeh check Android ke Settings.Secure.getString(contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ko padhkar, usme apni service ka ComponentName dhoondhkar kiya ja sakta hai:
+kotlin
+fun isAccessibilityServiceEnabled(context: Context): Boolean {
+val expectedComponentName = "context.packageName /{context.packageName}.AppBlockerAccessibilityService"
+val enabledServicesSetting = Settings.Secure.getString(
+context.contentResolver,
+Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+) ?: return false
+return enabledServicesSetting.split(':').any {
+it.equals(expectedComponentName, ignoreCase = true)
+}
+}
+Yeh naya permission bhi verifyAllPermissions() ke us hi robust system mein integrate karo jo baaki 5 ke liye already hai (monotonic token guard, AppState resume-check, sab kuch consistent)
+'0 of 5 granted' text ab 'X of 6 granted' ho jaana chahiye header mein
+Zaroori — bahut important:
+Yeh sabse critical addition hai — is permission ke bina poora app ka core feature (locking) hi silently fail hoga, chahe baaki 5 permissions sab granted ho
+Baaki 5 permissions ka existing flow (redirect, detection) bilkul mat chhedna
+UI styling/pattern exactly same rakho baaki permissions jaisa, consistency ke liye
+Baaki koi existing function (duck icon, sound, animations, bypass-fix, lock screen) bilkul mat chhedna
+Fix ke baad exact batao — ComponentName sahi se match ho raha hai ya nahi, aur confirm karo ki total ab '6 permissions' show ho raha hai"

@@ -4,6 +4,7 @@ export interface NativePermissionStatus {
   usageAccess: boolean;
   overlay: boolean;
   deviceAdmin: boolean;
+  accessibility: boolean;
   battery: boolean;
 }
 

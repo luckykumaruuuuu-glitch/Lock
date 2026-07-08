@@ -16,7 +16,7 @@ export interface MissingPerm {
 const PERM_LABELS: Record<PermissionId, string> = {
   usageAccess:   "Usage Access",
   deviceAdmin:   "Device Admin",
-  accessibility: "Accessibility",
+  accessibility: "Accessibility Service",
   overlay:       "Display Over Apps",
   notification:  "Notifications",
   battery:       "Battery Optimization",
@@ -47,6 +47,7 @@ async function syncNativeStatusToStorage(native: NativePermissionStatus): Promis
       "usageAccess",
       "overlay",
       "deviceAdmin",
+      "accessibility",
       "battery",
     ];
     for (const id of nativeIds) {
@@ -99,6 +100,9 @@ async function getMissingPermissions(): Promise<MissingPerm[]> {
       if (!nativeStatus.deviceAdmin) {
         missing.push({ id: "deviceAdmin", label: PERM_LABELS["deviceAdmin"] });
       }
+      if (!nativeStatus.accessibility) {
+        missing.push({ id: "accessibility", label: PERM_LABELS["accessibility"] });
+      }
       if (!nativeStatus.battery) {
         missing.push({ id: "battery", label: PERM_LABELS["battery"] });
       }
@@ -115,6 +119,7 @@ async function getMissingPermissions(): Promise<MissingPerm[]> {
       const fallbackIds: PermissionId[] = [
         "usageAccess",
         "deviceAdmin",
+        "accessibility",
         "overlay",
         "battery",
       ];

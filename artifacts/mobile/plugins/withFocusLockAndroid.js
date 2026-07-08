@@ -917,7 +917,7 @@ import com.facebook.react.bridge.ReactMethod
  * JS usage:
  *   import { NativeModules } from 'react-native';
  *   const result = await NativeModules.FocusLockPermissionChecker.checkPermissions();
- *   // result: { usageAccess, overlay, deviceAdmin, battery } — all booleans
+ *   // result: { usageAccess, overlay, deviceAdmin, accessibility, battery } — all booleans
  */
 class PermissionCheckerModule(private val ctx: ReactApplicationContext)
     : ReactContextBaseJavaModule(ctx) {
@@ -928,10 +928,11 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
     fun checkPermissions(promise: Promise) {
         try {
             val map = Arguments.createMap()
-            map.putBoolean("usageAccess",  hasUsageStatsPermission())
-            map.putBoolean("overlay",      canDrawOverlays())
-            map.putBoolean("deviceAdmin",  isDeviceAdminActive())
-            map.putBoolean("battery",      isIgnoringBatteryOptimizations())
+            map.putBoolean("usageAccess",   hasUsageStatsPermission())
+            map.putBoolean("overlay",       canDrawOverlays())
+            map.putBoolean("deviceAdmin",   isDeviceAdminActive())
+            map.putBoolean("accessibility", isAccessibilityServiceEnabled())
+            map.putBoolean("battery",       isIgnoringBatteryOptimizations())
             promise.resolve(map)
         } catch (e: Exception) {
             promise.reject("PERMISSION_CHECK_ERROR", e.message ?: "Unknown error", e)
@@ -1081,6 +1082,30 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
             val dpm       = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
             val component = ComponentName(ctx, "\${ctx.packageName}.DeviceAdminReceiver")
             dpm.isAdminActive(component)
+        } catch (e: Exception) { false }
+    }
+
+    /**
+     * Checks whether AppBlockerAccessibilityService is actually turned ON by the
+     * user in Settings → Accessibility. This is the single most critical permission —
+     * without it the entire blocking mechanism (AppBlockerAccessibilityService) never
+     * runs, even if every other permission is granted.
+     *
+     * There is no direct boolean API for "is my accessibility service enabled" — the
+     * documented approach is to read the colon-separated list of enabled services from
+     * Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES and look for our own ComponentName
+     * (case-insensitive, since some OEMs normalize casing).
+     */
+    private fun isAccessibilityServiceEnabled(): Boolean {
+        return try {
+            val expectedComponentName = "\${ctx.packageName}/\${ctx.packageName}.AppBlockerAccessibilityService"
+            val enabledServicesSetting = Settings.Secure.getString(
+                ctx.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            ) ?: return false
+            enabledServicesSetting.split(':').any {
+                it.equals(expectedComponentName, ignoreCase = true)
+            }
         } catch (e: Exception) { false }
     }
 
