@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import {
   Alert,
   Modal,
+  NativeModules,
   Platform,
   Pressable,
   ScrollView,
@@ -26,20 +27,31 @@ async function openSettingsForPerm(id: PermissionId): Promise<void> {
   try {
     switch (id) {
       case "usageAccess":
+        // Settings.ACTION_USAGE_ACCESS_SETTINGS + package Uri — without the Uri this
+        // opens the generic all-apps list instead of jumping to DuckLock directly.
         await IntentLauncher.startActivityAsync(
-          "android.settings.USAGE_ACCESS_SETTINGS"
+          "android.settings.USAGE_ACCESS_SETTINGS",
+          { data: `package:${APP_PACKAGE}` }
         );
         break;
       case "deviceAdmin":
+        // DevicePolicyManager.EXTRA_DEVICE_ADMIN requires a real ComponentName Parcelable —
+        // expo-intent-launcher can only pass String extras from JS, so a string here would
+        // silently fail to activate. The native module builds the ComponentName correctly.
+        if (NativeModules.FocusLockPermissionChecker?.openDeviceAdminSettings) {
+          await NativeModules.FocusLockPermissionChecker.openDeviceAdminSettings();
+        } else {
+          Alert.alert(
+            "Expo Go mein available nahi",
+            "Device Admin permission sirf real APK build mein activate ho sakti hai."
+          );
+        }
+        break;
+      case "accessibility":
+        // No ComponentName-targeted Intent exists for accessibility activation — the OS
+        // always opens the full Accessibility Settings list.
         await IntentLauncher.startActivityAsync(
-          "android.app.action.ADD_DEVICE_ADMIN",
-          {
-            extra: {
-              "android.app.extra.DEVICE_ADMIN": `${APP_PACKAGE}/.DeviceAdminReceiver`,
-              "android.app.extra.ADD_EXPLANATION":
-                "DuckLock needs device admin to prevent uninstall while a lock is active.",
-            },
-          }
+          "android.settings.ACCESSIBILITY_SETTINGS"
         );
         break;
       case "overlay":

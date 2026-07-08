@@ -1,0 +1,44 @@
+"Sabhi 6 permissions ke 'Allow' button ko EXACT, TARGETED Settings screen par redirect karna hai — generic Settings home ya galat/adhuri screen par nahi. Har ek ke liye exact sahi Intent action yeh hai:
+Usage Access
+kotlin
+Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+data = Uri.parse("package:${context.packageName}")
+}
+Yeh seedha 'Usage Access' list kholta hai jahan DuckLock ka toggle directly dikhna chahiye (kuch OEMs par package Uri se seedha DuckLock ki detail-page bhi khul sakti hai).
+Device Admin
+kotlin
+val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName) // apna DeviceAdminReceiver ComponentName
+intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "DuckLock needs this to prevent uninstall while a lock is active.")
+Yeh seedha 'Activate this device admin app?' wala specific confirmation dialog kholta hai — generic Security Settings NAHI.
+Display Over Apps (Overlay)
+kotlin
+Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+data = Uri.parse("package:${context.packageName}")
+}
+Yeh seedha DuckLock ki 'Display over other apps' specific toggle-page kholta hai, poori list nahi.
+Notifications
+kotlin
+Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+}
+Yeh seedha DuckLock ki app-specific Notification settings page kholta hai (jahan notification toggle hota hai), generic notification list nahi.
+Battery Optimization
+kotlin
+Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+data = Uri.parse("package:${context.packageName}")
+}
+Yeh seedha ek quick confirmation dialog kholta hai ('Allow DuckLock to ignore battery optimizations?'), poori Battery Optimization list nahi.
+Accessibility Service
+kotlin
+Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+Yeh Accessibility Settings list kholta hai (is permission ke liye Android koi aur zyada specific/direct Intent provide nahi karta — user ko list mein se DuckLock dhoondh kar tap karna padta hai, yeh Android ka hi limitation hai, isse zyada targeted nahi ho sakta).
+Ab yeh karna hai:
+Har ek permission ke moजूदा 'Allow' handler ko check karo — confirm karo ki upar diye gaye EXACT Intent actions use ho rahe hain, koi generic/fallback Settings action (jaise Settings.ACTION_SETTINGS ya ACTION_SECURITY_SETTINGS) kahin bhi use nahi ho raha
+Jahan bhi galat/generic action mile, use upar diye gaye sahi, specific action se replace karo
+package Uri (Uri.parse("package:${context.packageName}")) jahan zaroori hai (Usage Access, Overlay, Battery, Notifications), wahan zaroor attach karo — iske bina Android generic list par bhej deta hai targeted page ki jagah
+Zaroori:
+Har permission apni EXACT, correct, targeted Settings location par jaani chahiye — koi bhi generic ya galat page nahi
+Detection logic (jo already implement hai) ko mat chhedna, sirf redirect-Intents ko verify/fix karna hai
+Baaki koi existing function mat chhedna
+Fix ke baad, HAR EK permission ke liye exact batao — pehle kaunsa Intent use ho raha tha, aur ab kya hai (agar change hua), taaki main confirm kar sakoon"

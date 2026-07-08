@@ -96,8 +96,16 @@ async function verifyWithBackoff(
 
 async function openUsageAccess() {
   if (Platform.OS !== "android") return;
-  try { await IntentLauncher.startActivityAsync("android.settings.USAGE_ACCESS_SETTINGS"); }
-  catch { await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS); }
+  // Settings.ACTION_USAGE_ACCESS_SETTINGS + package Uri — without the Uri, Android
+  // opens the generic list of every app; with it, several OEMs jump straight to
+  // DuckLock's own toggle/detail page.
+  try {
+    await IntentLauncher.startActivityAsync("android.settings.USAGE_ACCESS_SETTINGS", {
+      data: `package:${APP_PACKAGE}`,
+    });
+  } catch {
+    await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS);
+  }
 }
 
 async function openDeviceAdmin() {
@@ -147,24 +155,36 @@ async function openOverlay() {
 
 async function openNotification() {
   if (Platform.OS !== "android") return;
-  // POST_NOTIFICATIONS is a runtime permission (Android 13+) — requestPermissionsAsync()
-  // shows Android's native in-app system dialog directly, same as Camera/Location.
-  // No IntentLauncher / Settings redirect needed at all.
+  // POST_NOTIFICATIONS is a runtime permission (Android 13+). Android will only show the
+  // native inline system dialog (requestPermissionsAsync) while canAskAgain is true — the
+  // FIRST time, or after the user hasn't permanently denied it yet.
   //
-  // WHY THE OLD CODE WAS WRONG:
-  //   1. requestPermissionsAsync() was called first — correct so far.
-  //   2. But if status !== "granted" (e.g. user tapped Deny, or permission was undetermined
-  //      and the dialog had already closed), it fell through to IntentLauncher and opened the
-  //      Notification Settings page instead — a Settings redirect the user never asked for.
-  //   The dialog appeared, user interacted, and THEN Settings opened on top — confusing.
-  //
-  // CORRECT FLOW: just call requestPermissionsAsync() and return. The system dialog appears
-  // inline. After the user responds, verifyAllPermissions() is called by handleAllow to
-  // update the tick immediately (see comment there).
+  // Once the user has denied it and canAskAgain becomes false, calling
+  // requestPermissionsAsync() again resolves immediately with no dialog at all — at that
+  // point the ONLY way to let the user turn it on is the exact targeted Settings screen:
+  //   Settings.ACTION_APP_NOTIFICATION_SETTINGS + EXTRA_APP_PACKAGE
+  // which opens DuckLock's own app-specific notification settings page directly (not the
+  // generic all-apps notification list).
   const Notifications = require("expo-notifications");
-  await Notifications.requestPermissionsAsync();
-  // Return value intentionally ignored: verifyAllPermissions() in handleAllow does the
-  // authoritative live check after this resolves.
+  const current = await Notifications.getPermissionsAsync();
+  if (current.status !== "granted" && current.canAskAgain) {
+    // First ask (or still askable) — inline system dialog, no Settings redirect.
+    await Notifications.requestPermissionsAsync();
+    // Return value intentionally ignored: verifyAllPermissions() in handleAllow does the
+    // authoritative live check after this resolves.
+    return;
+  }
+  if (current.status !== "granted") {
+    // Permanently denied — the dialog can no longer be shown, so go straight to the
+    // exact targeted app-notification-settings page.
+    try {
+      await IntentLauncher.startActivityAsync("android.settings.APP_NOTIFICATION_SETTINGS", {
+        extra: { "android.provider.extra.APP_PACKAGE": APP_PACKAGE },
+      });
+    } catch {
+      await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS);
+    }
+  }
 }
 
 async function openBattery() {
