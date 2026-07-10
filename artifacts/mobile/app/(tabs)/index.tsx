@@ -32,6 +32,7 @@ import {
 } from "@/hooks/useLockStorage";
 import { usePermissionGuard } from "@/hooks/usePermissionGuard";
 import { useSounds } from "@/hooks/useSounds";
+import { useReelCount } from "@/hooks/useReelCount";
 
 // Single combined video: 0–4 s = idle loop, 4–6 s = touch animation.
 // Sound is already baked into the file by the user — no mute/unmute needed.
@@ -300,6 +301,7 @@ function DuckPalScreen() {
   const bottomPad = Platform.OS === "web" ? 34 + 84 : 60 + insets.bottom;
   const { toggleAppMode } = useAppMode();
   const [weekOffset, setWeekOffset] = useState(0);
+  const { count: instagramCount } = useReelCount();
 
   const weekStart = getWeekStart(new Date());
   weekStart.setDate(weekStart.getDate() + weekOffset * 7);
@@ -325,18 +327,20 @@ function DuckPalScreen() {
         {/* Placeholder — reserved space for a future growing icon-animation */}
         <View style={styles.duckPalHeroPlaceholder} />
 
-        <Text style={styles.duckPalReelsCount}>{DUMMY_REELS_TODAY} Reels Scrolled Today</Text>
+        <Text style={styles.duckPalReelsCount}>{instagramCount ?? 0} Reels Scrolled Today</Text>
 
         <GlassCard style={styles.duckPalSplitCard} padding={14}>
           <View style={styles.duckPalSplitRow}>
+            {/* Instagram — live tracking (Phase 3A/3B) */}
             <View style={styles.duckPalSplitItem}>
               <FontAwesome5 name="instagram" size={16} color="#FFBF80" />
-              <Text style={styles.duckPalSplitCount}>{DUMMY_INSTAGRAM_TODAY}</Text>
+              <Text style={styles.duckPalSplitCount}>{instagramCount ?? 0}</Text>
             </View>
             <View style={styles.duckPalSplitDivider} />
+            {/* YouTube — detection not yet implemented */}
             <View style={styles.duckPalSplitItem}>
               <FontAwesome5 name="youtube" size={16} color="#FFBF80" />
-              <Text style={styles.duckPalSplitCount}>{DUMMY_YOUTUBE_TODAY}</Text>
+              <Text style={styles.duckPalComingSoon}>Coming Soon</Text>
             </View>
           </View>
         </GlassCard>
@@ -387,7 +391,13 @@ function DuckPalScreen() {
                 <View style={styles.lockInfo}>
                   <Text style={styles.lockAppName}>{app.name}</Text>
                 </View>
-                <Text style={styles.duckPalTopAppCount}>{app.count}</Text>
+                {app.name === "YouTube" ? (
+                  <Text style={styles.duckPalComingSoon}>Coming Soon</Text>
+                ) : (
+                  <Text style={styles.duckPalTopAppCount}>
+                    {app.name === "Instagram" ? instagramCount : app.count}
+                  </Text>
+                )}
               </View>
             </GlassCard>
           ))}
@@ -657,4 +667,6 @@ const styles = StyleSheet.create({
   duckPalTotalLabel: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   duckPalTotalsDivider: { width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.1)" },
   duckPalTopAppCount: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFBF80" },
+  // YouTube "Coming Soon" label — smaller, muted grey so it reads as inactive
+  duckPalComingSoon: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#636366", letterSpacing: 0.2 },
 });
