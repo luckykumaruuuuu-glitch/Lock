@@ -387,7 +387,6 @@ export default function SettingsScreen() {
         <Text style={styles.pageTitle}>{t("settings")}</Text>
 
         {/* PREFERENCES */}
-        <SectionLabel label={t("preferences")} />
         <GlassCard padding={0}>
           <SoundToggleRow
             muted={muted}
@@ -398,7 +397,6 @@ export default function SettingsScreen() {
         </GlassCard>
 
         {/* APPLICATION */}
-        <SectionLabel label={t("application")} />
         <GlassCard padding={0}>
           <Pressable
             onPress={hasUpdate ? reopenModal : undefined}
@@ -422,7 +420,6 @@ export default function SettingsScreen() {
         </GlassCard>
 
         {/* SUPPORT */}
-        <SectionLabel label={t("support")} />
         <GlassCard padding={0}>
           <SettingRow
             icon="message-circle"
@@ -444,7 +441,6 @@ export default function SettingsScreen() {
         </GlassCard>
 
         {/* LEGAL */}
-        <SectionLabel label={t("legal")} />
         <GlassCard padding={0}>
           <SettingRow
             icon="file-text"
@@ -460,7 +456,6 @@ export default function SettingsScreen() {
         </GlassCard>
 
         {/* ABOUT */}
-        <SectionLabel label={t("about")} />
         <GlassCard padding={0}>
           <View style={styles.aboutRow}>
             <View style={styles.aboutIconBox}>
@@ -493,7 +488,7 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content:   { paddingHorizontal: 20, gap: 6 },
+  content:   { paddingHorizontal: 20, gap: 16 },
   pageTitle: {
     fontSize: 30,
     fontFamily: "Inter_700Bold",
