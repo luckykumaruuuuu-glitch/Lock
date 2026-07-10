@@ -244,6 +244,34 @@ const DUMMY_TOP_APPS = [
   { name: "YouTube", icon: "youtube" as const, count: 0 },
 ];
 
+const MONTH_SHORT = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+// Monday of the week containing `date`.
+function getWeekStart(date: Date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function formatWeekRange(monday: Date) {
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  const startLabel = `${MONTH_SHORT[monday.getMonth()]} ${monday.getDate()}`;
+  const endLabel =
+    monday.getMonth() === sunday.getMonth()
+      ? `${sunday.getDate()}`
+      : `${MONTH_SHORT[sunday.getMonth()]} ${sunday.getDate()}`;
+
+  return `${startLabel} - ${endLabel}`;
+}
+
 function WeeklyBarChart({ data }: { data: { day: string; count: number }[] }) {
   const max = Math.max(1, ...data.map((d) => d.count));
 
@@ -253,10 +281,10 @@ function WeeklyBarChart({ data }: { data: { day: string; count: number }[] }) {
         <View key={d.day} style={styles.chartBarWrapper}>
           <View style={styles.chartBarTrack}>
             <LinearGradient
-              colors={["#FFBF80", "#FFA660"]}
+              colors={d.count > 0 ? ["#FFBF80", "#FFA660"] : ["#3A3A3C", "#3A3A3C"]}
               start={{ x: 0, y: 1 }}
               end={{ x: 0, y: 0 }}
-              style={[styles.chartBarFill, { height: `${Math.max(4, (d.count / max) * 100)}%` }]}
+              style={[styles.chartBarFill, { height: `${d.count > 0 ? Math.max(6, (d.count / max) * 100) : 4}%` }]}
             />
           </View>
           <Text style={styles.chartBarLabel}>{d.day}</Text>
@@ -271,6 +299,11 @@ function DuckPalScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 + 84 : 60 + insets.bottom;
   const { toggleAppMode } = useAppMode();
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const weekStart = getWeekStart(new Date());
+  weekStart.setDate(weekStart.getDate() + weekOffset * 7);
+  const weekLabel = formatWeekRange(weekStart);
 
   return (
     <GradientBackground>
@@ -309,7 +342,21 @@ function DuckPalScreen() {
         </GlassCard>
 
         <GlassCard padding={20}>
-          <Text style={styles.duckPalSectionTitle}>Weekly activity</Text>
+          <View style={styles.duckPalWeekNav}>
+            <TouchableOpacity
+              onPress={() => setWeekOffset((w) => w - 1)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Feather name="chevron-left" size={20} color="#FFBF80" />
+            </TouchableOpacity>
+            <Text style={styles.duckPalWeekLabel}>{weekLabel}</Text>
+            <TouchableOpacity
+              onPress={() => setWeekOffset((w) => w + 1)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Feather name="chevron-right" size={20} color="#FFBF80" />
+            </TouchableOpacity>
+          </View>
           <WeeklyBarChart data={DUMMY_WEEKLY} />
 
           <View style={styles.duckPalTotalsRow}>
@@ -580,15 +627,19 @@ const styles = StyleSheet.create({
   duckPalSplitCount: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
   duckPalSplitDivider: { width: 1, height: 20, backgroundColor: "rgba(255,255,255,0.1)" },
   duckPalScrollContent: { paddingHorizontal: 20, paddingTop: 16, gap: 16 },
-  duckPalSectionTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#FFFFFF", marginBottom: 16 },
+  duckPalWeekNav: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+    marginBottom: 16,
+  },
+  duckPalWeekLabel: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#FFFFFF", minWidth: 90, textAlign: "center" },
   chartRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", height: 120, gap: 8 },
   chartBarWrapper: { flex: 1, alignItems: "center", gap: 8, height: "100%", justifyContent: "flex-end" },
   chartBarTrack: {
     width: "100%",
     height: 90,
-    borderRadius: 8,
-    backgroundColor: "#2C2C2E",
-    overflow: "hidden",
     justifyContent: "flex-end",
   },
   chartBarFill: { width: "100%", borderRadius: 8 },
