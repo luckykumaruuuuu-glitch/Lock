@@ -42,28 +42,38 @@ function DuckCharacter() {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const player = useVideoPlayer(DUCK_FULL, (p) => {
-    p.loop = false; // manual loop via timeUpdate seek
+    p.loop = false;
+    // CRITICAL: timeUpdateEventInterval defaults to 0 in expo-video 3.x,
+    // which means the timeUpdate event is NEVER emitted until this is set.
+    // Without this, the idle loop (currentTime >= 4 → seek to 0) never fires,
+    // the video plays 0→6 s once and freezes on the last frame.
+    p.timeUpdateEventInterval = 0.1; // fire every 100 ms — accurate for 4 s / 6 s boundary
     p.play();
+    console.log("[duck] initializer: loop=false, timeUpdateEventInterval=0.1, play() called, playing=", p.playing);
   });
 
   useEffect(() => {
-    // timeUpdate fires ~every 250 ms in expo-video 3.x — accurate enough for
-    // a 4 s / 6 s boundary. No setInterval needed.
     const sub = player.addListener("timeUpdate", ({ currentTime }) => {
+      // Debug: confirm event fires and show values.
+      // Remove these logs once behaviour is verified on device.
+      console.log("[duck] timeUpdate:", currentTime.toFixed(2), "s | isTouched=", isTouchedRef.current, "| playing=", player.playing);
+
       if (!isTouchedRef.current && currentTime >= 4) {
         // Idle loop: 4 s reached → jump back to 0
+        console.log("[duck] idle >=4 s → seek 0 + play()");
         player.currentTime = 0;
         player.play();
       }
       if (isTouchedRef.current && currentTime >= 6) {
         // Touch segment done → back to idle loop
+        console.log("[duck] touch >=6 s → reset to idle, seek 0 + play()");
         isTouchedRef.current = false;
         player.currentTime = 0;
         player.play();
       }
     });
     return () => sub.remove();
-  }, [player]); // subscribe once; ref keeps the flag fresh without re-subscribing
+  }, [player]);
 
   function handlePress() {
     // Tap during touch segment → restart from 4 s immediately
