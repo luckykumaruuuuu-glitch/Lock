@@ -1,9 +1,9 @@
 import { FontAwesome5, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Platform,
@@ -30,70 +30,96 @@ import {
   useActiveLocks,
 } from "@/hooks/useLockStorage";
 import { usePermissionGuard } from "@/hooks/usePermissionGuard";
+import { useSounds } from "@/hooks/useSounds";
 
 // Single combined video: 0–4 s = idle loop, 4–6 s = touch animation.
 // Sound is already baked into the file by the user — no mute/unmute needed.
 const DUCK_FULL = require("../../assets/duck-full.mp4");
 
 function DuckCharacter() {
-  // Ref instead of state: avoids re-subscribing the timeUpdate listener on
-  // every tap. The listener reads isTouchedRef.current directly.
   const isTouchedRef = useRef(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  // Read user sound preference so we know whether to unmute on tap.
+  const { muted: soundsMuted } = useSounds();
 
   const player = useVideoPlayer(DUCK_FULL, (p) => {
     p.loop = false;
-    // CRITICAL: timeUpdateEventInterval defaults to 0 in expo-video 3.x — must
-    // be set before playback starts or timeUpdate events are never emitted.
-    p.timeUpdateEventInterval = 0.1; // fire every 100 ms
-    // Call play() here so the player queues the intent immediately.
-    // On some implementations this works even before the video finishes loading.
-    // The statusChange useEffect below is the guaranteed fallback for platforms
-    // where this call is ignored before load completes.
+    // timeUpdateEventInterval=0 by default in expo-video 3.x → events never fire.
+    p.timeUpdateEventInterval = 0.1;
+    // ── MUTED for idle ────────────────────────────────────────────────────────
+    // Web browsers block autoplay of videos that have an audio track unless the
+    // video is muted. Without this, player.play() silently returns playing=false
+    // and the duck freezes on launch. Muted autoplay is always allowed.
+    // Sound is re-enabled during the touch segment (4–6 s) on user tap — a tap
+    // counts as a user gesture, so the browser permits unmuted playback then.
+    p.muted = true;
     p.play();
-    console.log("[duck] initializer: play() called, playing=", p.playing);
+    console.log("[duck] initializer: muted=true, play() called, playing=", p.playing);
   });
 
-  // ── Guaranteed auto-play: covers the race condition ───────────────────────
-  // Problem: useEffect runs AFTER React commits the render. For bundled local
-  // assets, statusChange:"readyToPlay" can fire BEFORE this effect registers
-  // its listener — the event is missed and the player stays paused forever.
-  // Fix A (initializer p.play()): queues play intent synchronously during
-  //   player creation, before load completes.
-  // Fix B (this effect): after registering the listener, immediately check
-  //   player.status — if readyToPlay was already missed, call play() right now.
-  //   The listener also handles any future readyToPlay (e.g. after player reset).
+  // ── Primary auto-play: fires when home screen comes into focus ────────────
+  // Root cause of freeze: DuckCharacter pre-renders in the background while
+  // onboarding is shown. The VideoView isn't visible yet, so player.play()
+  // fails silently. useEffect only runs once on mount — it doesn't re-run when
+  // the tab becomes active. useFocusEffect fires EVERY TIME the screen focuses,
+  // including the first real navigation to home. This is the correct hook.
+  useFocusEffect(
+    useCallback(() => {
+      console.log("[duck] screen focused — playing=", player.playing);
+      if (!player.playing) {
+        player.muted = true;
+        player.play();
+        console.log("[duck] focus: play() called, playing=", player.playing);
+      }
+      // No cleanup needed — we don't pause on blur (duck keeps looping in bg).
+    }, [player])
+  );
+
+  // ── Fallback: statusChange + retry for native timing edge cases ──────────
+  // statusChange covers native platforms where play() in the focus effect fires
+  // slightly before the video finishes loading (readyToPlay not yet reached).
+  // The retry loop covers the race where readyToPlay already fired before the
+  // listener registered (local bundled assets load near-instantly on device).
   useEffect(() => {
     const sub = player.addListener("statusChange", ({ status }) => {
       console.log("[duck] statusChange:", status, "| playing=", player.playing);
-      if (status === "readyToPlay") {
+      if (status === "readyToPlay" && !player.playing) {
+        player.muted = true;
         player.play();
-        console.log("[duck] statusChange readyToPlay → play() called, playing=", player.playing);
+        console.log("[duck] readyToPlay → play() called, playing=", player.playing);
       }
     });
-    // Fix B: handle the race — readyToPlay may have already fired before this
-    // effect ran. Check current status and play immediately if so.
-    if ((player as any).status === "readyToPlay" && !player.playing) {
+
+    let attempts = 0;
+    const tryPlay = () => {
+      if (player.playing) {
+        console.log("[duck] tryPlay: playing after", attempts, "attempt(s) ✓");
+        return;
+      }
+      attempts++;
+      player.muted = true;
       player.play();
-      console.log("[duck] effect mount: already readyToPlay, playing=", player.playing, "→ play() called now");
-    }
+      console.log("[duck] tryPlay attempt", attempts, "| playing=", player.playing);
+      if (!player.playing && attempts < 8) setTimeout(tryPlay, 250);
+    };
+    setTimeout(tryPlay, 50);
+
     return () => sub.remove();
   }, [player]);
 
+  // ── Segment loop control ──────────────────────────────────────────────────
   useEffect(() => {
     const sub = player.addListener("timeUpdate", ({ currentTime }) => {
-      console.log("[duck] timeUpdate:", currentTime.toFixed(2), "s | isTouched=", isTouchedRef.current, "| playing=", player.playing);
-
       if (!isTouchedRef.current && currentTime >= 4) {
-        // Idle loop: 4 s reached → jump back to 0
-        console.log("[duck] idle >=4 s → seek 0 + play()");
+        // Idle loop: 4 s reached → mute + seek to 0
+        player.muted = true;
         player.currentTime = 0;
         player.play();
       }
       if (isTouchedRef.current && currentTime >= 6) {
-        // Touch segment done → back to idle loop
-        console.log("[duck] touch >=6 s → reset to idle, seek 0 + play()");
+        // Touch segment done → mute + return to idle
         isTouchedRef.current = false;
+        player.muted = true;
         player.currentTime = 0;
         player.play();
       }
@@ -102,9 +128,10 @@ function DuckCharacter() {
   }, [player]);
 
   function handlePress() {
-    // Tap during touch segment → restart from 4 s immediately
-    // Tap during idle → enter touch segment from 4 s
     isTouchedRef.current = true;
+    // Tap = user gesture → browser allows unmuted playback.
+    // Unmute only if the user hasn't disabled sound effects.
+    player.muted = soundsMuted;
     player.currentTime = 4;
     player.play();
     // Bounce: compress → spring back
