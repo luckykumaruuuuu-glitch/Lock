@@ -42,7 +42,6 @@ function DuckCharacter() {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   // Read user sound preference so we know whether to unmute on tap.
   const { muted: soundsMuted } = useSounds();
-  const { toggleAppMode } = useAppMode();
 
   const player = useVideoPlayer(DUCK_FULL, (p) => {
     p.loop = false;
@@ -141,8 +140,6 @@ function DuckCharacter() {
       Animated.timing(scaleAnim, { toValue: 0.85, duration: 80, useNativeDriver: true }),
       Animated.spring(scaleAnim, { toValue: 1, friction: 3, tension: 120, useNativeDriver: true }),
     ]).start();
-
-    toggleAppMode();
   }
 
   return (
@@ -230,15 +227,16 @@ function LockCard({ item, index }: { item: ActiveLockDisplayItem; index: number 
 function DuckPalScreen() {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const { toggleAppMode } = useAppMode();
 
   return (
     <GradientBackground>
       <View style={[styles.duckPalContainer, { paddingTop: topPad + 16 }]}>
         <Animated.View style={[styles.header, { marginBottom: 0 }]}>
-          <View>
+          <TouchableOpacity onPress={toggleAppMode} activeOpacity={0.7}>
             <Text style={styles.greeting}>Meet your new companion</Text>
             <Text style={styles.appTitle}>DuckPal</Text>
-          </View>
+          </TouchableOpacity>
           <DuckCharacter />
         </Animated.View>
 
@@ -286,6 +284,7 @@ function DuckLockHomeContent() {
   const { t } = useLanguage();
   const [toast, setToast] = React.useState(false);
   const { missingPerms, recheck } = usePermissionGuard();
+  const { toggleAppMode } = useAppMode();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 + 84 : 60 + insets.bottom;
@@ -320,10 +319,10 @@ function DuckLockHomeContent() {
       >
         {/* Header */}
         <Animated.View style={[styles.header, { transform: [{ translateY: headerY }], opacity: headerOpacity }]}>
-          <View>
+          <TouchableOpacity onPress={toggleAppMode} activeOpacity={0.7}>
             <Text style={styles.greeting}>{t("stayFocused")}</Text>
             <Text style={styles.appTitle}>{t("appTitle")}</Text>
-          </View>
+          </TouchableOpacity>
           <DuckCharacter />
         </Animated.View>
 
