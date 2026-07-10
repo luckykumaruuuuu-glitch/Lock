@@ -1011,6 +1011,9 @@ class ReelDetector(private val context: Context) {
     private var isInReelsContext      = false
     private var reelEnteredAt         = 0L      // epoch-ms when current reel appeared
     private var currentFgPkg          = ""
+
+    // ── Phase 3B: duplicate-prevention session tracker ────────────────────────
+    private val sessionTracker = ReelSessionTracker()
     /**
      * Sponsored state of the reel CURRENTLY on screen.
      * Set to false when a new reel enters, then updated after
@@ -1050,6 +1053,7 @@ class ReelDetector(private val context: Context) {
                 reelEnteredAt        = 0L
                 currentReelSponsored = false
                 isInReelsContext     = false
+                sessionTracker.reset()   // Phase 3B: end session on app switch
             }
             return
         }
@@ -1061,6 +1065,7 @@ class ReelDetector(private val context: Context) {
         if (isReelsWindow && !isInReelsContext) {
             Log.d(TAG, "Entered Reels context via window: className=\${className}")
             isInReelsContext = true
+            sessionTracker.onSessionEntered()   // Phase 3B: fresh session, reel-0 is now visible
             startReelTimer(service)
         } else if (!isReelsWindow && className.isNotEmpty() && isInReelsContext) {
             // Navigated away from Reels within Instagram (e.g. back to Feed)
@@ -1069,6 +1074,7 @@ class ReelDetector(private val context: Context) {
             reelEnteredAt        = 0L
             currentReelSponsored = false
             isInReelsContext     = false
+            sessionTracker.reset()   // Phase 3B: end session on Reels exit
         }
     }
 
@@ -1097,16 +1103,42 @@ class ReelDetector(private val context: Context) {
         if (!isInReelsContext) {
             Log.d(TAG, "Reels context set via first ViewPager scroll: viewId=\${viewId}")
             isInReelsContext = true
+            sessionTracker.onSessionEntered()   // Phase 3B: reel-0 visible, fresh session
             startReelTimer(service)       // start clock + schedule sponsored check
             srcNode?.recycle()
             return  // nothing to count yet — no previous reel to evaluate
         }
 
+        // ── Phase 3B: direction detection + duplicate-prevention ─────────────
+        // Must run BEFORE Phase 3A dwell check. Detects forward/backward and
+        // skips counting entirely for revisit reels — Phase 3A logic unchanged.
+        val direction = sessionTracker.detectScrollDirection(event)
+
+        if (direction == ReelSessionTracker.ScrollDirection.UNKNOWN) {
+            // Cannot determine direction (e.g. first Tier-3 sample, delta=0).
+            // Hold all state intact — timer keeps running, don't advance session.
+            // The next scroll will have a reliable direction reading.
+            srcNode?.recycle()
+            return
+        }
+
+        val isNewReel = sessionTracker.advance(direction)
+        if (!isNewReel) {
+            // Revisit reel (backward scroll, or forward through already-seen).
+            // Cancel timing so dwell cannot accumulate for non-countable reels.
+            cancelSponsoredCheck()
+            reelEnteredAt        = 0L
+            currentReelSponsored = false
+            srcNode?.recycle()
+            return
+        }
+
         // ── Reel transition: evaluate the reel that just scrolled away ────────
+        // (Phase 3A logic — untouched, only reached when isNewReel == true)
         val now     = System.currentTimeMillis()
         val dwellMs = if (reelEnteredAt > 0) now - reelEnteredAt else 0L
 
-        Log.d(TAG, "Reel scroll — dwell=\${dwellMs}ms (need \${THRESHOLD_MS}ms) sponsored=\${currentReelSponsored}")
+        Log.d(TAG, "Reel scroll — dwell=\${dwellMs}ms (need \${THRESHOLD_MS}ms) sponsored=\${currentReelSponsored} [NEW reel]")
 
         if (dwellMs >= THRESHOLD_MS) {
             if (currentReelSponsored) {
@@ -1221,6 +1253,199 @@ class ReelDetector(private val context: Context) {
         return JSONObject().apply {
             put("date",  today)
             put("count", count)
+        }
+    }
+}
+`);
+
+      /* ════════════════════════════════════════════════
+         ReelSessionTracker.kt  (Phase 3B — duplicate-prevention)
+      ════════════════════════════════════════════════ */
+      fs.writeFileSync(path.join(kotlinDir, "ReelSessionTracker.kt"),
+`package ${PACKAGE_NAME}
+
+import android.os.Build
+import android.util.Log
+import android.view.accessibility.AccessibilityEvent
+
+/**
+ * ReelSessionTracker — Phase 3B: Duplicate-prevention for reel counting.
+ *
+ * Layered ON TOP of ReelDetector (Phase 3A) without modifying any existing
+ * counting logic. ReelDetector calls this tracker to decide whether the reel
+ * about to be evaluated is brand-new or a revisit before running the 2.5s
+ * dwell / Sponsored checks.
+ *
+ * ── Session model ─────────────────────────────────────────────────────────────
+ * A session starts when the user enters Instagram Reels and ends when they
+ * leave Instagram or switch away. Session data is purely in-memory — it resets
+ * automatically on session exit but does NOT touch the persisted daily count
+ * stored in reelcount_data.json.
+ *
+ *   currentIndex    : index of the reel currently on screen (0 = first reel)
+ *   maxForwardIndex : highest index ever reached going forward this session
+ *
+ * A reel is NEW (eligible to be counted by Phase 3A) only when:
+ *   advance(FORWARD) is called AND currentIndex > maxForwardIndex
+ *
+ * All other cases are revisits and return false from advance():
+ *   - Any BACKWARD scroll
+ *   - A FORWARD scroll through a reel already seen (currentIndex <= maxForwardIndex)
+ *   - UNKNOWN direction (safe default: skip counting)
+ *
+ * ── Direction detection ───────────────────────────────────────────────────────
+ * detectScrollDirection() uses a three-tier fallback:
+ *
+ *   Tier 1 — fromIndex / toIndex (most reliable when ViewPager2 emits page
+ *             indices via accessibility):
+ *             toIndex > fromIndex → FORWARD, toIndex < fromIndex → BACKWARD
+ *
+ *   Tier 2 — scrollDeltaY (API 26+, Android O+):
+ *             positive delta → content moved up → user saw next reel → FORWARD
+ *             negative delta → content moved down → user went back → BACKWARD
+ *
+ *   Tier 3 — consecutive scrollY delta (compatible with all API levels):
+ *             currY > prevY → FORWARD, currY < prevY → BACKWARD
+ *
+ * ── Usage in ReelDetector ─────────────────────────────────────────────────────
+ *   // On Reels entry (before any scroll):
+ *   sessionTracker.onSessionEntered()
+ *
+ *   // On each qualifying Reels ViewPager scroll:
+ *   val direction = sessionTracker.detectScrollDirection(event)
+ *   val isNewReel = sessionTracker.advance(direction)
+ *   if (!isNewReel) return   // skip counting entirely — Phase 3A logic not reached
+ *   // ... Phase 3A dwell + Sponsored logic runs only here ...
+ *
+ *   // On Reels / Instagram exit:
+ *   sessionTracker.reset()
+ */
+class ReelSessionTracker {
+
+    companion object {
+        private const val TAG = "DuckLock:SessionTracker"
+    }
+
+    // currentIndex=-1 means "session not started" (before onSessionEntered())
+    private var currentIndex    = -1
+    private var maxForwardIndex = -1
+
+    // Tier-3 fallback: track consecutive scrollY for direction detection
+    private var prevScrollY     = Int.MIN_VALUE
+
+    enum class ScrollDirection { FORWARD, BACKWARD, UNKNOWN }
+
+    // ── Session lifecycle ─────────────────────────────────────────────────────
+
+    /**
+     * Call when the user enters Instagram Reels (window state change or first
+     * ViewPager scroll). Sets currentIndex = 0 (reel-0 is now on screen) so the
+     * very next forward scroll correctly returns isNew = true for reel-1.
+     */
+    fun onSessionEntered() {
+        currentIndex    = 0
+        maxForwardIndex = 0
+        prevScrollY     = Int.MIN_VALUE
+        Log.d(TAG, "Session entered — reel-0 on screen")
+    }
+
+    /**
+     * Reset all session state. Call when the user leaves Reels or switches away
+     * from Instagram. Does NOT touch the persisted daily count file.
+     */
+    fun reset() {
+        currentIndex    = -1
+        maxForwardIndex = -1
+        prevScrollY     = Int.MIN_VALUE
+        Log.d(TAG, "Session reset")
+    }
+
+    // ── Direction detection ───────────────────────────────────────────────────
+
+    /**
+     * Infers scroll direction from an accessibility TYPE_VIEW_SCROLLED event.
+     * Three-tier fallback for maximum compatibility across Instagram versions.
+     */
+    fun detectScrollDirection(event: AccessibilityEvent): ScrollDirection {
+        // Tier 1: fromIndex / toIndex — ViewPager2 emits these as page positions
+        val from = event.fromIndex
+        val to   = event.toIndex
+        if (from >= 0 && to >= 0 && from != to) {
+            val dir = if (to > from) ScrollDirection.FORWARD else ScrollDirection.BACKWARD
+            Log.d(TAG, "Dir(fromIndex/toIndex): \${from}→\${to} = \${dir}")
+            return dir
+        }
+
+        // Tier 2: scrollDeltaY (API 26+). Wrapped in try-catch because some OEM
+        // implementations on API 26/27 may throw or behave unexpectedly; we fall
+        // through to Tier 3 silently on any failure.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                val delta = event.scrollDeltaY
+                if (delta != 0) {
+                    val dir = if (delta > 0) ScrollDirection.FORWARD else ScrollDirection.BACKWARD
+                    Log.d(TAG, "Dir(scrollDeltaY=\${delta}) = \${dir}")
+                    return dir
+                }
+            } catch (_: Exception) { /* fall through to Tier 3 */ }
+        }
+
+        // Tier 3: consecutive scrollY delta
+        val currY = event.scrollY
+        if (prevScrollY == Int.MIN_VALUE) {
+            prevScrollY = currY
+            Log.d(TAG, "Dir(scrollY): first sample, storing \${currY}, returning UNKNOWN")
+            return ScrollDirection.UNKNOWN
+        }
+        val dir = when {
+            currY > prevScrollY -> ScrollDirection.FORWARD
+            currY < prevScrollY -> ScrollDirection.BACKWARD
+            else                -> ScrollDirection.UNKNOWN
+        }
+        Log.d(TAG, "Dir(scrollY delta): prev=\${prevScrollY} curr=\${currY} = \${dir}")
+        prevScrollY = currY
+        return dir
+    }
+
+    // ── Session advance ───────────────────────────────────────────────────────
+
+    /**
+     * Advances the session for one reel-to-reel scroll.
+     *
+     * @param direction Detected scroll direction (call detectScrollDirection() first).
+     * @return true  → reel is brand-new this session; Phase 3A counting should run.
+     *         false → revisit (backward, or re-entering an already-seen reel);
+     *                 Phase 3A counting must be skipped entirely.
+     */
+    fun advance(direction: ScrollDirection): Boolean {
+        // Guard: if somehow called before onSessionEntered(), init conservatively
+        if (currentIndex < 0) {
+            currentIndex    = 0
+            maxForwardIndex = 0
+        }
+
+        return when (direction) {
+            ScrollDirection.FORWARD -> {
+                currentIndex++
+                val isNew = currentIndex > maxForwardIndex
+                if (isNew) {
+                    maxForwardIndex = currentIndex
+                    Log.d(TAG, "FORWARD → NEW reel #\${currentIndex} (maxForward=\${maxForwardIndex})")
+                } else {
+                    Log.d(TAG, "FORWARD → REVISIT reel #\${currentIndex} (maxForward=\${maxForwardIndex})")
+                }
+                isNew
+            }
+            ScrollDirection.BACKWARD -> {
+                currentIndex = maxOf(0, currentIndex - 1)
+                Log.d(TAG, "BACKWARD → REVISIT reel #\${currentIndex} (maxForward=\${maxForwardIndex})")
+                false   // backward is always a revisit
+            }
+            ScrollDirection.UNKNOWN -> {
+                // Unknown direction: safe default — don't count
+                Log.d(TAG, "UNKNOWN direction → REVISIT (safe default)")
+                false
+            }
         }
     }
 }
