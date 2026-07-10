@@ -224,26 +224,128 @@ function LockCard({ item, index }: { item: ActiveLockDisplayItem; index: number 
   );
 }
 
+// ── Dummy data — replaced with real reel-tracking logic in a later step ──────
+const DUMMY_REELS_TODAY = 0;
+const DUMMY_INSTAGRAM_TODAY = 0;
+const DUMMY_YOUTUBE_TODAY = 0;
+const DUMMY_WEEKLY = [
+  { day: "Mon", count: 0 },
+  { day: "Tue", count: 0 },
+  { day: "Wed", count: 0 },
+  { day: "Thu", count: 0 },
+  { day: "Fri", count: 0 },
+  { day: "Sat", count: 0 },
+  { day: "Sun", count: 0 },
+];
+const DUMMY_TOTAL_REELS = 0;
+const DUMMY_DAILY_AVG = 0;
+const DUMMY_TOP_APPS = [
+  { name: "Instagram", icon: "instagram" as const, count: 0 },
+  { name: "YouTube", icon: "youtube" as const, count: 0 },
+];
+
+function WeeklyBarChart({ data }: { data: { day: string; count: number }[] }) {
+  const max = Math.max(1, ...data.map((d) => d.count));
+
+  return (
+    <View style={styles.chartRow}>
+      {data.map((d) => (
+        <View key={d.day} style={styles.chartBarWrapper}>
+          <View style={styles.chartBarTrack}>
+            <LinearGradient
+              colors={["#FFBF80", "#FFA660"]}
+              start={{ x: 0, y: 1 }}
+              end={{ x: 0, y: 0 }}
+              style={[styles.chartBarFill, { height: `${Math.max(4, (d.count / max) * 100)}%` }]}
+            />
+          </View>
+          <Text style={styles.chartBarLabel}>{d.day}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function DuckPalScreen() {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const bottomPad = Platform.OS === "web" ? 34 + 84 : 60 + insets.bottom;
   const { toggleAppMode } = useAppMode();
 
   return (
     <GradientBackground>
-      <View style={[styles.duckPalContainer, { paddingTop: topPad + 16 }]}>
-        <Animated.View style={[styles.header, { marginBottom: 0 }]}>
-          <TouchableOpacity onPress={toggleAppMode} activeOpacity={0.7}>
-            <Text style={styles.greeting}>Meet your new companion</Text>
-            <Text style={styles.appTitle}>DuckPal</Text>
-          </TouchableOpacity>
-          <DuckCharacter />
-        </Animated.View>
+      {/* Fixed top section — always visible, no scroll */}
+      <View style={[styles.duckPalTop, { paddingTop: topPad + 16 }]}>
+        <TouchableOpacity onPress={toggleAppMode} activeOpacity={0.7} style={styles.duckPalTitleTap}>
+          <Text style={styles.greeting}>Your reel companion</Text>
+          <Text style={styles.appTitle}>DuckPal</Text>
+        </TouchableOpacity>
 
-        <View style={styles.duckPalBody}>
-          <Text style={styles.duckPalPlaceholder}>DuckPal — Coming Soon</Text>
+        <View style={styles.duckPalCharacterWrap}>
+          <DuckCharacter />
         </View>
+
+        <Text style={styles.duckPalReelsCount}>{DUMMY_REELS_TODAY} Reels Scrolled Today</Text>
+
+        <GlassCard style={styles.duckPalSplitCard} padding={14}>
+          <View style={styles.duckPalSplitRow}>
+            <View style={styles.duckPalSplitItem}>
+              <FontAwesome5 name="instagram" size={16} color="#FFBF80" />
+              <Text style={styles.duckPalSplitCount}>{DUMMY_INSTAGRAM_TODAY}</Text>
+            </View>
+            <View style={styles.duckPalSplitDivider} />
+            <View style={styles.duckPalSplitItem}>
+              <FontAwesome5 name="youtube" size={16} color="#FFBF80" />
+              <Text style={styles.duckPalSplitCount}>{DUMMY_YOUTUBE_TODAY}</Text>
+            </View>
+          </View>
+        </GlassCard>
       </View>
+
+      {/* Scrollable stats section */}
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[styles.duckPalScrollContent, { paddingBottom: bottomPad + 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <GlassCard padding={20}>
+          <Text style={styles.duckPalSectionTitle}>Weekly activity</Text>
+          <WeeklyBarChart data={DUMMY_WEEKLY} />
+
+          <View style={styles.duckPalTotalsRow}>
+            <View style={styles.duckPalTotalItem}>
+              <Text style={styles.duckPalTotalValue}>{DUMMY_TOTAL_REELS}</Text>
+              <Text style={styles.duckPalTotalLabel}>Total Reels</Text>
+            </View>
+            <View style={styles.duckPalTotalsDivider} />
+            <View style={styles.duckPalTotalItem}>
+              <Text style={styles.duckPalTotalValue}>{DUMMY_DAILY_AVG}</Text>
+              <Text style={styles.duckPalTotalLabel}>Daily avg</Text>
+            </View>
+          </View>
+        </GlassCard>
+
+        <View style={styles.sectionRow}>
+          <Feather name="bar-chart-2" size={15} color="#FFBF80" />
+          <Text style={styles.sectionTitle}>Top apps</Text>
+        </View>
+
+        <View style={styles.lockList}>
+          {DUMMY_TOP_APPS.map((app) => (
+            <GlassCard key={app.name} style={styles.lockCard}>
+              <View style={styles.lockCardInner}>
+                <View style={styles.lockIconBg}>
+                  <FontAwesome5 name={app.icon} size={22} color="#FFBF80" />
+                </View>
+                <View style={styles.lockInfo}>
+                  <Text style={styles.lockAppName}>{app.name}</Text>
+                </View>
+                <Text style={styles.duckPalTopAppCount}>{app.count}</Text>
+              </View>
+            </GlassCard>
+          ))}
+        </View>
+      </ScrollView>
     </GradientBackground>
   );
 }
@@ -458,7 +560,45 @@ const styles = StyleSheet.create({
   emptyBody: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center", lineHeight: 22 },
   warningCard: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 4 },
   warningText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#FF453A", lineHeight: 18 },
-  duckPalContainer: { flex: 1, paddingHorizontal: 20, gap: 16 },
-  duckPalBody: { flex: 1, alignItems: "center", justifyContent: "center" },
-  duckPalPlaceholder: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  duckPalTop: { paddingHorizontal: 20, gap: 14, alignItems: "center" },
+  duckPalTitleTap: { alignSelf: "flex-start" },
+  duckPalCharacterWrap: { marginTop: 4 },
+  duckPalReelsCount: {
+    fontSize: 26,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+    textAlign: "center",
+  },
+  duckPalSplitCard: { alignSelf: "stretch" },
+  duckPalSplitRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 20 },
+  duckPalSplitItem: { flexDirection: "row", alignItems: "center", gap: 8 },
+  duckPalSplitCount: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  duckPalSplitDivider: { width: 1, height: 20, backgroundColor: "rgba(255,255,255,0.1)" },
+  duckPalScrollContent: { paddingHorizontal: 20, paddingTop: 16, gap: 16 },
+  duckPalSectionTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#FFFFFF", marginBottom: 16 },
+  chartRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", height: 120, gap: 8 },
+  chartBarWrapper: { flex: 1, alignItems: "center", gap: 8, height: "100%", justifyContent: "flex-end" },
+  chartBarTrack: {
+    width: "100%",
+    height: 90,
+    borderRadius: 8,
+    backgroundColor: "#2C2C2E",
+    overflow: "hidden",
+    justifyContent: "flex-end",
+  },
+  chartBarFill: { width: "100%", borderRadius: 8 },
+  chartBarLabel: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#8E8E93" },
+  duckPalTotalsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.08)",
+  },
+  duckPalTotalItem: { flex: 1, alignItems: "center", gap: 4 },
+  duckPalTotalValue: { fontSize: 24, fontFamily: "Inter_700Bold", color: "#FFBF80" },
+  duckPalTotalLabel: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
+  duckPalTotalsDivider: { width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.1)" },
+  duckPalTopAppCount: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFBF80" },
 });
