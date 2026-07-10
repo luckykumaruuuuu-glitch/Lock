@@ -20,6 +20,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Toast } from "@/components/ui/Toast";
 import { GradientBackground } from "@/components/ui/GradientBackground";
 import { PermissionGuardPopup } from "@/components/ui/PermissionGuardPopup";
+import { useAppMode } from "@/context/AppModeContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLock } from "@/context/LockContext";
 import {
@@ -41,6 +42,7 @@ function DuckCharacter() {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   // Read user sound preference so we know whether to unmute on tap.
   const { muted: soundsMuted } = useSounds();
+  const { toggleAppMode } = useAppMode();
 
   const player = useVideoPlayer(DUCK_FULL, (p) => {
     p.loop = false;
@@ -139,6 +141,8 @@ function DuckCharacter() {
       Animated.timing(scaleAnim, { toValue: 0.85, duration: 80, useNativeDriver: true }),
       Animated.spring(scaleAnim, { toValue: 1, friction: 3, tension: 120, useNativeDriver: true }),
     ]).start();
+
+    toggleAppMode();
   }
 
   return (
@@ -223,6 +227,29 @@ function LockCard({ item, index }: { item: ActiveLockDisplayItem; index: number 
   );
 }
 
+function DuckPalScreen() {
+  const insets = useSafeAreaInsets();
+  const topPad = Platform.OS === "web" ? 67 : insets.top;
+
+  return (
+    <GradientBackground>
+      <View style={[styles.duckPalContainer, { paddingTop: topPad + 16 }]}>
+        <Animated.View style={[styles.header, { marginBottom: 0 }]}>
+          <View>
+            <Text style={styles.greeting}>Meet your new companion</Text>
+            <Text style={styles.appTitle}>DuckPal</Text>
+          </View>
+          <DuckCharacter />
+        </Animated.View>
+
+        <View style={styles.duckPalBody}>
+          <Text style={styles.duckPalPlaceholder}>DuckPal — Coming Soon</Text>
+        </View>
+      </View>
+    </GradientBackground>
+  );
+}
+
 function EmptyState() {
   const { t } = useLanguage();
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -252,7 +279,7 @@ function EmptyState() {
   );
 }
 
-export default function HomeScreen() {
+function DuckLockHomeContent() {
   const insets = useSafeAreaInsets();
   const { resetSelection } = useLock();
   const { displayItems, locks, loading } = useActiveLocks(30_000);
@@ -367,6 +394,16 @@ export default function HomeScreen() {
   );
 }
 
+export default function HomeScreen() {
+  const { mode } = useAppMode();
+
+  if (mode === "DuckPal") {
+    return <DuckPalScreen />;
+  }
+
+  return <DuckLockHomeContent />;
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingHorizontal: 20, gap: 16 },
@@ -422,4 +459,7 @@ const styles = StyleSheet.create({
   emptyBody: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center", lineHeight: 22 },
   warningCard: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 4 },
   warningText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#FF453A", lineHeight: 18 },
+  duckPalContainer: { flex: 1, paddingHorizontal: 20, gap: 16 },
+  duckPalBody: { flex: 1, alignItems: "center", justifyContent: "center" },
+  duckPalPlaceholder: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
 });

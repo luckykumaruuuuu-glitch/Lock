@@ -19,6 +19,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { UpdateModal } from "@/components/ui/UpdateModal";
+import { AppModeProvider } from "@/context/AppModeContext";
 import { FirebaseSyncProvider, useFirebaseSyncContext } from "@/context/FirebaseSyncContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { LockProvider } from "@/context/LockContext";
@@ -228,6 +229,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <LanguageProvider>
             <SoundProvider>
+            <AppModeProvider>
             <LockProvider>
               <FirebaseSyncProvider>
                 <UpdateCheckProvider>
@@ -239,6 +241,7 @@ export default function RootLayout() {
                 </UpdateCheckProvider>
               </FirebaseSyncProvider>
             </LockProvider>
+            </AppModeProvider>
             </SoundProvider>
           </LanguageProvider>
         </QueryClientProvider>
