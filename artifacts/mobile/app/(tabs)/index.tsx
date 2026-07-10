@@ -43,19 +43,36 @@ function DuckCharacter() {
 
   const player = useVideoPlayer(DUCK_FULL, (p) => {
     p.loop = false;
-    // CRITICAL: timeUpdateEventInterval defaults to 0 in expo-video 3.x,
-    // which means the timeUpdate event is NEVER emitted until this is set.
-    // Without this, the idle loop (currentTime >= 4 → seek to 0) never fires,
-    // the video plays 0→6 s once and freezes on the last frame.
-    p.timeUpdateEventInterval = 0.1; // fire every 100 ms — accurate for 4 s / 6 s boundary
-    p.play();
-    console.log("[duck] initializer: loop=false, timeUpdateEventInterval=0.1, play() called, playing=", p.playing);
+    // CRITICAL: timeUpdateEventInterval defaults to 0 in expo-video 3.x — set
+    // before readyToPlay so the listener is configured as soon as play starts.
+    p.timeUpdateEventInterval = 0.1; // fire every 100 ms
+    // NOTE: p.play() is intentionally NOT called here.
+    // The initializer runs synchronously during player creation, before the
+    // video source is loaded. Calling play() here fires against an unloaded
+    // player — it silently fails and the player settles in 'paused' state once
+    // the video finishes loading. The statusChange listener below is the
+    // correct place to call play(), because it fires only after 'readyToPlay'.
+    console.log("[duck] initializer: loop=false, timeUpdateEventInterval=0.1 set — waiting for readyToPlay");
   });
+
+  // ── Auto-play on mount (and after every app restart) ──────────────────────
+  // Root cause of freeze-on-launch: useVideoPlayer initializer is synchronous;
+  // the video isn't loaded yet, so p.play() inside it silently fails. The
+  // player then lands in 'paused' once loading finishes — frozen until a tap.
+  // Fix: listen for statusChange and call play() the moment readyToPlay fires.
+  useEffect(() => {
+    const sub = player.addListener("statusChange", ({ status }) => {
+      console.log("[duck] statusChange:", status, "| playing=", player.playing);
+      if (status === "readyToPlay") {
+        player.play();
+        console.log("[duck] readyToPlay → play() called, playing=", player.playing);
+      }
+    });
+    return () => sub.remove();
+  }, [player]);
 
   useEffect(() => {
     const sub = player.addListener("timeUpdate", ({ currentTime }) => {
-      // Debug: confirm event fires and show values.
-      // Remove these logs once behaviour is verified on device.
       console.log("[duck] timeUpdate:", currentTime.toFixed(2), "s | isTouched=", isTouchedRef.current, "| playing=", player.playing);
 
       if (!isTouchedRef.current && currentTime >= 4) {
