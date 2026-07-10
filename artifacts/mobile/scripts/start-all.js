@@ -185,7 +185,7 @@ const metroEnv = {
 
 const metro = spawn(
   "pnpm",
-  ["exec", "expo", "start", "--localhost"],
+  ["exec", "expo", "start", "--localhost", "--port", "8082"],
   { cwd: ROOT, stdio: "inherit", env: metroEnv }
 );
 
