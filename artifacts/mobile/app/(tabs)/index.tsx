@@ -274,16 +274,23 @@ function DuckPalScreen() {
 
   return (
     <GradientBackground>
-      {/* Fixed top section — always visible, no scroll */}
-      <View style={[styles.duckPalTop, { paddingTop: topPad + 16 }]}>
-        <TouchableOpacity onPress={toggleAppMode} activeOpacity={0.7} style={styles.duckPalTitleTap}>
-          <Text style={styles.greeting}>Your reel companion</Text>
-          <Text style={styles.appTitle}>DuckPal</Text>
-        </TouchableOpacity>
-
-        <View style={styles.duckPalCharacterWrap}>
+      {/* Single continuous scroll — no nested scroll views */}
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[styles.duckPalScrollContent, { paddingTop: topPad + 16, paddingBottom: bottomPad + 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header — same row layout/position as DuckLock: title left, duck icon top-right */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={toggleAppMode} activeOpacity={0.7}>
+            <Text style={styles.greeting}>Your reel companion</Text>
+            <Text style={styles.appTitle}>DuckPal</Text>
+          </TouchableOpacity>
           <DuckCharacter />
         </View>
+
+        {/* Placeholder — reserved space for a future growing icon-animation */}
+        <View style={styles.duckPalHeroPlaceholder} />
 
         <Text style={styles.duckPalReelsCount}>{DUMMY_REELS_TODAY} Reels Scrolled Today</Text>
 
@@ -300,14 +307,7 @@ function DuckPalScreen() {
             </View>
           </View>
         </GlassCard>
-      </View>
 
-      {/* Scrollable stats section */}
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={[styles.duckPalScrollContent, { paddingBottom: bottomPad + 24 }]}
-        showsVerticalScrollIndicator={false}
-      >
         <GlassCard padding={20}>
           <Text style={styles.duckPalSectionTitle}>Weekly activity</Text>
           <WeeklyBarChart data={DUMMY_WEEKLY} />
@@ -560,9 +560,14 @@ const styles = StyleSheet.create({
   emptyBody: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center", lineHeight: 22 },
   warningCard: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 4 },
   warningText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#FF453A", lineHeight: 18 },
-  duckPalTop: { paddingHorizontal: 20, gap: 14, alignItems: "center" },
-  duckPalTitleTap: { alignSelf: "flex-start" },
-  duckPalCharacterWrap: { marginTop: 4 },
+  duckPalHeroPlaceholder: {
+    alignSelf: "stretch",
+    height: 280,
+    borderRadius: 24,
+    backgroundColor: "#1C1C1E",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
   duckPalReelsCount: {
     fontSize: 26,
     fontFamily: "Inter_700Bold",

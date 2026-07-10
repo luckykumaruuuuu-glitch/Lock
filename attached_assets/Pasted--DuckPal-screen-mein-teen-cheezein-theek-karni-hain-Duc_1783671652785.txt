@@ -1,0 +1,10 @@
+"DuckPal screen mein teen cheezein theek karni hain:
+Duck touch-icon galat jagah aa gaya hai: Jo bada duck-character abhi center mein (page ke beech, 'Your reel companion / DuckPal' title ke neeche) rakha hai — yeh galat hai. Woh chhota touch-icon (jo title ke bagal mein, top-right area mein DuckLock screen par hamesha rehta hai, aur mode-switch/animation ka kaam karta hai) — usko wapas EXACT usi jagah par lao jaha woh DuckLock screen mein hota hai (title ke row mein, top-right). Yeh duck-icon dono screens (DuckLock aur DuckPal) mein SAME jagah, SAME size mein dikhna chahiye — kahin bhi center mein bada character NAHI hona chahiye abhi.
+Center mein sirf ek khaali placeholder box rakho: Jahan abhi bada duck-character tha center mein, uski jagah ek simple khaali/empty box (placeholder) rakho — koi image/icon abhi nahi, sirf jagah reserve karo. Yeh baad mein ek bade growing-animation se replace hoga (abhi implement nahi karna).
+Placeholder area BADA karo: Yeh khaali box abhi chhota hai — ise significantly BADA karo (zyada height aur width), kyunki future mein yahan ek bada, growing icon-animation aayega jo dheere-dheere size mein badhega. Neeche ka poora layout bhi thoda aur stretch/adjust karo taaki yeh bada placeholder area comfortably fit ho jaaye.
+Poori screen EK HI scroll mein ho: Abhi 'Weekly activity' section alag se apna khud ka nested-scroll kar raha hai, jisse do-alag-scrolling ka irritating feel aata hai. Poore DuckPal screen ko EK SINGLE ScrollView mein wrap karo — top section (title, placeholder-box, Reels-count, Instagram/YouTube split) aur neeche ka section (Weekly activity chart) — sab kuch EK hi continuous scroll mein ho, koi nested/inner scroll nahi.
+Zaroori:
+Duck touch-icon ki animation-logic (jo already sahi kaam kar rahi hai) ko BILKUL mat chhedna — sirf uski POSITION wapas top-right par honi chahiye, dono screens mein consistent
+DuckLock mode (existing) ko bilkul mat chhedna
+Title-tap mode-switch logic ko bhi mat chhedna
+Fix ke baad screenshot confirm karo"
