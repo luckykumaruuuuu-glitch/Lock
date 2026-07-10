@@ -2,7 +2,7 @@ import { FontAwesome5, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import { useVideoPlayer, VideoView, VideoSource } from "expo-video";
+import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -31,75 +31,51 @@ import {
 } from "@/hooks/useLockStorage";
 import { usePermissionGuard } from "@/hooks/usePermissionGuard";
 
-const DUCK_IDLE = require("../../assets/duck-idle.mp4");
-const DUCK_TOUCH = require("../../assets/duck-touch.mp4");
+// Single combined video: 0–4 s = idle loop, 4–6 s = touch animation.
+// Sound is already baked into the file by the user — no mute/unmute needed.
+const DUCK_FULL = require("../../assets/duck-full.mp4");
 
 function DuckCharacter() {
-  // Tracks which source is currently loaded: 'idle' or 'touch'
-  const currentSourceRef = useRef<'idle' | 'touch'>('idle');
+  // Ref instead of state: avoids re-subscribing the timeUpdate listener on
+  // every tap. The listener reads isTouchedRef.current directly.
+  const isTouchedRef = useRef(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  const player = useVideoPlayer(DUCK_IDLE, (p) => {
-    p.loop = true;
-    p.muted = true;
+  const player = useVideoPlayer(DUCK_FULL, (p) => {
+    p.loop = false; // manual loop via timeUpdate seek
     p.play();
   });
 
-  // Bounce transition: compress → run action at peak squeeze → spring back
-  // Hides the video-switch gap behind the compress keyframe (scale 0.85 = smallest frame).
-  async function bounceTransition(action: () => Promise<void> | void) {
-    await new Promise<void>((resolve) => {
-      Animated.timing(scaleAnim, {
-        toValue: 0.85,
-        duration: 80,
-        useNativeDriver: true,
-      }).start(() => resolve());
-    });
-    await action();
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      friction: 3,
-      tension: 120,
-      useNativeDriver: true,
-    }).start();
-  }
-
   useEffect(() => {
-    const sub = player.addListener("playToEnd", () => {
-      if (currentSourceRef.current !== 'touch') return;
-      // Touch video khatam — wapas idle par switch
-      currentSourceRef.current = 'idle';
-      bounceTransition(async () => {
-        console.time('[duck] replaceAsync(IDLE)');
-        await player.replaceAsync(DUCK_IDLE);
-        console.timeEnd('[duck] replaceAsync(IDLE)');
-        player.loop = true;
-        player.muted = true;
-        player.play();
-      });
-    });
-    return () => sub.remove();
-  }, [player]);
-
-  function handlePress() {
-    if (currentSourceRef.current === 'touch') {
-      // Touch video already loaded — sirf shuru se restart karo, replace ki zaroorat nahi
-      bounceTransition(async () => {
+    // timeUpdate fires ~every 250 ms in expo-video 3.x — accurate enough for
+    // a 4 s / 6 s boundary. No setInterval needed.
+    const sub = player.addListener("timeUpdate", ({ currentTime }) => {
+      if (!isTouchedRef.current && currentTime >= 4) {
+        // Idle loop: 4 s reached → jump back to 0
         player.currentTime = 0;
         player.play();
-      });
-    } else {
-      // Idle se touch par switch karo
-      currentSourceRef.current = 'touch';
-      bounceTransition(async () => {
-        console.time('[duck] replaceAsync(TOUCH)');
-        await player.replaceAsync(DUCK_TOUCH);
-        console.timeEnd('[duck] replaceAsync(TOUCH)');
-        player.loop = false;
-        player.muted = false;
+      }
+      if (isTouchedRef.current && currentTime >= 6) {
+        // Touch segment done → back to idle loop
+        isTouchedRef.current = false;
+        player.currentTime = 0;
         player.play();
-      });
-    }
+      }
+    });
+    return () => sub.remove();
+  }, [player]); // subscribe once; ref keeps the flag fresh without re-subscribing
+
+  function handlePress() {
+    // Tap during touch segment → restart from 4 s immediately
+    // Tap during idle → enter touch segment from 4 s
+    isTouchedRef.current = true;
+    player.currentTime = 4;
+    player.play();
+    // Bounce: compress → spring back
+    Animated.sequence([
+      Animated.timing(scaleAnim, { toValue: 0.85, duration: 80, useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1, friction: 3, tension: 120, useNativeDriver: true }),
+    ]).start();
   }
 
   return (
