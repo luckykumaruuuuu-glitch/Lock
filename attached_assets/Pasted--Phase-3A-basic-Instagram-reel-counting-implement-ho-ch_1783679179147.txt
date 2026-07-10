@@ -1,0 +1,14 @@
+"Phase 3A (basic Instagram reel-counting) implement ho chuka hai. Ab Phase 3B — duplicate-prevention add karna hai, isi existing reel-counting logic ke upar (Phase 3A ka code na chhedo, sirf ek naya layer add karo).
+Requirement:
+Agar user KISI reel ko already count kar chuka hai (forward-scroll karte hue, 2.5-second threshold pura karke), aur phir WAPAS peeche scroll karke usi reel (ya kisi bhi PEHLE-COUNTED reel) par phir se aata hai — chahe woh use fir se kitni bhi der dekhe — usko DOBARA count NAHI karna hai.
+Technical approach:
+Ek session-level 'seen-position' tracker banao — jab bhi koi reel FORWARD-scroll se count hoti hai, uska ek session-index/counter save karo (jaise 'abhi tak session mein X reels forward-count ho chuki hain')
+Jab user PEECHE scroll kare (upward swipe reels mein, jo pichli reel par le jaata hai), us reel ke liye timer/counting-logic COMPLETELY SKIP karo — chahe user kitni der bhi ruke wahan, count NAHI badhega
+Jab user WAPAS AAGE badhe (unhi purani reels se hoke), tab bhi un reels ko dobara count NAHI karna — sirf jab user un reels se AAGE NIKAL KAR bilkul NAYI (pehle kabhi na-dekhi) reel par pahunche, TABHI naya counting-threshold shuru ho
+Yeh session-tracker sirf CURRENT Instagram-session ke liye hona chahiye — jaise hi user Instagram band kare ya app switch kare, agli baar jab Instagram Reels dobara khole, yeh ek FRESH session maana jaaye (purani session ka data reset ho jaaye, lekin already-saved TOTAL count — jo local storage mein hai — wo bilkul untouched rahe)
+Zaroori:
+Phase 3A ka existing counting-logic (minimum-time-threshold, ads-skip) bilkul mat chhedna, sirf uske upar yeh duplicate-prevention layer add karo
+Yeh abhi bhi sirf Instagram ke liye hai
+Locking ka existing Accessibility Service logic bilkul mat chhedna
+Yeh code-level par ready rakho, hum ise real APK/dev-build banne ke baad Phase 3A ke saath ek saath test karenge
+Implement karne ke baad exact batao — session-tracking ka logic kaise design kiya, aur 'forward vs backward scroll' kaise pehchana jaata hai accessibility-events se."

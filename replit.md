@@ -22,7 +22,7 @@ pnpm install          # install all workspace deps
 The `start-all` script runs three things in parallel:
 1. **Static file server** on port 5000 (immediate, serves a loading page then the built web export)
 2. **Expo web export** (`expo export --platform web`) — output lands in `artifacts/mobile/web-dist/`
-3. **Metro dev server** on port 8081 — for Expo Go / native builds
+3. **Metro dev server** on port 8082 — for Expo Go / native builds
 
 The preview pane shows the web version. For the native app, scan the QR code printed in the workflow logs with Expo Go.
 
