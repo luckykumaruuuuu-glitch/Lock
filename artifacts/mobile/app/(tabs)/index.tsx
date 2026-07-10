@@ -43,31 +43,40 @@ function DuckCharacter() {
 
   const player = useVideoPlayer(DUCK_FULL, (p) => {
     p.loop = false;
-    // CRITICAL: timeUpdateEventInterval defaults to 0 in expo-video 3.x — set
-    // before readyToPlay so the listener is configured as soon as play starts.
+    // CRITICAL: timeUpdateEventInterval defaults to 0 in expo-video 3.x — must
+    // be set before playback starts or timeUpdate events are never emitted.
     p.timeUpdateEventInterval = 0.1; // fire every 100 ms
-    // NOTE: p.play() is intentionally NOT called here.
-    // The initializer runs synchronously during player creation, before the
-    // video source is loaded. Calling play() here fires against an unloaded
-    // player — it silently fails and the player settles in 'paused' state once
-    // the video finishes loading. The statusChange listener below is the
-    // correct place to call play(), because it fires only after 'readyToPlay'.
-    console.log("[duck] initializer: loop=false, timeUpdateEventInterval=0.1 set — waiting for readyToPlay");
+    // Call play() here so the player queues the intent immediately.
+    // On some implementations this works even before the video finishes loading.
+    // The statusChange useEffect below is the guaranteed fallback for platforms
+    // where this call is ignored before load completes.
+    p.play();
+    console.log("[duck] initializer: play() called, playing=", p.playing);
   });
 
-  // ── Auto-play on mount (and after every app restart) ──────────────────────
-  // Root cause of freeze-on-launch: useVideoPlayer initializer is synchronous;
-  // the video isn't loaded yet, so p.play() inside it silently fails. The
-  // player then lands in 'paused' once loading finishes — frozen until a tap.
-  // Fix: listen for statusChange and call play() the moment readyToPlay fires.
+  // ── Guaranteed auto-play: covers the race condition ───────────────────────
+  // Problem: useEffect runs AFTER React commits the render. For bundled local
+  // assets, statusChange:"readyToPlay" can fire BEFORE this effect registers
+  // its listener — the event is missed and the player stays paused forever.
+  // Fix A (initializer p.play()): queues play intent synchronously during
+  //   player creation, before load completes.
+  // Fix B (this effect): after registering the listener, immediately check
+  //   player.status — if readyToPlay was already missed, call play() right now.
+  //   The listener also handles any future readyToPlay (e.g. after player reset).
   useEffect(() => {
     const sub = player.addListener("statusChange", ({ status }) => {
       console.log("[duck] statusChange:", status, "| playing=", player.playing);
       if (status === "readyToPlay") {
         player.play();
-        console.log("[duck] readyToPlay → play() called, playing=", player.playing);
+        console.log("[duck] statusChange readyToPlay → play() called, playing=", player.playing);
       }
     });
+    // Fix B: handle the race — readyToPlay may have already fired before this
+    // effect ran. Check current status and play immediately if so.
+    if ((player as any).status === "readyToPlay" && !player.playing) {
+      player.play();
+      console.log("[duck] effect mount: already readyToPlay, playing=", player.playing, "→ play() called now");
+    }
     return () => sub.remove();
   }, [player]);
 
