@@ -173,10 +173,10 @@ const withFocusLockNativeFiles = (config) =>
       fs.writeFileSync(path.join(xmlDir, "accessibility_service_config.xml"),
 `<?xml version="1.0" encoding="utf-8"?>
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeViewScrolled|typeWindowContentChanged"
     android:accessibilityFeedbackType="feedbackAllMask"
     android:accessibilityFlags="flagReportViewIds|flagRetrieveInteractiveWindows"
-    android:canRetrieveWindowContent="false"
+    android:canRetrieveWindowContent="true"
     android:notificationTimeout="50"
     android:description="@string/focuslock_accessibility_description"
     android:settingsActivity="${PACKAGE_NAME}.MainActivity" />
@@ -730,6 +730,9 @@ import android.widget.Toast
  * Core enforcement service.
  * Monitors foreground app changes and launches the lock overlay when a locked
  * app is detected. Also manages the persistent notification and tamper alerts.
+ *
+ * Reel detection: ReelDetector is instantiated here and receives every event via
+ * reelDetector.onEvent() — called AFTER all locking logic so it never interferes.
  */
 class AppBlockerAccessibilityService : AccessibilityService() {
 
@@ -739,6 +742,9 @@ class AppBlockerAccessibilityService : AccessibilityService() {
     // state of a different package (that previously caused a bypass window).
     private val lastBlockedTimes = mutableMapOf<String, Long>()
     private val DEBOUNCE_MS     = 2_000L
+
+    // ── Reel detection (Phase 3A) — independent from locking ──────────────────
+    private var reelDetector: ReelDetector? = null
 
     private val HOME_LAUNCHERS = setOf(
         "com.android.launcher",
@@ -759,7 +765,9 @@ class AppBlockerAccessibilityService : AccessibilityService() {
         repo = LockRepository(applicationContext)
 
         serviceInfo = AccessibilityServiceInfo().apply {
-            eventTypes     = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+            eventTypes     = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
+                             AccessibilityEvent.TYPE_VIEW_SCROLLED or
+                             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
             feedbackType   = AccessibilityServiceInfo.FEEDBACK_ALL_MASK
             flags          = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
                              AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
@@ -773,6 +781,10 @@ class AppBlockerAccessibilityService : AccessibilityService() {
         }
 
         FocusLockNotificationService.cancelTamperNotification(applicationContext)
+
+        // Initialise reel detector (independent — no locking side-effects)
+        reelDetector = ReelDetector(applicationContext)
+
         // ⚠️ DEBUG — remove before production
         val lockFilePath = applicationContext.filesDir.absolutePath + "/focuslock_data.json"
         Log.d("DuckLock", "✅ Service connected. Lock file path: $lockFilePath")
@@ -780,44 +792,69 @@ class AppBlockerAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+        event ?: return
 
-        val pkg = event.packageName?.toString() ?: return
-        if (pkg == applicationContext.packageName) return
-        if (pkg in HOME_LAUNCHERS) return
+        // ════════════════════════════════════════════════════════════════════════
+        // LOCKING LOGIC — not modified (Phase 1/2). Only TYPE_WINDOW_STATE_CHANGED
+        // events reach the blocking code paths below.
+        // ════════════════════════════════════════════════════════════════════════
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            val pkg = event.packageName?.toString() ?: return
+            if (pkg == applicationContext.packageName) {
+                // Still pass to reel detector even for our own package (harmless, returns early inside)
+                reelDetector?.onEvent(event, this)
+                return
+            }
+            if (pkg in HOME_LAUNCHERS) {
+                reelDetector?.onEvent(event, this)
+                return
+            }
 
-        val now = System.currentTimeMillis()
-        val lastTimeForPkg = lastBlockedTimes[pkg]
-        if (lastTimeForPkg != null && now - lastTimeForPkg < DEBOUNCE_MS) return
+            val now = System.currentTimeMillis()
+            val lastTimeForPkg = lastBlockedTimes[pkg]
+            if (lastTimeForPkg != null && now - lastTimeForPkg < DEBOUNCE_MS) {
+                reelDetector?.onEvent(event, this)
+                return
+            }
 
-        // ⚠️ DEBUG — remove before production
-        Log.d("DuckLock", "📱 Foreground app detected: $pkg")
+            // ⚠️ DEBUG — remove before production
+            Log.d("DuckLock", "📱 Foreground app detected: $pkg")
 
-        val endTime = repo.isPackageLocked(pkg)
-        // ⚠️ DEBUG — remove before production
-        Log.d("DuckLock", "🔒 Is '$pkg' locked? \${endTime != null}")
-        if (endTime == null) return
+            val endTime = repo.isPackageLocked(pkg)
+            // ⚠️ DEBUG — remove before production
+            Log.d("DuckLock", "🔒 Is '$pkg' locked? \${endTime != null}")
+            if (endTime == null) {
+                reelDetector?.onEvent(event, this)
+                return
+            }
 
-        // ⚠️ DEBUG — remove before production
-        Log.d("DuckLock", "🚫 Blocking triggered for: $pkg")
-        Toast.makeText(applicationContext, "🚫 Blocking: $pkg", Toast.LENGTH_SHORT).show()
+            // ⚠️ DEBUG — remove before production
+            Log.d("DuckLock", "🚫 Blocking triggered for: $pkg")
+            Toast.makeText(applicationContext, "🚫 Blocking: $pkg", Toast.LENGTH_SHORT).show()
 
-        // Ensure foreground notification is active — prevents aggressive OEMs (MIUI, OPPO, etc.)
-        // from killing this accessibility service when the React Native app is in background.
-        FocusLockNotificationService.start(applicationContext)
+            // Ensure foreground notification is active — prevents aggressive OEMs (MIUI, OPPO, etc.)
+            // from killing this accessibility service when the React Native app is in background.
+            FocusLockNotificationService.start(applicationContext)
 
-        lastBlockedTimes[pkg] = now
+            lastBlockedTimes[pkg] = now
 
-        val appName = repo.getAppName(pkg)
+            val appName = repo.getAppName(pkg)
 
-        startActivity(Intent(applicationContext, LockOverlayActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(LockOverlayActivity.EXTRA_APP_NAME, appName)
-            putExtra(LockOverlayActivity.EXTRA_PKG_NAME,  pkg)
-            putExtra(LockOverlayActivity.EXTRA_END_TIME,  endTime)
-        })
+            startActivity(Intent(applicationContext, LockOverlayActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra(LockOverlayActivity.EXTRA_APP_NAME, appName)
+                putExtra(LockOverlayActivity.EXTRA_PKG_NAME,  pkg)
+                putExtra(LockOverlayActivity.EXTRA_END_TIME,  endTime)
+            })
+        }
+
+        // ════════════════════════════════════════════════════════════════════════
+        // REEL DETECTION (Phase 3A) — runs for ALL event types, fully independent.
+        // Locking logic above is completely unaffected by this call.
+        // ════════════════════════════════════════════════════════════════════════
+        reelDetector?.onEvent(event, this)
     }
 
     override fun onInterrupt() {}
@@ -866,6 +903,402 @@ class BootReceiver : BroadcastReceiver() {
         FocusLockNotificationService.createChannels(context)
         FocusLockNotificationService.start(context)
     }
+}
+`);
+
+      /* ════════════════════════════════════════════════
+         ReelDetector.kt  (Phase 3A — Instagram only)
+      ════════════════════════════════════════════════ */
+      fs.writeFileSync(path.join(kotlinDir, "ReelDetector.kt"),
+`package ${PACKAGE_NAME}
+
+import android.accessibilityservice.AccessibilityService
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
+import org.json.JSONObject
+import java.io.File
+import java.lang.ref.WeakReference
+import java.text.SimpleDateFormat
+import java.util.*
+
+/**
+ * ReelDetector — Phase 3A: Instagram Reel counting via Accessibility tree.
+ *
+ * COMPLETELY INDEPENDENT from app-locking logic. Instantiated by
+ * AppBlockerAccessibilityService and receives events via onEvent().
+ * It never reads or modifies any lock state.
+ *
+ * ── Detection strategy ────────────────────────────────────────────────────────
+ *
+ * 1. WINDOW_STATE_CHANGED (Instagram foreground / navigation):
+ *    - Tracks the current foreground package.
+ *    - Sets isInReelsContext=true when the incoming window className matches
+ *      known Reels fragment/activity name fragments (see REELS_CLASS_KEYWORDS).
+ *    - Resets context when the user navigates away from Reels or leaves Instagram.
+ *
+ * 2. VIEW_SCROLLED (reel-to-reel transition):
+ *    - Fires on every scroll. We filter to Instagram only.
+ *    - We identify the Reels ViewPager by its resource-ID (REEL_PAGER_ID_KEYWORDS)
+ *      or, while already in Reels context, by className containing ViewPager/RecyclerView.
+ *    - On first matching scroll, isInReelsContext is promoted to true and the sponsored
+ *      check for the now-visible reel is scheduled.
+ *    - Each subsequent qualifying scroll = user moved to a new reel:
+ *      * dwell time = now − reelEnteredAt
+ *      * If dwell >= THRESHOLD_MS (2500 ms) AND currentReelSponsored == false → count +1
+ *      * reelEnteredAt is reset and a fresh sponsored check is scheduled for the new reel.
+ *
+ * 3. Sponsored detection — proactive sampling (fixes rootInActiveWindow timing):
+ *    - When a new reel ENTERS the screen (timer reset), a 300 ms delayed check is
+ *      scheduled via Handler. This gives Instagram time to render the "Sponsored"
+ *      chip before we sample.
+ *    - rootInActiveWindow is traversed (depth ≤ 8) for any node whose text or
+ *      contentDescription equals "Sponsored" (case-insensitive).
+ *    - The result is stored in currentReelSponsored and used when the NEXT scroll
+ *      decides whether to count the reel that just scrolled away.
+ *    - This avoids the race where rootInActiveWindow already shows the NEW reel
+ *      at scroll-away evaluation time.
+ *
+ * ── Storage format (reelcount_data.json in context.filesDir) ─────────────────
+ *   { "date": "2025-01-15", "count": 42, "updatedAt": 1705305600000 }
+ *   If the saved date != today the count is reset to 0 (daily reset).
+ *
+ * ── Instagram Reels ViewPager IDs (observed across Instagram versions) ────────
+ *   clips_viewer_view_pager, reel_viewer_pager, clips_tab_fragment_container,
+ *   video_feed_view_pager, reels_tray_container
+ *   These are Instagram-internal resource names that may change across app
+ *   updates. The className-based fallback (ViewPager2 / RecyclerView while
+ *   isInReelsContext is true) ensures counting still works if IDs change.
+ */
+class ReelDetector(private val context: Context) {
+
+    companion object {
+        private const val TAG          = "DuckLock:ReelDetector"
+        const  val INSTAGRAM_PKG       = "com.instagram.android"
+        const  val THRESHOLD_MS        = 2_500L
+        const  val COUNT_FILE          = "reelcount_data.json"
+        const  val DATE_FORMAT         = "yyyy-MM-dd"
+        private const val SPONSORED_CHECK_DELAY_MS = 300L
+
+        /** Partial resource-ID strings that identify the Reels ViewPager. */
+        val REEL_PAGER_ID_KEYWORDS = listOf(
+            "clips_viewer_view_pager",
+            "reel_viewer_pager",
+            "clips_tab_fragment",
+            "video_feed_view_pager",
+            "reels_tray_container",
+        )
+
+        /**
+         * Fragments of Instagram fragment/activity class names that indicate the
+         * user is inside the Reels section (not Feed, Explore, Profile, etc.).
+         */
+        val REELS_CLASS_KEYWORDS = listOf(
+            "ReelViewer",
+            "ClipsViewer",
+            "ClipsVideo",
+            "VideoWatch",
+            "ReelsTab",
+            "ClipsTab",
+            "IgReels",
+        )
+    }
+
+    // ── Runtime state ─────────────────────────────────────────────────────────
+    private var isInReelsContext      = false
+    private var reelEnteredAt         = 0L      // epoch-ms when current reel appeared
+    private var currentFgPkg          = ""
+    /**
+     * Sponsored state of the reel CURRENTLY on screen.
+     * Set to false when a new reel enters, then updated after
+     * SPONSORED_CHECK_DELAY_MS by the proactive check runnable.
+     * Read at scroll-away time to decide whether to count.
+     */
+    private var currentReelSponsored  = false
+
+    private val handler                = Handler(Looper.getMainLooper())
+    private var sponsoredCheckRunnable: Runnable? = null
+
+    // ── Entry point (called from AppBlockerAccessibilityService) ──────────────
+    fun onEvent(event: AccessibilityEvent, service: AccessibilityService) {
+        val pkg = event.packageName?.toString() ?: return
+
+        when (event.eventType) {
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ->
+                handleWindowState(pkg, event, service)
+            AccessibilityEvent.TYPE_VIEW_SCROLLED ->
+                handleScroll(pkg, event, service)
+            // TYPE_WINDOW_CONTENT_CHANGED not processed — sponsored sampling is
+            // done proactively via the delayed Handler, not reactively here.
+            else -> Unit
+        }
+    }
+
+    // ── Window state: track Instagram foreground + Reels context ──────────────
+    private fun handleWindowState(pkg: String, event: AccessibilityEvent, service: AccessibilityService) {
+        val prevPkg = currentFgPkg
+        currentFgPkg = pkg
+
+        if (pkg != INSTAGRAM_PKG) {
+            // Left Instagram entirely — discard any in-flight reel
+            if (prevPkg == INSTAGRAM_PKG && isInReelsContext) {
+                Log.d(TAG, "Left Instagram — discarding in-flight reel timer")
+                cancelSponsoredCheck()
+                reelEnteredAt        = 0L
+                currentReelSponsored = false
+                isInReelsContext     = false
+            }
+            return
+        }
+
+        // Instagram is (or stays) foreground — check if this window is Reels
+        val className     = event.className?.toString() ?: ""
+        val isReelsWindow = REELS_CLASS_KEYWORDS.any { className.contains(it, ignoreCase = true) }
+
+        if (isReelsWindow && !isInReelsContext) {
+            Log.d(TAG, "Entered Reels context via window: className=\${className}")
+            isInReelsContext = true
+            startReelTimer(service)
+        } else if (!isReelsWindow && className.isNotEmpty() && isInReelsContext) {
+            // Navigated away from Reels within Instagram (e.g. back to Feed)
+            Log.d(TAG, "Left Reels context: className=\${className}")
+            cancelSponsoredCheck()
+            reelEnteredAt        = 0L
+            currentReelSponsored = false
+            isInReelsContext     = false
+        }
+    }
+
+    // ── Scroll: detect reel-to-reel transition ────────────────────────────────
+    private fun handleScroll(pkg: String, event: AccessibilityEvent, service: AccessibilityService) {
+        if (pkg != INSTAGRAM_PKG) return
+
+        val srcNode   = event.source
+        val viewId    = srcNode?.viewIdResourceName ?: ""
+        val className = event.className?.toString() ?: ""
+
+        // Is this scroll from a Reels ViewPager?
+        val isReelsPagerById    = REEL_PAGER_ID_KEYWORDS.any { viewId.contains(it, ignoreCase = true) }
+        val isReelsPagerByClass = isInReelsContext && (
+            className.contains("ViewPager", ignoreCase = true) ||
+            className.contains("RecyclerView", ignoreCase = true)
+        )
+        val isReelsPagerScroll = isReelsPagerById || isReelsPagerByClass
+
+        if (!isReelsPagerScroll) {
+            srcNode?.recycle()
+            return
+        }
+
+        // First qualifying scroll: promote to Reels context if not already set
+        if (!isInReelsContext) {
+            Log.d(TAG, "Reels context set via first ViewPager scroll: viewId=\${viewId}")
+            isInReelsContext = true
+            startReelTimer(service)       // start clock + schedule sponsored check
+            srcNode?.recycle()
+            return  // nothing to count yet — no previous reel to evaluate
+        }
+
+        // ── Reel transition: evaluate the reel that just scrolled away ────────
+        val now     = System.currentTimeMillis()
+        val dwellMs = if (reelEnteredAt > 0) now - reelEnteredAt else 0L
+
+        Log.d(TAG, "Reel scroll — dwell=\${dwellMs}ms (need \${THRESHOLD_MS}ms) sponsored=\${currentReelSponsored}")
+
+        if (dwellMs >= THRESHOLD_MS) {
+            if (currentReelSponsored) {
+                Log.d(TAG, "Sponsored reel — SKIPPED (dwell=\${dwellMs}ms)")
+            } else {
+                Log.d(TAG, "Reel COUNTED (dwell=\${dwellMs}ms)")
+                incrementTodayCount()
+            }
+        } else {
+            Log.d(TAG, "Quick scroll — NOT counted (dwell=\${dwellMs}ms < \${THRESHOLD_MS}ms)")
+        }
+
+        // New reel entering screen — reset timer and schedule fresh sponsored check
+        startReelTimer(service)
+        srcNode?.recycle()
+    }
+
+    // ── New-reel entry: start clock + schedule sponsored check ────────────────
+    /**
+     * Call whenever a new reel appears on screen (first scroll, subsequent scroll,
+     * or Reels window entry). Resets the dwell timer and proactively schedules a
+     * sponsored check after SPONSORED_CHECK_DELAY_MS so the UI has time to render
+     * the "Sponsored" chip before we sample rootInActiveWindow.
+     */
+    private fun startReelTimer(service: AccessibilityService) {
+        reelEnteredAt        = System.currentTimeMillis()
+        currentReelSponsored = false  // optimistic: assume not sponsored
+        scheduleSponsoredCheck(service)
+    }
+
+    private fun cancelSponsoredCheck() {
+        sponsoredCheckRunnable?.let { handler.removeCallbacks(it) }
+        sponsoredCheckRunnable = null
+    }
+
+    private fun scheduleSponsoredCheck(service: AccessibilityService) {
+        cancelSponsoredCheck()
+        val svcRef = WeakReference(service)
+        val runnable = Runnable {
+            sponsoredCheckRunnable = null
+            val svc  = svcRef.get() ?: return@Runnable
+            val root = svc.rootInActiveWindow ?: return@Runnable
+            val isSponsored = containsSponsoredLabel(root)
+            root.recycle()
+            currentReelSponsored = isSponsored
+            if (isSponsored) Log.d(TAG, "⚠️ Current reel is Sponsored — will be skipped when scrolled")
+        }
+        sponsoredCheckRunnable = runnable
+        handler.postDelayed(runnable, SPONSORED_CHECK_DELAY_MS)
+    }
+
+    // ── Sponsored label tree traversal ───────────────────────────────────────
+    /**
+     * Depth-first traversal (max 8 levels) looking for Instagram's "Sponsored"
+     * ad label. Instagram renders it as a plain text node or accessibility label
+     * on the ad indicator chip.
+     */
+    private fun containsSponsoredLabel(node: AccessibilityNodeInfo, depth: Int = 0): Boolean {
+        if (depth > 8) return false
+        val text = node.text?.toString()?.trim() ?: ""
+        val cd   = node.contentDescription?.toString()?.trim() ?: ""
+        if (text.equals("Sponsored", ignoreCase = true) ||
+            cd.equals("Sponsored",   ignoreCase = true)) {
+            return true
+        }
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            val found = containsSponsoredLabel(child, depth + 1)
+            child.recycle()
+            if (found) return true
+        }
+        return false
+    }
+
+    // ── Storage ───────────────────────────────────────────────────────────────
+    private fun todayString(): String =
+        SimpleDateFormat(DATE_FORMAT, Locale.US).format(Date())
+
+    private fun countFile(): File = File(context.filesDir, COUNT_FILE)
+
+    /** Returns (todayDateString, currentCount). Resets to 0 on date rollover. */
+    private fun readEntry(): Pair<String, Int> {
+        val today = todayString()
+        return try {
+            val json  = JSONObject(countFile().readText())
+            val saved = json.optString("date", "")
+            val count = if (saved == today) json.optInt("count", 0) else 0
+            Pair(today, count)
+        } catch (e: Exception) {
+            Pair(today, 0)
+        }
+    }
+
+    private fun incrementTodayCount() {
+        val (today, current) = readEntry()
+        val newCount = current + 1
+        try {
+            countFile().writeText(JSONObject().apply {
+                put("date",      today)
+                put("count",     newCount)
+                put("updatedAt", System.currentTimeMillis())
+            }.toString())
+            Log.d(TAG, "💾 Count saved: \${newCount} reels today (\${today})")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to write reel count: \${e.message}")
+        }
+    }
+
+    /** Called by ReelCounterModule to expose today's count to JavaScript. */
+    fun readTodayCount(): JSONObject {
+        val (today, count) = readEntry()
+        return JSONObject().apply {
+            put("date",  today)
+            put("count", count)
+        }
+    }
+}
+`);
+
+      /* ════════════════════════════════════════════════
+         ReelCounterModule.kt  — JS bridge
+      ════════════════════════════════════════════════ */
+      fs.writeFileSync(path.join(kotlinDir, "ReelCounterModule.kt"),
+`package ${PACKAGE_NAME}
+
+import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.Promise
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod
+import org.json.JSONObject
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
+
+/**
+ * Exposes Instagram reel-count data to JavaScript.
+ *
+ * JS usage (React Native):
+ *   import { NativeModules } from 'react-native';
+ *   const { date, count } = await NativeModules.ReelCounter.getTodayCount();
+ *   // → { date: "2025-01-15", count: 42 }
+ */
+class ReelCounterModule(private val ctx: ReactApplicationContext)
+    : ReactContextBaseJavaModule(ctx) {
+
+    override fun getName() = "ReelCounter"
+
+    /** Returns { date: "yyyy-MM-dd", count: number } for today. */
+    @ReactMethod
+    fun getTodayCount(promise: Promise) {
+        try {
+            val file  = File(ctx.filesDir, ReelDetector.COUNT_FILE)
+            val today = SimpleDateFormat(ReelDetector.DATE_FORMAT, Locale.US).format(Date())
+            val map   = Arguments.createMap()
+
+            if (!file.exists()) {
+                map.putString("date",  today)
+                map.putInt("count",    0)
+                promise.resolve(map)
+                return
+            }
+
+            val json  = JSONObject(file.readText())
+            val saved = json.optString("date", "")
+            val count = if (saved == today) json.optInt("count", 0) else 0
+
+            map.putString("date",  today)
+            map.putInt("count",    count)
+            promise.resolve(map)
+        } catch (e: Exception) {
+            promise.reject("REEL_COUNT_ERROR", e.message ?: "Unknown error", e)
+        }
+    }
+}
+`);
+
+      /* ── ReelCounterPackage.kt ── */
+      fs.writeFileSync(path.join(kotlinDir, "ReelCounterPackage.kt"),
+`package ${PACKAGE_NAME}
+
+import com.facebook.react.ReactPackage
+import com.facebook.react.bridge.NativeModule
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.uimanager.ViewManager
+
+class ReelCounterPackage : ReactPackage {
+    override fun createNativeModules(ctx: ReactApplicationContext): List<NativeModule> =
+        listOf(ReelCounterModule(ctx))
+
+    override fun createViewManagers(ctx: ReactApplicationContext): List<ViewManager<*, *>> =
+        emptyList()
 }
 `);
 
@@ -1262,10 +1695,52 @@ class PermissionCheckerPackage : ReactPackage {
 `
       );
 
-      /* ── Patch MainApplication.kt to register the package ── */
+      /* ── Patch MainApplication.kt to register both native packages ── */
       const mainAppPath = path.join(kotlinDir, "MainApplication.kt");
       if (fs.existsSync(mainAppPath)) {
         let content = fs.readFileSync(mainAppPath, "utf8");
+
+        // Register ReelCounterPackage (reel counting JS bridge)
+        if (!content.includes("ReelCounterPackage")) {
+          const REEL_PATTERNS = [
+            {
+              // .apply block — receiver is the list itself, so bare add() works
+              regex: /(PackageList\(this\)\.packages\.apply\s*\{)/,
+              replacement: "$1\n              add(ReelCounterPackage())",
+            },
+            {
+              // .also block — receiver is NOT the list; use it.add()
+              regex: /(PackageList\(this\)\.packages\.also\s*\{)/,
+              replacement: "$1\n              it.add(ReelCounterPackage())",
+            },
+            {
+              regex: /(val packages = PackageList\(this\)\.packages)/,
+              replacement: "$1\n          packages.add(ReelCounterPackage())",
+            },
+          ];
+          let patched = content;
+          let matchedPattern = null;
+          for (const { regex, replacement } of REEL_PATTERNS) {
+            const result = content.replace(regex, replacement);
+            if (result !== content) {
+              patched = result;
+              matchedPattern = regex.toString();
+              break;
+            }
+          }
+          if (!matchedPattern) {
+            throw new Error(
+              "[withFocusLockAndroid] ReelCounterPackage was NOT registered in MainApplication.kt.\n" +
+              "None of the known PackageList patterns matched. Add: add(ReelCounterPackage())\n" +
+              "Then add the pattern to withFocusLockAndroid.js REEL_PATTERNS array."
+            );
+          }
+          content = patched;
+          console.log(`[withFocusLockAndroid] ReelCounterPackage registered via pattern: ${matchedPattern}`);
+        } else {
+          console.log("[withFocusLockAndroid] ReelCounterPackage already present in MainApplication.kt — skipping patch.");
+        }
+
         if (!content.includes("PermissionCheckerPackage")) {
           //
           // Try multiple patterns — Expo/RN template changes across SDK versions.
@@ -1286,13 +1761,14 @@ class PermissionCheckerPackage : ReactPackage {
           const PATTERNS = [
             {
               // A — primary: confirmed working for Expo 54 / RN 0.81
+              // .apply block — receiver is the list itself, so bare add() works
               regex: /(PackageList\(this\)\.packages\.apply\s*\{)/,
               replacement: "$1\n              add(PermissionCheckerPackage())",
             },
             {
-              // B — .also block variant
+              // B — .also block variant — receiver is NOT the list; use it.add()
               regex: /(PackageList\(this\)\.packages\.also\s*\{)/,
-              replacement: "$1\n              add(PermissionCheckerPackage())",
+              replacement: "$1\n              it.add(PermissionCheckerPackage())",
             },
             {
               // C — explicit val style: insert add() after the val declaration
@@ -1301,12 +1777,11 @@ class PermissionCheckerPackage : ReactPackage {
             },
           ];
 
-          let patched = content;
           let matchedPattern = null;
           for (const { regex, replacement } of PATTERNS) {
             const result = content.replace(regex, replacement);
             if (result !== content) {
-              patched = result;
+              content = result;
               matchedPattern = regex.toString();
               break;
             }
@@ -1324,11 +1799,13 @@ class PermissionCheckerPackage : ReactPackage {
             );
           }
 
-          fs.writeFileSync(mainAppPath, patched, "utf8");
           console.log(`[withFocusLockAndroid] PermissionCheckerPackage registered via pattern: ${matchedPattern}`);
         } else {
           console.log("[withFocusLockAndroid] PermissionCheckerPackage already present in MainApplication.kt — skipping patch.");
         }
+
+        // Write once — after both patches so both additions land in a single write.
+        fs.writeFileSync(mainAppPath, content, "utf8");
       } else {
         throw new Error(
           "[withFocusLockAndroid] MainApplication.kt not found at: " + mainAppPath + "\n" +
