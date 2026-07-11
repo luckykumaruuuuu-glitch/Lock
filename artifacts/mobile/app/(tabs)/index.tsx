@@ -38,6 +38,9 @@ import { useReelCount } from "@/hooks/useReelCount";
 // Sound is already baked into the file by the user — no mute/unmute needed.
 const DUCK_FULL = require("../../assets/duck-full.mp4");
 
+// DuckPal home hero character — always-muted, always-looping ambient animation.
+const DUCKPAL_HERO = require("../../assets/duckpal-hero.mp4");
+
 function DuckCharacter() {
   const isTouchedRef = useRef(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -154,6 +157,77 @@ function DuckCharacter() {
         />
       </Animated.View>
     </TouchableOpacity>
+  );
+}
+
+// ── DuckPal home hero character ─────────────────────────────────────────────
+// Always-muted, always-looping ambient animation that fills the hero
+// placeholder box. Follows the same mount/focus/retry pattern proven on
+// DuckCharacter to avoid the freeze-on-mount / tab-visibility issues found
+// there — but simpler since there's no touch interaction or segment logic.
+function DuckPalHeroCharacter() {
+  const player = useVideoPlayer(DUCKPAL_HERO, (p) => {
+    p.loop = true;
+    p.timeUpdateEventInterval = 0.1;
+    // Muted: this is an ambient/idle animation only, same rationale as the
+    // top-right duck icon's idle segment. Muted autoplay is always allowed.
+    p.muted = true;
+    p.play();
+    console.log("[duckpal-hero] initializer: muted=true, play() called, playing=", p.playing);
+  });
+
+  // Primary auto-play: fires every time the DuckPal screen comes into focus.
+  // Without this, the video can freeze if it pre-rendered while the tab/mode
+  // wasn't visible yet (same root cause as the original duck-icon freeze).
+  useFocusEffect(
+    useCallback(() => {
+      console.log("[duckpal-hero] screen focused — playing=", player.playing);
+      if (!player.playing) {
+        player.muted = true;
+        player.play();
+        console.log("[duckpal-hero] focus: play() called, playing=", player.playing);
+      }
+    }, [player])
+  );
+
+  // Fallback: statusChange + retry loop for native timing edge cases where
+  // play() fires before the player reaches readyToPlay.
+  useEffect(() => {
+    const sub = player.addListener("statusChange", ({ status }) => {
+      console.log("[duckpal-hero] statusChange:", status, "| playing=", player.playing);
+      if (status === "readyToPlay" && !player.playing) {
+        player.muted = true;
+        player.play();
+        console.log("[duckpal-hero] readyToPlay → play() called, playing=", player.playing);
+      }
+    });
+
+    let attempts = 0;
+    const tryPlay = () => {
+      if (player.playing) {
+        console.log("[duckpal-hero] tryPlay: playing after", attempts, "attempt(s) ✓");
+        return;
+      }
+      attempts++;
+      player.muted = true;
+      player.play();
+      console.log("[duckpal-hero] tryPlay attempt", attempts, "| playing=", player.playing);
+      if (!player.playing && attempts < 8) setTimeout(tryPlay, 250);
+    };
+    setTimeout(tryPlay, 50);
+
+    return () => sub.remove();
+  }, [player]);
+
+  return (
+    <View style={styles.duckPalHeroPlaceholder}>
+      <VideoView
+        player={player}
+        style={styles.duckPalHeroVideo}
+        contentFit="contain"
+        nativeControls={false}
+      />
+    </View>
   );
 }
 
@@ -324,8 +398,9 @@ function DuckPalScreen() {
           <DuckCharacter />
         </View>
 
-        {/* Placeholder — reserved space for a future growing icon-animation */}
-        <View style={styles.duckPalHeroPlaceholder} />
+        {/* Hero character — ambient looping video. The floating/growing overlay
+            version (shown while scrolling Reels) is a separate, later step. */}
+        <DuckPalHeroCharacter />
 
         <Text style={styles.duckPalReelsCount}>{instagramCount ?? 0} Reels Scrolled Today</Text>
 
@@ -624,6 +699,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#1C1C1E",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
+    overflow: "hidden",
+  },
+  duckPalHeroVideo: {
+    width: "100%",
+    height: "100%",
   },
   duckPalReelsCount: {
     fontSize: 26,
