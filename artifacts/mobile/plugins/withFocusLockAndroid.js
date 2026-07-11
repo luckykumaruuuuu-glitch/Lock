@@ -857,10 +857,15 @@ class AppBlockerAccessibilityService : AccessibilityService() {
         reelDetector?.onEvent(event, this)
     }
 
-    override fun onInterrupt() {}
+    override fun onInterrupt() {
+        // Safety-net: hide overlay immediately if service is interrupted
+        reelDetector?.hideOverlay()
+    }
 
     override fun onDestroy() {
         super.onDestroy()
+        // Safety-net: hide overlay so it never gets stuck on screen if service is killed
+        reelDetector?.hideOverlay()
 
         if (::repo.isInitialized && repo.hasActiveLocks()) {
             FocusLockNotificationService.showTamperNotification(
@@ -1262,6 +1267,10 @@ class ReelDetector(private val context: Context) {
             put("count", count)
         }
     }
+
+    /** Safety-net: called by AccessibilityService lifecycle so overlay is always removed
+     *  when the service is interrupted or destroyed (e.g. aggressive battery-management kill). */
+    fun hideOverlay() { overlayManager.hide() }
 }
 `);
 
@@ -1662,7 +1671,7 @@ class ReelOverlayManager(private val context: Context) {
     private fun applySizeForCount(count: Int) {
         val size = characterSizePx(count)
         val badgeExtraPx = dpToPx(BADGE_EXTRA_DP)
-        val totalSize = size + badgeExtraPx
+        val newTotal = size + badgeExtraPx
 
         (characterView?.layoutParams as? FrameLayout.LayoutParams)?.let {
             it.width = size
@@ -1671,8 +1680,15 @@ class ReelOverlayManager(private val context: Context) {
         }
 
         val lp = layoutParams ?: return
-        lp.width = totalSize
-        lp.height = totalSize
+        val oldTotal = lp.width
+        val centerX = lp.x + oldTotal / 2
+        val centerY = lp.y + oldTotal / 2
+
+        lp.width = newTotal
+        lp.height = newTotal
+        lp.x = centerX - newTotal / 2
+        lp.y = centerY - newTotal / 2
+
         clampToScreen(lp)
         try { windowManager.updateViewLayout(overlayRoot, lp) } catch (_: Exception) {}
     }

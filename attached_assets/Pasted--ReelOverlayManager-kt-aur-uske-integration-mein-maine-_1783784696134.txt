@@ -1,0 +1,36 @@
+"ReelOverlayManager.kt aur uske integration mein maine khud teen cheezein identify ki hain jo fix karni hain — pehle inhe implement karo, phir clean build banayenge:
+Fix 1 — Resize center-anchored honi chahiye, corner-anchored nahi:
+Abhi jab size badhti hai (applySizeForCount() mein), window sirf right-bottom ki taraf expand ho rahi hai (x,y wahi rehta hai), jisse character apni jagah se drift karta hua dikhega jaise-jaise count badhega. Isko center-anchored karna hai — resize hone par window ka CENTER same rahe, sirf size uske around badhe. applySizeForCount() ko is exact code se replace karo:
+Kotlin
+private fun applySizeForCount(count: Int) {
+    val size = characterSizePx(count)
+    val badgeExtraPx = dpToPx(BADGE_EXTRA_DP)
+    val newTotal = size + badgeExtraPx
+
+    (characterView?.layoutParams as? FrameLayout.LayoutParams)?.let {
+        it.width = size
+        it.height = size
+        characterView?.layoutParams = it
+    }
+
+    val lp = layoutParams ?: return
+    val oldTotal = lp.width
+    val centerX = lp.x + oldTotal / 2
+    val centerY = lp.y + oldTotal / 2
+
+    lp.width = newTotal
+    lp.height = newTotal
+    lp.x = centerX - newTotal / 2
+    lp.y = centerY - newTotal / 2
+
+    clampToScreen(lp)
+    try { windowManager.updateViewLayout(overlayRoot, lp) } catch (_: Exception) {}
+}
+Fix 2 — Transparent hisson par bhi touch block ho sakta hai (info, action nahi):
+Yeh ek known-limitation hai — overlay-window ka poora square-area touch capture karta hai, chahe wahan ki pixel transparent ho. Bade size par yeh Instagram ke buttons (like/comment) ko block kar sakta hai jo transparent-area ke peeche aa jayein. Isko avoid karne ki koshish MAT karo abhi — yeh design ke against nahi hai (deterrent-intent se match karta hai), bas isse touch-capture normal rakho jaisa hai.
+Fix 3 — Accessibility Service crash/kill hone par overlay atki reh sakti hai:
+Agar Android kabhi Service ko force-kill kare (rare, aggressive battery-management wale phones par), overlay screen par permanently atki reh sakti hai. Safety-net add karo — jo bhi Accessibility Service class hai (jisme ReelDetector use hota hai), uske onInterrupt() function mein aur onDestroy() (agar override nahi hai to add karo) — dono jagah overlayManager.hide() call karo, taaki Service band hone par overlay bhi turant hat jaaye.
+Zaroori:
+Yeh teeno sirf ReelOverlayManager.kt aur Accessibility-Service-lifecycle se related fixes hain
+ReelDetector.kt, ReelSessionTracker.kt ka baaki koi existing logic, locking, DuckPal-tracking — kuch bhi mat chhedna
+Fix ke baad exact batao — kahan-kahan change apply hua, aur ek fresh expo prebuild --clean chalakar confirm karo generated files mein yeh changes reflect ho rahe hain"
