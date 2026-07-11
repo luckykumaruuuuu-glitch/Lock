@@ -1,0 +1,20 @@
+"DuckPal screen ke 'Top apps' section mein pichle developer ne ek bug chhoda hai jo fix karna hai. Yeh Instagram aur YouTube ke card-list-items hain (jahan pehle 'Total Reels'/'Daily avg' ke neeche 'Top apps' heading ke saath list dikhti hai).
+Problem jo abhi ho rahi hai:
+App-logos (Instagram gradient-logo, YouTube red-play-button-logo) ko poore card ka BACKGROUND bana diya gaya hai — stretched aur zoomed poore card-width tak. Isse:
+Logo distorted/badsurat dikh raha hai (bahut bada, stretched)
+App-naam ka TEXT ('Instagram', 'YouTube') logo ke UPAR overlap ho raha hai, jisse text ka kuch hissa gayab/kata hua dikhta hai (jaise 'Instagram' mein beech ke letters chhup jaate hain logo ke peeche)
+Sahi kya hona chahiye:
+Har card ek NORMAL LIST-ROW jaisa dikhna chahiye:
+LEFT-SIDE mein ek CHHOTI, FIXED-SIZE icon (jaise 44-48 pixels, round/squircle shape) — sirf logo, koi stretch/zoom nahi
+Icon ke turant baad (right mein), NORMAL, CLEAR TEXT mein app ka naam — 'Instagram', 'YouTube' — white color, readable size, bina kisi overlap ke
+Card ka background poora dark/solid (
+#1C1C1E jaisa, jaisa app ke baaki cards hain) — koi logo isko background ki tarah cover nahi karega
+YouTube ke card mein 'Coming Soon' text right-side mein clearly dikhna chahiye (yeh already implement hai kahin, bas layout theek hone ke baad yeh bhi sahi jagah aa jaana chahiye)
+Reference ke liye — isi app mein upar ek 'Instagram/YouTube split-bar' section hai jahan icons chhote aur clean dikhte hain — 'Top apps' section ka icon-sizing bhi bilkul waisa hi hona chahiye, bas ab yeh full-width row ke andar app-naam ke saath ho.
+Zaroori — bahut dhyan se:
+Yeh sirf ek CSS/layout/styling fix hai — logo-image ki jagah ya text nahi badalna, sirf unka SIZE aur POSITIONING theek karna hai
+Yeh sirf DuckPal section mein hai — DuckLock section (existing Home screen — Locks/Blocked/Avg, Lock Apps Now, Active Locks) ko BILKUL BHI mat chhedna
+Duck-icon animation, mode-switch logic — inhe bhi bilkul mat chhedna
+Baaki koi bhi existing function/data/counting-logic mat chhedna, sirf visual-layout ka fix hai
+Pehle poore codebase mein 'Top apps'/TopApps wala component dhoondh kar mujhe uska current code dikhao, phir fix karo — guess mat karna
+Fix karne ke baad screenshot confirm karo"
