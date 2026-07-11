@@ -1014,6 +1014,8 @@ class ReelDetector(private val context: Context) {
 
     // ── Phase 3B: duplicate-prevention session tracker ────────────────────────
     private val sessionTracker = ReelSessionTracker()
+    // ── Phase 3C: floating duck overlay ──────────────────────────────────────
+    private val overlayManager = ReelOverlayManager(context)
     /**
      * Sponsored state of the reel CURRENTLY on screen.
      * Set to false when a new reel enters, then updated after
@@ -1054,6 +1056,7 @@ class ReelDetector(private val context: Context) {
                 currentReelSponsored = false
                 isInReelsContext     = false
                 sessionTracker.reset()   // Phase 3B: end session on app switch
+                overlayManager.hide()
             }
             return
         }
@@ -1067,6 +1070,7 @@ class ReelDetector(private val context: Context) {
             isInReelsContext = true
             sessionTracker.onSessionEntered()   // Phase 3B: fresh session, reel-0 is now visible
             startReelTimer(service)
+            overlayManager.show(readEntry().second)
         } else if (!isReelsWindow && className.isNotEmpty() && isInReelsContext) {
             // Navigated away from Reels within Instagram (e.g. back to Feed)
             Log.d(TAG, "Left Reels context: className=\${className}")
@@ -1075,6 +1079,7 @@ class ReelDetector(private val context: Context) {
             currentReelSponsored = false
             isInReelsContext     = false
             sessionTracker.reset()   // Phase 3B: end session on Reels exit
+            overlayManager.hide()
         }
     }
 
@@ -1105,6 +1110,7 @@ class ReelDetector(private val context: Context) {
             isInReelsContext = true
             sessionTracker.onSessionEntered()   // Phase 3B: reel-0 visible, fresh session
             startReelTimer(service)       // start clock + schedule sponsored check
+            overlayManager.show(readEntry().second)
             srcNode?.recycle()
             return  // nothing to count yet — no previous reel to evaluate
         }
@@ -1242,6 +1248,7 @@ class ReelDetector(private val context: Context) {
                 put("updatedAt", System.currentTimeMillis())
             }.toString())
             Log.d(TAG, "💾 Count saved: \${newCount} reels today (\${today})")
+            overlayManager.updateCount(newCount)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to write reel count: \${e.message}")
         }
@@ -1452,6 +1459,302 @@ class ReelSessionTracker {
 `);
 
       /* ════════════════════════════════════════════════
+         ReelOverlayManager.kt  — floating duck overlay
+      ════════════════════════════════════════════════ */
+      fs.writeFileSync(path.join(kotlinDir, "ReelOverlayManager.kt"),
+`package ${PACKAGE_NAME}
+
+import android.animation.ValueAnimator
+import android.content.Context
+import android.graphics.Color
+import android.graphics.PixelFormat
+import android.graphics.drawable.GradientDrawable
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
+import android.util.DisplayMetrics
+import android.util.Log
+import android.view.Gravity
+import android.view.MotionEvent
+import android.view.WindowManager
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.TextView
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.random.Random
+
+class ReelOverlayManager(private val context: Context) {
+
+    companion object {
+        private const val TAG = "DuckLock:ReelOverlay"
+        const val MAX_COUNT = 100
+        private const val MIN_SIZE_RATIO = 0.14f
+        private const val MAX_SIZE_RATIO = 0.60f
+        private const val BADGE_EXTRA_DP = 56
+        private const val RANDOM_MOVE_INTERVAL_MS = 2200L
+        private const val RANDOM_MOVE_DURATION_MS = 900L
+        private const val ASSET_NAME = "duck_overlay_character.webp"
+    }
+
+    private val windowManager =
+        context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    private var overlayRoot: FrameLayout? = null
+    private var characterView: ImageView? = null
+    private var badgeText: TextView? = null
+    private var layoutParams: WindowManager.LayoutParams? = null
+
+    private var isShowing = false
+    private var currentCount = 0
+    private var isRandomMoveActive = false
+    private var randomMoveRunnable: Runnable? = null
+
+    private var dragStartX = 0
+    private var dragStartY = 0
+    private var touchStartRawX = 0f
+    private var touchStartRawY = 0f
+    private var isDragging = false
+
+    private fun screenSize(): Pair<Int, Int> {
+        val dm = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(dm)
+        return Pair(dm.widthPixels, dm.heightPixels)
+    }
+
+    private fun dpToPx(dp: Int): Int {
+        val density = context.resources.displayMetrics.density
+        return (dp * density).toInt()
+    }
+
+    private fun characterSizePx(count: Int): Int {
+        val (screenW, _) = screenSize()
+        val clamped = count.coerceIn(0, MAX_COUNT)
+        val ratio = MIN_SIZE_RATIO + (MAX_SIZE_RATIO - MIN_SIZE_RATIO) * (clamped / MAX_COUNT.toFloat())
+        return (screenW * ratio).toInt()
+    }
+
+    fun show(initialCount: Int) {
+        if (!Settings.canDrawOverlays(context)) {
+            Log.d(TAG, "Overlay permission not granted — skipping show()")
+            return
+        }
+        if (isShowing) {
+            updateCount(initialCount)
+            return
+        }
+        currentCount = initialCount
+        mainHandler.post {
+            try {
+                buildOverlayIfNeeded()
+                windowManager.addView(overlayRoot, layoutParams)
+                isShowing = true
+                updateCount(initialCount)
+                Log.d(TAG, "Overlay shown, count=\$initialCount")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to add overlay view: \${e.message}")
+            }
+        }
+    }
+
+    fun hide() {
+        if (!isShowing) return
+        mainHandler.post {
+            stopRandomMovement()
+            try {
+                overlayRoot?.let { windowManager.removeView(it) }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to remove overlay view: \${e.message}")
+            }
+            isShowing = false
+            Log.d(TAG, "Overlay hidden")
+        }
+    }
+
+    fun updateCount(count: Int) {
+        currentCount = count
+        if (!isShowing) return
+        mainHandler.post {
+            applySizeForCount(count)
+            badgeText?.text = count.toString()
+            if (count >= MAX_COUNT) {
+                if (!isRandomMoveActive) startRandomMovement()
+            } else {
+                if (isRandomMoveActive) stopRandomMovement()
+            }
+        }
+    }
+
+    private fun buildOverlayIfNeeded() {
+        if (overlayRoot != null) return
+
+        val size = characterSizePx(currentCount)
+        val badgeExtraPx = dpToPx(BADGE_EXTRA_DP)
+
+        val root = FrameLayout(context)
+
+        val character = ImageView(context).apply {
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            try {
+                context.assets.open(ASSET_NAME).use { stream ->
+                    setImageDrawable(android.graphics.drawable.Drawable.createFromStream(stream, null))
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load \$ASSET_NAME from assets: \${e.message}")
+            }
+        }
+        val charParams = FrameLayout.LayoutParams(size, size).apply {
+            gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+        }
+        root.addView(character, charParams)
+
+        val badge = TextView(context).apply {
+            setTextColor(Color.WHITE)
+            textSize = 14f
+            setPadding(dpToPx(12), dpToPx(5), dpToPx(12), dpToPx(5))
+            gravity = Gravity.CENTER
+            background = GradientDrawable().apply {
+                setColor(Color.BLACK)
+                cornerRadius = dpToPx(20).toFloat()
+            }
+        }
+        val badgeParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+        }
+        root.addView(badge, badgeParams)
+
+        overlayRoot = root
+        characterView = character
+        badgeText = badge
+
+        val overlayType =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else
+                @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
+
+        val (screenW, screenH) = screenSize()
+        val totalSize = size + badgeExtraPx
+        val params = WindowManager.LayoutParams(
+            totalSize,
+            totalSize,
+            overlayType,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            PixelFormat.TRANSLUCENT
+        )
+        params.gravity = Gravity.TOP or Gravity.START
+        params.x = (screenW - totalSize) / 2
+        params.y = (screenH - totalSize) / 3
+        layoutParams = params
+
+        root.setOnTouchListener { _, event ->
+            if (currentCount >= MAX_COUNT) return@setOnTouchListener false
+            handleDrag(event)
+        }
+    }
+
+    private fun applySizeForCount(count: Int) {
+        val size = characterSizePx(count)
+        val badgeExtraPx = dpToPx(BADGE_EXTRA_DP)
+        val totalSize = size + badgeExtraPx
+
+        (characterView?.layoutParams as? FrameLayout.LayoutParams)?.let {
+            it.width = size
+            it.height = size
+            characterView?.layoutParams = it
+        }
+
+        val lp = layoutParams ?: return
+        lp.width = totalSize
+        lp.height = totalSize
+        clampToScreen(lp)
+        try { windowManager.updateViewLayout(overlayRoot, lp) } catch (_: Exception) {}
+    }
+
+    private fun clampToScreen(lp: WindowManager.LayoutParams) {
+        val (screenW, screenH) = screenSize()
+        lp.x = lp.x.coerceIn(0, max(0, screenW - lp.width))
+        lp.y = lp.y.coerceIn(0, max(0, screenH - lp.height))
+    }
+
+    private fun handleDrag(event: MotionEvent): Boolean {
+        val lp = layoutParams ?: return false
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                dragStartX = lp.x
+                dragStartY = lp.y
+                touchStartRawX = event.rawX
+                touchStartRawY = event.rawY
+                isDragging = false
+                return true
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val dx = (event.rawX - touchStartRawX).toInt()
+                val dy = (event.rawY - touchStartRawY).toInt()
+                if (abs(dx) > 6 || abs(dy) > 6) isDragging = true
+                lp.x = dragStartX + dx
+                lp.y = dragStartY + dy
+                clampToScreen(lp)
+                try { windowManager.updateViewLayout(overlayRoot, lp) } catch (_: Exception) {}
+                return true
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> return isDragging
+        }
+        return false
+    }
+
+    private fun startRandomMovement() {
+        isRandomMoveActive = true
+        Log.d(TAG, "Random movement started (count reached \$MAX_COUNT)")
+        scheduleNextRandomMove()
+    }
+
+    private fun stopRandomMovement() {
+        isRandomMoveActive = false
+        randomMoveRunnable?.let { mainHandler.removeCallbacks(it) }
+        randomMoveRunnable = null
+    }
+
+    private fun scheduleNextRandomMove() {
+        val runnable = Runnable {
+            if (!isRandomMoveActive || !isShowing) return@Runnable
+            animateToRandomPosition()
+            scheduleNextRandomMove()
+        }
+        randomMoveRunnable = runnable
+        mainHandler.postDelayed(runnable, RANDOM_MOVE_INTERVAL_MS)
+    }
+
+    private fun animateToRandomPosition() {
+        val lp = layoutParams ?: return
+        val (screenW, screenH) = screenSize()
+        val maxX = max(0, screenW - lp.width)
+        val maxY = max(0, screenH - lp.height)
+        val targetX = Random.nextInt(0, maxX + 1)
+        val targetY = Random.nextInt(0, maxY + 1)
+        val startX = lp.x
+        val startY = lp.y
+
+        val animator = ValueAnimator.ofFloat(0f, 1f)
+        animator.duration = RANDOM_MOVE_DURATION_MS
+        animator.addUpdateListener { anim ->
+            val f = anim.animatedValue as Float
+            lp.x = (startX + (targetX - startX) * f).toInt()
+            lp.y = (startY + (targetY - startY) * f).toInt()
+            try { windowManager.updateViewLayout(overlayRoot, lp) } catch (_: Exception) {}
+        }
+        animator.start()
+    }
+}
+`);
+
+      /* ════════════════════════════════════════════════
          ReelCounterModule.kt  — JS bridge
       ════════════════════════════════════════════════ */
       fs.writeFileSync(path.join(kotlinDir, "ReelCounterModule.kt"),
@@ -1526,6 +1829,17 @@ class ReelCounterPackage : ReactPackage {
         emptyList()
 }
 `);
+
+      /* ── duck_overlay_character.webp → android/app/src/main/assets/ ── */
+      const assetsDir = path.join(projectRoot, "app/src/main/assets");
+      fs.mkdirSync(assetsDir, { recursive: true });
+      const webpSrc = path.join(config.modRequest.projectRoot, "assets/duck_overlay_character.webp");
+      const webpDst = path.join(assetsDir, "duck_overlay_character.webp");
+      if (fs.existsSync(webpSrc)) {
+        fs.copyFileSync(webpSrc, webpDst);
+      } else {
+        console.warn("[withFocusLockAndroid] duck_overlay_character.webp not found at:", webpSrc);
+      }
 
       return config;
     },
