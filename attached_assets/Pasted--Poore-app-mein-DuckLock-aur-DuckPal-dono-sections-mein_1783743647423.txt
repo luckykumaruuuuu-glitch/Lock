@@ -1,0 +1,19 @@
+"Poore app mein (DuckLock aur DuckPal dono sections mein) har card/box ke around ek halki, visible BORDER-LINE dikh rahi hai — ek chhoti si thin outline-jaisi line jo card ke edges (top/bottom/sides) par nazar aati hai, jisse aisa lagta hai card ke around ek separate 'frame' hai. Yeh hatani hai.
+Kaise pehchano yeh border-line kahan hai code mein:
+Har card-component (StatCard, LockCard, EmptyState-box, SettingsItem-row, DuckPal ke Reels-count box, Weekly-activity box, Top-apps list-items) ki style mein dhoondo:
+borderWidth: 1 (ya koi bhi number > 0)
+borderColor: '...' (koi bhi color value)
+borderTopWidth, borderBottomWidth (agar individually set hon)
+Yeh sab jagah se HATA do — sirf backgroundColor (jo already
+#1C1C1E ya similar dark-shade hai) rehne do, koi bhi border-related property NAHI honi chahiye.
+Kya result chahiye:
+Card ka shape sirf uske BACKGROUND-COLOR se define ho (jo thoda lighter-dark hai poore-page ke pure-black background se), koi bhi separate, visible thin-line/stroke/outline card ke edges par nahi dikhni chahiye. Card bilkul seamlessly apne background-color se hi 'card' jaisa dikhna chahiye — bina kisi frame/outline ke, jaise ek 'floating patch of slightly-lighter-black' ho, na ki ek 'boxed/framed' shape.
+Kahan-kahan check karna hai systematically:
+DuckLock Home screen — 'Locks/Blocked/Avg' teeno stats-cards, 'No Active Locks' box
+DuckPal Home screen — 'Reels-count' area, 'Weekly-activity' chart-box, 'Top-apps' list-item-cards
+Settings screen — 'Sound Effects' card, 'Version' card, 'Feedback & Help/Rate-us/Language' group-card, 'Privacy Policy/Terms' group-card
+Zaroori:
+Sirf border-property (borderWidth, borderColor) hatani hai — backgroundColor, borderRadius, padding, shadow — inhe BILKUL mat chhedna
+Koi function/logic mat chhedna, sirf yeh visual-styling ka fix hai
+Fix karne ke baad, poore codebase mein 'borderWidth' shabd grep/search karke confirm karo ki kahin bhi card-components mein yeh residual to nahi bacha
+Fix ke baad exact batao — kitni jagah (files/components) mein yeh border-property mili aur hatai gayi"

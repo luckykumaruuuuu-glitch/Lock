@@ -20,7 +20,7 @@ export function GlassCard({
   children,
   style,
   intensity = 20,
-  borderColor = "rgba(255,255,255,0.1)",
+  borderColor,
   backgroundColor = "#1C1C1E",
   radius = 20,
   padding,
@@ -30,8 +30,6 @@ export function GlassCard({
       style={[
         {
           borderRadius: radius,
-          borderWidth: 1,
-          borderColor,
           backgroundColor,
         },
         style,
