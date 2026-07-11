@@ -6,6 +6,7 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -40,6 +41,12 @@ const DUCK_FULL = require("../../assets/duck-full.mp4");
 
 // DuckPal home hero character — always-muted, always-looping ambient animation.
 const DUCKPAL_HERO = require("../../assets/duckpal-hero.mp4");
+
+// Real official app logos — used in the DuckPal split-bar and Top apps list
+// so the icons read as the actual Instagram/YouTube brand marks instead of
+// generic flat glyphs.
+const INSTAGRAM_LOGO = require("../../assets/images/instagram-logo.png");
+const YOUTUBE_LOGO = require("../../assets/images/youtube-logo.png");
 
 function DuckCharacter() {
   const isTouchedRef = useRef(false);
@@ -421,13 +428,13 @@ function DuckPalScreen() {
             <View style={styles.duckPalSplitRow}>
               {/* Instagram — live tracking (Phase 3A/3B) */}
               <View style={styles.duckPalSplitItem}>
-                <FontAwesome5 name="instagram" size={16} color="#FFBF80" />
+                <Image source={INSTAGRAM_LOGO} style={styles.duckPalSplitLogo} resizeMode="contain" />
                 <Text style={styles.duckPalSplitCount}>{instagramCount ?? 0}</Text>
               </View>
               <View style={styles.duckPalSplitDivider} />
               {/* YouTube — detection not yet implemented */}
               <View style={styles.duckPalSplitItem}>
-                <FontAwesome5 name="youtube" size={16} color="#FFBF80" />
+                <Image source={YOUTUBE_LOGO} style={styles.duckPalSplitLogo} resizeMode="contain" />
                 <Text style={styles.duckPalComingSoon}>Coming Soon</Text>
               </View>
             </View>
@@ -475,7 +482,11 @@ function DuckPalScreen() {
             <GlassCard key={app.name} style={styles.lockCard}>
               <View style={styles.lockCardInner}>
                 <View style={styles.lockIconBg}>
-                  <FontAwesome5 name={app.icon} size={22} color="#FFBF80" />
+                  <Image
+                    source={app.name === "YouTube" ? YOUTUBE_LOGO : INSTAGRAM_LOGO}
+                    style={styles.lockIconLogo}
+                    resizeMode="contain"
+                  />
                 </View>
                 <View style={styles.lockInfo}>
                   <Text style={styles.lockAppName}>{app.name}</Text>
@@ -690,7 +701,8 @@ const styles = StyleSheet.create({
   lockList: { gap: 10 },
   lockCard: {},
   lockCardInner: { flexDirection: "row", alignItems: "center", padding: 16, gap: 14 },
-  lockIconBg: { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,203,142,0.12)" },
+  lockIconBg: { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,203,142,0.12)", overflow: "hidden" },
+  lockIconLogo: { width: 34, height: 34 },
   lockInfo: { flex: 1, gap: 4 },
   lockAppName: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
   lockRemaining: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#FFBF80" },
@@ -732,6 +744,7 @@ const styles = StyleSheet.create({
   duckPalSplitCard: { alignSelf: "stretch" },
   duckPalSplitRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 20 },
   duckPalSplitItem: { flexDirection: "row", alignItems: "center", gap: 8 },
+  duckPalSplitLogo: { width: 20, height: 20 },
   duckPalSplitCount: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
   duckPalSplitDivider: { width: 1, height: 20, backgroundColor: "rgba(255,255,255,0.1)" },
   duckPalScrollContent: { paddingHorizontal: 20, paddingTop: 16, gap: 16 },
