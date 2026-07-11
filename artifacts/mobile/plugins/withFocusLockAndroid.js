@@ -1477,6 +1477,7 @@ import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Handler
@@ -1505,6 +1506,22 @@ class ReelOverlayManager(private val context: Context) {
         private const val RANDOM_MOVE_INTERVAL_MS = 2200L
         private const val RANDOM_MOVE_DURATION_MS = 900L
         private const val ASSET_NAME = "duck_overlay_character.webp"
+
+        // Pre-loaded image cache — populated on a background thread so show() is instant
+        @Volatile var cachedDrawable: Drawable? = null
+
+        fun preloadAsset(ctx: Context) {
+            if (cachedDrawable != null) return
+            Thread {
+                try {
+                    val d = ctx.assets.open(ASSET_NAME).use { Drawable.createFromStream(it, null) }
+                    cachedDrawable = d
+                    Log.d(TAG, "Duck image pre-loaded into cache")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to pre-load duck image: \${e.message}")
+                }
+            }.also { it.name = "duck-preload"; it.isDaemon = true }.start()
+        }
     }
 
     private val windowManager =
@@ -1526,6 +1543,12 @@ class ReelOverlayManager(private val context: Context) {
     private var touchStartRawX = 0f
     private var touchStartRawY = 0f
     private var isDragging = false
+
+    init {
+        // Kick off background pre-load as soon as this manager is created
+        // (at AccessibilityService start-up) so the duck image is ready when show() fires.
+        preloadAsset(context)
+    }
 
     private fun screenSize(): Pair<Int, Int> {
         val dm = DisplayMetrics()
@@ -1554,6 +1577,8 @@ class ReelOverlayManager(private val context: Context) {
             updateCount(initialCount)
             return
         }
+        val showCalledAt = System.currentTimeMillis()
+        Log.d(TAG, "⏱ show() called at t=0 (count=\$initialCount, imageReady=\${cachedDrawable != null})")
         currentCount = initialCount
         mainHandler.post {
             try {
@@ -1561,7 +1586,8 @@ class ReelOverlayManager(private val context: Context) {
                 windowManager.addView(overlayRoot, layoutParams)
                 isShowing = true
                 updateCount(initialCount)
-                Log.d(TAG, "Overlay shown, count=\$initialCount")
+                val elapsed = System.currentTimeMillis() - showCalledAt
+                Log.d(TAG, "⏱ addView() done — total show() lag: \${elapsed}ms (target <100ms)")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to add overlay view: \${e.message}")
             }
@@ -1606,13 +1632,19 @@ class ReelOverlayManager(private val context: Context) {
 
         val character = ImageView(context).apply {
             scaleType = ImageView.ScaleType.FIT_CENTER
-            try {
-                context.assets.open(ASSET_NAME).use { stream ->
-                    setImageDrawable(android.graphics.drawable.Drawable.createFromStream(stream, null))
+            // Use pre-loaded cache for instant display; synchronous fallback only if the
+            // background thread hasn't finished yet (very-first launch, extremely rare).
+            val drawable = cachedDrawable ?: run {
+                Log.d(TAG, "Cache miss — loading \$ASSET_NAME synchronously (should be rare)")
+                try {
+                    context.assets.open(ASSET_NAME).use { Drawable.createFromStream(it, null) }
+                        .also { cachedDrawable = it }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to load \$ASSET_NAME from assets: \${e.message}")
+                    null
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to load \$ASSET_NAME from assets: \${e.message}")
             }
+            drawable?.let { setImageDrawable(it) }
         }
         val charParams = FrameLayout.LayoutParams(size, size).apply {
             gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
