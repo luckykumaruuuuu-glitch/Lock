@@ -695,14 +695,6 @@ const styles = StyleSheet.create({
   duckPalHeroPlaceholder: {
     alignSelf: "stretch",
     height: 280,
-    borderRadius: 24,
-    // Matches the video's own (near-)pure-black background so the
-    // letterboxed edges around the contained video blend seamlessly into
-    // the box instead of showing a visible grey seam.
-    backgroundColor: "#000000",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    overflow: "hidden",
   },
   duckPalHeroVideo: {
     width: "100%",
