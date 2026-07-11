@@ -376,6 +376,10 @@ function DuckPalScreen() {
   const { toggleAppMode } = useAppMode();
   const [weekOffset, setWeekOffset] = useState(0);
   const { count: instagramCount } = useReelCount();
+  // Split bar only has something worth showing once Instagram has at least
+  // one tracked reel. YouTube has no real tracking yet (Coming Soon), so it
+  // doesn't independently gate visibility — see split bar render below.
+  const hasInstagramActivity = (instagramCount ?? 0) >= 1;
 
   const weekStart = getWeekStart(new Date());
   weekStart.setDate(weekStart.getDate() + weekOffset * 7);
@@ -402,23 +406,33 @@ function DuckPalScreen() {
             version (shown while scrolling Reels) is a separate, later step. */}
         <DuckPalHeroCharacter />
 
-        <Text style={styles.duckPalReelsCount}>{instagramCount ?? 0} Reels Scrolled Today</Text>
+        <View style={styles.duckPalReelsCountBlock}>
+          <Text style={styles.duckPalReelsCountNumber}>{instagramCount ?? 0}</Text>
+          <Text style={styles.duckPalReelsCountLabel}>Reels Scrolled Today</Text>
+        </View>
 
-        <GlassCard style={styles.duckPalSplitCard} padding={14}>
-          <View style={styles.duckPalSplitRow}>
-            {/* Instagram — live tracking (Phase 3A/3B) */}
-            <View style={styles.duckPalSplitItem}>
-              <FontAwesome5 name="instagram" size={16} color="#FFBF80" />
-              <Text style={styles.duckPalSplitCount}>{instagramCount ?? 0}</Text>
+        {/* Split bar — only shown once there's something real to report.
+            Instagram appears once its count reaches 1; YouTube has no real
+            tracking yet so its "Coming Soon" placeholder rides along with
+            Instagram's visibility for now. Once YouTube tracking ships, gate
+            it behind `youtubeCount >= 1` the same way Instagram is gated. */}
+        {hasInstagramActivity && (
+          <GlassCard style={styles.duckPalSplitCard} padding={14}>
+            <View style={styles.duckPalSplitRow}>
+              {/* Instagram — live tracking (Phase 3A/3B) */}
+              <View style={styles.duckPalSplitItem}>
+                <FontAwesome5 name="instagram" size={16} color="#FFBF80" />
+                <Text style={styles.duckPalSplitCount}>{instagramCount ?? 0}</Text>
+              </View>
+              <View style={styles.duckPalSplitDivider} />
+              {/* YouTube — detection not yet implemented */}
+              <View style={styles.duckPalSplitItem}>
+                <FontAwesome5 name="youtube" size={16} color="#FFBF80" />
+                <Text style={styles.duckPalComingSoon}>Coming Soon</Text>
+              </View>
             </View>
-            <View style={styles.duckPalSplitDivider} />
-            {/* YouTube — detection not yet implemented */}
-            <View style={styles.duckPalSplitItem}>
-              <FontAwesome5 name="youtube" size={16} color="#FFBF80" />
-              <Text style={styles.duckPalComingSoon}>Coming Soon</Text>
-            </View>
-          </View>
-        </GlassCard>
+          </GlassCard>
+        )}
 
         <GlassCard padding={20}>
           <View style={styles.duckPalWeekNav}>
@@ -701,10 +715,18 @@ const styles = StyleSheet.create({
     height: "100%",
     backgroundColor: "#000000",
   },
-  duckPalReelsCount: {
-    fontSize: 26,
+  duckPalReelsCountBlock: { alignItems: "center", gap: 2 },
+  duckPalReelsCountNumber: {
+    fontSize: 64,
     fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
+    textAlign: "center",
+    lineHeight: 72,
+  },
+  duckPalReelsCountLabel: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: "#8E8E93",
     textAlign: "center",
   },
   duckPalSplitCard: { alignSelf: "stretch" },
