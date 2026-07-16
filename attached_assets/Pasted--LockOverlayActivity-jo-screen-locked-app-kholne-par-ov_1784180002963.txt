@@ -1,0 +1,28 @@
+"LockOverlayActivity (jo screen locked-app kholne par overlay dikhti hai) ko poori tarah redesign karna hai — abhi jo content hai (emoji, app-naam, 'is locked', divider, motivational-message, countdown-text) sab hatakar ek bilkul naya, simple design banana hai.
+Hatana hai (poori tarah remove, in sabko):
+🔒 emoji
+App ka naam
+'is locked' text
+Unlock-time ka purana format
+Divider-line
+'Stay strong! You chose this. 💪' wala motivational-message
+'Redirecting in 3s…' wala countdown-text
+Naya Background:
+Poora background dark brown-black gradient (upar se neeche halka gradient jaana chahiye)
+Center mein ek soft golden/yellowish glow-effect — jaise ek spotlight/halo character ke peeche ho, beech mein halka ujala aur kinaron ki taraf dheere-dheere andhera (vignette-effect)
+Bilkul plain/simple background — koi extra pattern, texture, ya objects nahi, sirf yeh glow
+Character-image (per-app, mapping-system se):
+Screen ke center mein ek character-image dikhani hai
+Main Instagram ke liye character-image upload kar raha hoon — ise assets mein rakho
+Ek MAPPING-SYSTEM banao (Kotlin Map<String, String> — package-name se image-filename tak), taaki aage naye platforms (YouTube, Telegram, Twitter) aasani se add ho sakein
+Abhi sirf Instagram (com.instagram.android) ke liye entry jodo is mapping mein
+Kisi aur (abhi-tak-unmapped) app ke liye lock-screen dikhe, to koi DEFAULT/fallback-image use ho (crash na ho) — abhi ke liye yehi Instagram-wali image hi default bhi rakh do
+Naya text (character ke UPAR, ek hi single-line mein):
+Format: 'Unlocks in [remaining-time]' — jaise 'Unlocks in 2h 30m' — SAB EK HI LINE/TEXT-BLOCK mein, do alag lines nahi
+Yeh remaining-time REAL-TIME se sync hoke continuously live-update hona chahiye
+Text-size: medium (na bahut bada, na bahut chhota), White, bold letters
+Zaroori:
+Yeh sirf LockOverlayActivity ka visual/content-redesign + character-mapping hai
+Baaki koi existing function (locking-logic, auto-dismiss behavior, back-button behavior, DuckPal, duck-icon-animation, Settings) bilkul mat chhedna
+Existing 3-second auto-redirect behavior touch mat karna (jab tak alag se na bola jaaye)
+Fix ke baad screenshot confirm karo — sirf glow-background, Instagram-character center mein, aur upar single-line live-updating 'Unlocks in [time]' text dikhna chahiye, baaki kuch nahi"

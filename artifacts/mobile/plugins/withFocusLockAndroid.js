@@ -155,6 +155,17 @@ const withFocusLockNativeFiles = (config) =>
       const valuesDir = path.join(projectRoot, "app/src/main/res/values");
       fs.mkdirSync(valuesDir, { recursive: true });
 
+      /* ── res/drawable — character images for lock overlay ── */
+      const drawableDir = path.join(projectRoot, "app/src/main/res/drawable");
+      fs.mkdirSync(drawableDir, { recursive: true });
+      const expoRoot = config.modRequest.projectRoot;
+      const charImages = ["lock_char_instagram"];
+      for (const name of charImages) {
+        const src = path.join(expoRoot, "assets", `${name}.png`);
+        const dst = path.join(drawableDir, `${name}.png`);
+        if (fs.existsSync(src)) fs.copyFileSync(src, dst);
+      }
+
       const kotlinDir = path.join(projectRoot, `app/src/main/java/${packagePath}`);
       fs.mkdirSync(kotlinDir, { recursive: true });
 
@@ -547,35 +558,41 @@ class DeviceAdminReceiver : DeviceAdminReceiver() {
 
 import android.app.Activity
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.Typeface
+import android.graphics.*
 import android.os.*
-import android.view.Gravity
-import android.view.View
-import android.view.WindowManager
-import android.widget.LinearLayout
-import android.widget.TextView
-import java.text.SimpleDateFormat
-import java.util.*
+import android.view.*
+import android.widget.*
 
 /**
  * Full-screen overlay shown for 3 seconds when a locked app is opened.
  * Auto-dismisses to home screen. Back press also goes home.
+ *
+ * Design: dark brown-black background with a soft golden centre glow,
+ * per-app character image in the middle, and a single live-updating
+ * "Unlocks in Xh Ym" label above the character.
  */
 class LockOverlayActivity : Activity() {
 
     companion object {
-        const val EXTRA_APP_NAME    = "app_name"
-        const val EXTRA_PKG_NAME    = "pkg_name"
-        const val EXTRA_END_TIME    = "end_time"
+        const val EXTRA_APP_NAME = "app_name"
+        const val EXTRA_PKG_NAME = "pkg_name"
+        const val EXTRA_END_TIME = "end_time"
+
+        /** Add new platforms here: package-name → drawable resource name (no extension). */
+        private val CHAR_MAP = mapOf(
+            "com.instagram.android" to "lock_char_instagram"
+        )
+        /** Fallback image used for any unmapped package (currently same as Instagram). */
+        private const val DEFAULT_CHAR = "lock_char_instagram"
     }
 
     private var countDown: CountDownTimer? = null
-    private lateinit var countdownLabel: TextView
+    private var updateHandler: Handler? = null
+    private var updateRunnable: Runnable? = null
+    private lateinit var unlockLabel: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
@@ -590,7 +607,6 @@ class LockOverlayActivity : Activity() {
             WindowManager.LayoutParams.FLAG_FULLSCREEN or
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
         )
-
         renderLockScreen(intent)
     }
 
@@ -613,85 +629,113 @@ class LockOverlayActivity : Activity() {
     }
 
     private fun renderLockScreen(sourceIntent: Intent) {
-        // Discard any in-flight countdown from a previous (now stale) trigger.
+        // Cancel any in-flight timers from a previous (stale) trigger.
         countDown?.cancel()
+        updateRunnable?.let { updateHandler?.removeCallbacks(it) }
 
-        val appName = sourceIntent.getStringExtra(EXTRA_APP_NAME) ?: "This app"
+        val pkgName = sourceIntent.getStringExtra(EXTRA_PKG_NAME) ?: ""
         val endTime = sourceIntent.getLongExtra(EXTRA_END_TIME, 0L)
         val density = resources.displayMetrics.density
         fun dp(v: Int) = (v * density).toInt()
 
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity     = Gravity.CENTER
-            setBackgroundColor(Color.parseColor("#0F172A"))
-            setPadding(dp(32), dp(48), dp(32), dp(48))
-        }
+        /* ── Root: FrameLayout so bg view + content can layer ── */
+        val frame = FrameLayout(this)
 
-        root += textView("\\uD83D\\uDD12", 72f, "#FFFFFF")
-
-        root += textView(appName, 30f, "#FFFFFF").also {
-            it.typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
-            it.setPadding(0, dp(16), 0, dp(4))
-        }
-
-        root += textView("is locked", 16f, "#64748B").also {
-            it.setPadding(0, 0, 0, dp(24))
-        }
-
-        root += textView(formatRemaining(endTime), 24f, "#60A5FA").also {
-            it.typeface = Typeface.create("sans-serif", Typeface.BOLD)
-            it.setPadding(0, 0, 0, dp(8))
-        }
-
-        val expiry = SimpleDateFormat("MMM d 'at' h:mm a", Locale.getDefault()).format(Date(endTime))
-        root += textView("Unlocks $expiry", 14f, "#94A3B8").also {
-            it.setPadding(0, 0, 0, dp(32))
-        }
-
-        root += View(this).also { v ->
-            v.setBackgroundColor(Color.parseColor("#1E293B"))
-            v.layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(1)
-            ).apply { setMargins(0, 0, 0, dp(32)) }
-        }
-
-        root += textView("Stay strong! You chose this. \\uD83D\\uDCAA", 18f, "#A78BFA").also {
-            it.typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
-            it.setPadding(0, 0, 0, dp(40))
-        }
-
-        countdownLabel = textView("Redirecting in 3s\\u2026", 13f, "#475569")
-        root += countdownLabel
-
-        setContentView(root)
-
-        countDown = object : CountDownTimer(3200, 1000) {
-            override fun onTick(ms: Long) {
-                val s = (ms / 1000).coerceAtLeast(1)
-                countdownLabel.text = "Redirecting in \${s}s\\u2026"
+        /* ── Background: dark brown-black + soft golden centre glow ── */
+        val bgView = object : View(this) {
+            override fun onDraw(canvas: Canvas) {
+                val w = width.toFloat(); val h = height.toFloat()
+                val cx = w / 2f; val cy = h * 0.48f
+                // Solid dark base
+                canvas.drawColor(Color.parseColor("#120A06"))
+                // Radial golden glow
+                val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+                glowPaint.shader = RadialGradient(
+                    cx, cy, minOf(w, h) * 0.62f,
+                    intArrayOf(
+                        Color.parseColor("#6B4510"),
+                        Color.parseColor("#3A1E07"),
+                        Color.parseColor("#120A06")
+                    ),
+                    floatArrayOf(0f, 0.46f, 1f),
+                    Shader.TileMode.CLAMP
+                )
+                canvas.drawRect(0f, 0f, w, h, glowPaint)
             }
+        }
+        frame.addView(bgView, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        ))
+
+        /* ── Content: vertically centred column ── */
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(32), 0, dp(32), 0)
+        }
+
+        // Single-line "Unlocks in Xh Ym" label above character
+        unlockLabel = TextView(this).apply {
+            text = formatRemaining(endTime)
+            textSize = 20f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(24))
+        }
+        content.addView(unlockLabel)
+
+        // Character image (per-app mapping, fallback to default)
+        val charResName = CHAR_MAP[pkgName] ?: DEFAULT_CHAR
+        val charResId = resources.getIdentifier(charResName, "drawable", packageName)
+        val imageView = ImageView(this).apply {
+            if (charResId != 0) setImageResource(charResId)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+        }
+        val imgSize = dp(270)
+        content.addView(imageView, LinearLayout.LayoutParams(imgSize, imgSize))
+
+        frame.addView(content, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        ))
+
+        setContentView(frame)
+
+        /* ── Live-update the "Unlocks in" text every second ── */
+        val handler = Handler(Looper.getMainLooper())
+        updateHandler = handler
+        val runnable = object : Runnable {
+            override fun run() {
+                if (!isFinishing) {
+                    unlockLabel.text = formatRemaining(endTime)
+                    handler.postDelayed(this, 1000)
+                }
+            }
+        }
+        updateRunnable = runnable
+        handler.post(runnable)
+
+        /* ── 3-second auto-dismiss (unchanged behaviour) ── */
+        countDown = object : CountDownTimer(3200, 3200) {
+            override fun onTick(ms: Long) {}
             override fun onFinish() = goHome()
         }.start()
     }
 
-    private operator fun LinearLayout.plusAssign(view: View) = addView(view)
-
-    private fun textView(text: String, sizeSp: Float, hexColor: String) =
-        TextView(this).apply {
-            this.text  = text
-            textSize   = sizeSp
-            setTextColor(Color.parseColor(hexColor))
-            gravity    = Gravity.CENTER
-        }
-
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() = goHome()
 
-    override fun onDestroy() { super.onDestroy(); countDown?.cancel() }
+    override fun onDestroy() {
+        super.onDestroy()
+        countDown?.cancel()
+        updateRunnable?.let { updateHandler?.removeCallbacks(it) }
+    }
 
     private fun goHome() {
         countDown?.cancel()
+        updateRunnable?.let { updateHandler?.removeCallbacks(it) }
         startActivity(Intent(Intent.ACTION_MAIN).apply {
             addCategory(Intent.CATEGORY_HOME)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -701,14 +745,15 @@ class LockOverlayActivity : Activity() {
 
     private fun formatRemaining(endTime: Long): String {
         val ms = endTime - System.currentTimeMillis()
-        if (ms <= 0) return "Expired"
+        if (ms <= 0) return "Unlocks in 0m"
         val s = ms / 1000
         val d = s / 86400; val h = (s % 86400) / 3600; val m = (s % 3600) / 60
         val parts = mutableListOf<String>()
         if (d > 0) parts += "\${d}d"
         if (h > 0) parts += "\${h}h"
         if (d == 0L && m > 0) parts += "\${m}m"
-        return parts.joinToString(" ") + " remaining"
+        if (parts.isEmpty()) parts += "<1m"
+        return "Unlocks in \${parts.joinToString(" ")}"
     }
 }
 `);
