@@ -1529,7 +1529,6 @@ class ReelSessionTracker {
       fs.writeFileSync(path.join(kotlinDir, "ReelOverlayManager.kt"),
 `package ${PACKAGE_NAME}
 
-import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Color
 import android.graphics.PixelFormat
@@ -1549,7 +1548,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import kotlin.math.abs
 import kotlin.math.max
-import kotlin.random.Random
 
 class ReelOverlayManager(private val context: Context) {
 
@@ -1559,8 +1557,6 @@ class ReelOverlayManager(private val context: Context) {
         private const val MIN_SIZE_RATIO = 0.14f
         private const val MAX_SIZE_RATIO = 0.60f
         private const val BADGE_EXTRA_DP = 56
-        private const val RANDOM_MOVE_INTERVAL_MS = 2200L
-        private const val RANDOM_MOVE_DURATION_MS = 900L
         private const val ASSET_NAME = "duck_overlay_character.webp"
 
         // Pre-loaded image cache — populated on a background thread so show() is instant
@@ -1591,8 +1587,6 @@ class ReelOverlayManager(private val context: Context) {
 
     private var isShowing = false
     private var currentCount = 0
-    private var isRandomMoveActive = false
-    private var randomMoveRunnable: Runnable? = null
 
     private var dragStartX = 0
     private var dragStartY = 0
@@ -1653,7 +1647,6 @@ class ReelOverlayManager(private val context: Context) {
     fun hide() {
         if (!isShowing) return
         mainHandler.post {
-            stopRandomMovement()
             try {
                 overlayRoot?.let { windowManager.removeView(it) }
             } catch (e: Exception) {
@@ -1670,11 +1663,6 @@ class ReelOverlayManager(private val context: Context) {
         mainHandler.post {
             applySizeForCount(count)
             badgeText?.text = count.toString()
-            if (count >= MAX_COUNT) {
-                if (!isRandomMoveActive) startRandomMovement()
-            } else {
-                if (isRandomMoveActive) stopRandomMovement()
-            }
         }
     }
 
@@ -1751,7 +1739,6 @@ class ReelOverlayManager(private val context: Context) {
         layoutParams = params
 
         root.setOnTouchListener { _, event ->
-            if (currentCount >= MAX_COUNT) return@setOnTouchListener false
             handleDrag(event)
         }
     }
@@ -1813,48 +1800,6 @@ class ReelOverlayManager(private val context: Context) {
         return false
     }
 
-    private fun startRandomMovement() {
-        isRandomMoveActive = true
-        Log.d(TAG, "Random movement started (count reached \$MAX_COUNT)")
-        scheduleNextRandomMove()
-    }
-
-    private fun stopRandomMovement() {
-        isRandomMoveActive = false
-        randomMoveRunnable?.let { mainHandler.removeCallbacks(it) }
-        randomMoveRunnable = null
-    }
-
-    private fun scheduleNextRandomMove() {
-        val runnable = Runnable {
-            if (!isRandomMoveActive || !isShowing) return@Runnable
-            animateToRandomPosition()
-            scheduleNextRandomMove()
-        }
-        randomMoveRunnable = runnable
-        mainHandler.postDelayed(runnable, RANDOM_MOVE_INTERVAL_MS)
-    }
-
-    private fun animateToRandomPosition() {
-        val lp = layoutParams ?: return
-        val (screenW, screenH) = screenSize()
-        val maxX = max(0, screenW - lp.width)
-        val maxY = max(0, screenH - lp.height)
-        val targetX = Random.nextInt(0, maxX + 1)
-        val targetY = Random.nextInt(0, maxY + 1)
-        val startX = lp.x
-        val startY = lp.y
-
-        val animator = ValueAnimator.ofFloat(0f, 1f)
-        animator.duration = RANDOM_MOVE_DURATION_MS
-        animator.addUpdateListener { anim ->
-            val f = anim.animatedValue as Float
-            lp.x = (startX + (targetX - startX) * f).toInt()
-            lp.y = (startY + (targetY - startY) * f).toInt()
-            try { windowManager.updateViewLayout(overlayRoot, lp) } catch (_: Exception) {}
-        }
-        animator.start()
-    }
 }
 `);
 
