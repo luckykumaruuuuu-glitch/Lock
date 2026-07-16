@@ -10,6 +10,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -553,6 +554,7 @@ function DuckLockHomeContent() {
   const { displayItems, locks, loading } = useActiveLocks(30_000);
   const { t } = useLanguage();
   const [toast, setToast] = React.useState(false);
+  const [reelsLockEnabled, setReelsLockEnabled] = useState(false);
   const { missingPerms, recheck } = usePermissionGuard();
   const { toggleAppMode } = useAppMode();
 
@@ -602,6 +604,27 @@ function DuckLockHomeContent() {
           <StatCard value={displayItems.length} label={t("blocked")} color="#FF453A" />
           <StatCard value={avgDays > 0 ? `${avgDays}d` : "—"} label={t("avg")} color="#32D74B" />
         </View>
+
+        {/* Reels Lock */}
+        <GlassCard style={styles.reelsLockCard} padding={0}>
+          <View style={styles.reelsLockTopRow}>
+            <Text style={styles.reelsLockTitle}>Reels Lock</Text>
+            <Switch
+              value={reelsLockEnabled}
+              onValueChange={setReelsLockEnabled}
+              trackColor={{ false: "#FF453A", true: "#32D74B" }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+          <View style={[
+            styles.reelsLockStrip,
+            { borderTopColor: reelsLockEnabled ? "rgba(50,215,75,0.2)" : "rgba(255,69,58,0.2)" },
+          ]}>
+            <Text style={[styles.reelsLockStatus, { color: reelsLockEnabled ? "#32D74B" : "#FF453A" }]}>
+              {reelsLockEnabled ? "Unlock" : "Lock"}
+            </Text>
+          </View>
+        </GlassCard>
 
         {/* CTA */}
         <View style={styles.ctaBtnShadow}>
@@ -728,6 +751,11 @@ const styles = StyleSheet.create({
   emptyBody: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center", lineHeight: 22 },
   warningCard: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 4 },
   warningText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#FF453A", lineHeight: 18 },
+  reelsLockCard: { overflow: "hidden" },
+  reelsLockTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 14 },
+  reelsLockTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#FFFFFF" },
+  reelsLockStrip: { paddingHorizontal: 16, paddingVertical: 9, borderTopWidth: 1 },
+  reelsLockStatus: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   duckPalHeroPlaceholder: {
     alignSelf: "stretch",
     height: 280,
