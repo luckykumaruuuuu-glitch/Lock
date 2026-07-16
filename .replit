@@ -53,3 +53,7 @@ EXPO_PUBLIC_FIREBASE_APP_ID = "1:485800700678:web:5a16e66f47834903858c87"
 
 [nix]
 channel = "stable-25_05"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
