@@ -6,6 +6,7 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -18,6 +19,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
+
+const lockIconImg = require("@/assets/images/lock-icon.png");
 import { Toast } from "@/components/ui/Toast";
 import { GradientBackground } from "@/components/ui/GradientBackground";
 import { PermissionGuardPopup } from "@/components/ui/PermissionGuardPopup";
@@ -608,7 +611,7 @@ function DuckLockHomeContent() {
         {/* Reels Lock */}
         <GlassCard style={styles.reelsLockCard} padding={16}>
           <View style={styles.reelsLockRow}>
-            <Text style={styles.reelsLockEmoji}>🔒</Text>
+            <Image source={lockIconImg} style={styles.reelsLockEmoji} />
             <View style={styles.reelsLockCenter}>
               <Text style={styles.reelsLockTitle}>Lock Reels</Text>
               <View style={[
@@ -757,7 +760,7 @@ const styles = StyleSheet.create({
   warningText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#FF453A", lineHeight: 18 },
   reelsLockCard: {},
   reelsLockRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  reelsLockEmoji: { fontSize: 28 },
+  reelsLockEmoji: { width: 28, height: 28 },
   reelsLockCenter: { flex: 1, gap: 8 },
   reelsLockTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
   reelsLockPill: {
