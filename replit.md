@@ -1,45 +1,47 @@
-# DuckLock
+# FocusLock
 
-A focus / screen-time locker mobile app built with **Expo (React Native)** + **Firebase Realtime Database**. Once a lock session starts, there's no way to bypass it early.
+A React Native / Expo mobile app that helps users block distracting apps (social media, etc.) with a duck mascot. Built as a pnpm monorepo.
 
-## Stack
-
-| Layer | Tech |
-|---|---|
-| Mobile app | Expo ~54, React Native 0.81, expo-router |
-| State / data | Firebase Realtime Database (firebase ^12) |
-| Styling | react-native-reanimated, expo-linear-gradient |
-| i18n | i18next / react-i18next |
-| Monorepo | pnpm workspaces |
-
-## Running on Replit
+## Project structure
 
 ```
-pnpm install          # install all workspace deps
-# then use the "Start application" workflow (port 5000)
+artifacts/
+  mobile/          # Expo React Native app (main app)
+  api-server/      # Express API server (TypeScript, esbuild)
+  ui-design/       # Web UI design reference
+  mockup-sandbox/  # Component preview / Canvas mockups
+lib/
+  api-client-react/  # React Query hooks for the API
+  api-spec/          # Shared API route definitions
+  api-zod/           # Shared Zod schemas
+  db/                # Drizzle ORM database layer
 ```
 
-The `start-all` script runs three things in parallel:
-1. **Static file server** on port 5000 (immediate, serves a loading page then the built web export)
-2. **Expo web export** (`expo export --platform web`) — output lands in `artifacts/mobile/web-dist/`
-3. **Metro dev server** on port 8082 — for Expo Go / native builds
+## How to run
 
-The preview pane shows the web version. For the native app, scan the QR code printed in the workflow logs with Expo Go.
+The **Start application** workflow runs `pnpm --filter @workspace/mobile run start-all` on port 5000. This:
+1. Serves a static loading page immediately on port 5000
+2. Builds the Expo web export in the background
+3. Starts the Metro bundler for Expo Go (QR code in logs)
 
-## Firebase config
+Once the build finishes (~30–60 s), the preview pane auto-refreshes and shows the app.
 
-All Firebase public config keys are stored as `EXPO_PUBLIC_*` environment variables in `.replit` under `[userenv.shared]`. No secrets are required for the web/preview build.
+To run on a phone: scan the QR code that appears in the **Start application** workflow logs with the **Expo Go** app.
 
-## Artifacts
+## Firebase
 
-| Name | Path | Purpose |
-|---|---|---|
-| FocusLock (mobile) | `artifacts/mobile` | Main Expo app |
-| API Server | `artifacts/api-server` | Express API (TypeScript, esbuild) |
-| App UI Design | `artifacts/ui-design` | Vite/React design exploration |
-| Canvas / Mockup Sandbox | `artifacts/mockup-sandbox` | Component preview server |
+Firebase credentials are already set as shared environment variables in `.replit`. The project uses Firebase Realtime Database with anonymous auth (device-UUID approach — no `getReactNativePersistence`).
+
+## Key environment variables (already set)
+
+- `EXPO_PUBLIC_FIREBASE_API_KEY`
+- `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `EXPO_PUBLIC_FIREBASE_DATABASE_URL`
+- `EXPO_PUBLIC_FIREBASE_PROJECT_ID`
+- `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `EXPO_PUBLIC_FIREBASE_APP_ID`
 
 ## User preferences
 
-- Keep the existing monorepo structure (pnpm workspaces).
-- Do not restructure or migrate the project unless explicitly asked.
+_None recorded yet._
