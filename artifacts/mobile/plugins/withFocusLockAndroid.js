@@ -159,7 +159,7 @@ const withFocusLockNativeFiles = (config) =>
       const drawableDir = path.join(projectRoot, "app/src/main/res/drawable");
       fs.mkdirSync(drawableDir, { recursive: true });
       const expoRoot = config.modRequest.projectRoot;
-      const charImages = ["lock_char_instagram", "lock_char_tiktok"];
+      const charImages = ["lock_char_instagram", "lock_char_tiktok", "lock_char_twitter"];
       for (const name of charImages) {
         const src = path.join(expoRoot, "assets", `${name}.png`);
         const dst = path.join(drawableDir, `${name}.png`);
@@ -581,7 +581,8 @@ class LockOverlayActivity : Activity() {
         /** Add new platforms here: package-name → drawable resource name (no extension). */
         private val CHAR_MAP = mapOf(
             "com.instagram.android" to "lock_char_instagram",
-            "com.zhiliaoapp.musically" to "lock_char_tiktok"
+            "com.zhiliaoapp.musically" to "lock_char_tiktok",
+            "com.twitter.android" to "lock_char_twitter"
         )
         /** Fallback image used for any unmapped package (currently same as Instagram). */
         private const val DEFAULT_CHAR = "lock_char_instagram"
