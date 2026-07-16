@@ -627,7 +627,7 @@ function DuckLockHomeContent() {
             <ToggleSwitch
               value={reelsLockEnabled}
               onValueChange={setReelsLockEnabled}
-              trackColorOff="#FF3B30"
+              trackColorOff="#3A3A3C"
               trackColorOn="#30D158"
             />
           </View>
