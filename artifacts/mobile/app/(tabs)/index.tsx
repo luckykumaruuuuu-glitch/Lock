@@ -10,7 +10,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -18,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassCard } from "@/components/ui/GlassCard";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { Toast } from "@/components/ui/Toast";
 import { GradientBackground } from "@/components/ui/GradientBackground";
 import { PermissionGuardPopup } from "@/components/ui/PermissionGuardPopup";
@@ -621,11 +621,11 @@ function DuckLockHomeContent() {
                 </Text>
               </View>
             </View>
-            <Switch
+            <ToggleSwitch
               value={reelsLockEnabled}
               onValueChange={setReelsLockEnabled}
-              trackColor={{ false: "#FF3B30", true: "#30D158" }}
-              thumbColor="#FFFFFF"
+              trackColorOff="#FF3B30"
+              trackColorOn="#30D158"
             />
           </View>
         </GlassCard>
