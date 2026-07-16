@@ -159,7 +159,7 @@ const withFocusLockNativeFiles = (config) =>
       const drawableDir = path.join(projectRoot, "app/src/main/res/drawable");
       fs.mkdirSync(drawableDir, { recursive: true });
       const expoRoot = config.modRequest.projectRoot;
-      const charImages = ["lock_char_instagram", "lock_char_tiktok", "lock_char_twitter", "lock_char_facebook", "lock_char_youtube", "lock_char_snapchat"];
+      const charImages = ["lock_char_instagram", "lock_char_tiktok", "lock_char_twitter", "lock_char_facebook", "lock_char_youtube", "lock_char_snapchat", "lock_char_reddit"];
       for (const name of charImages) {
         const src = path.join(expoRoot, "assets", `${name}.png`);
         const dst = path.join(drawableDir, `${name}.png`);
@@ -585,7 +585,8 @@ class LockOverlayActivity : Activity() {
             "com.twitter.android" to "lock_char_twitter",
             "com.facebook.katana" to "lock_char_facebook",
             "com.google.android.youtube" to "lock_char_youtube",
-            "com.snapchat.android" to "lock_char_snapchat"
+            "com.snapchat.android" to "lock_char_snapchat",
+            "com.reddit.frontpage" to "lock_char_reddit"
         )
         /** Fallback image used for any unmapped package (currently same as Instagram). */
         private const val DEFAULT_CHAR = "lock_char_instagram"
