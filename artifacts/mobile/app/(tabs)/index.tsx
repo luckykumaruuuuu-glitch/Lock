@@ -606,23 +606,27 @@ function DuckLockHomeContent() {
         </View>
 
         {/* Reels Lock */}
-        <GlassCard style={styles.reelsLockCard} padding={0}>
-          <View style={styles.reelsLockTopRow}>
-            <Text style={styles.reelsLockTitle}>Reels Lock</Text>
+        <GlassCard style={styles.reelsLockCard} padding={16}>
+          <View style={styles.reelsLockRow}>
+            <Text style={styles.reelsLockEmoji}>🔒</Text>
+            <View style={styles.reelsLockCenter}>
+              <Text style={styles.reelsLockTitle}>Lock Reels</Text>
+              <View style={[
+                styles.reelsLockPill,
+                { backgroundColor: reelsLockEnabled ? "rgba(48,209,88,0.13)" : "rgba(255,59,48,0.13)" },
+              ]}>
+                <View style={[styles.reelsLockDot, { backgroundColor: reelsLockEnabled ? "#30D158" : "#FF3B30" }]} />
+                <Text style={[styles.reelsLockPillText, { color: reelsLockEnabled ? "#30D158" : "#FF3B30" }]}>
+                  {reelsLockEnabled ? "Unlock" : "Lock"}
+                </Text>
+              </View>
+            </View>
             <Switch
               value={reelsLockEnabled}
               onValueChange={setReelsLockEnabled}
-              trackColor={{ false: "#FF453A", true: "#32D74B" }}
+              trackColor={{ false: "#FF3B30", true: "#30D158" }}
               thumbColor="#FFFFFF"
             />
-          </View>
-          <View style={[
-            styles.reelsLockStrip,
-            { borderTopColor: reelsLockEnabled ? "rgba(50,215,75,0.2)" : "rgba(255,69,58,0.2)" },
-          ]}>
-            <Text style={[styles.reelsLockStatus, { color: reelsLockEnabled ? "#32D74B" : "#FF453A" }]}>
-              {reelsLockEnabled ? "Unlock" : "Lock"}
-            </Text>
           </View>
         </GlassCard>
 
@@ -751,11 +755,19 @@ const styles = StyleSheet.create({
   emptyBody: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center", lineHeight: 22 },
   warningCard: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 4 },
   warningText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#FF453A", lineHeight: 18 },
-  reelsLockCard: { overflow: "hidden" },
-  reelsLockTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 14 },
-  reelsLockTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#FFFFFF" },
-  reelsLockStrip: { paddingHorizontal: 16, paddingVertical: 9, borderTopWidth: 1 },
-  reelsLockStatus: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  reelsLockCard: {},
+  reelsLockRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  reelsLockEmoji: { fontSize: 28 },
+  reelsLockCenter: { flex: 1, gap: 8 },
+  reelsLockTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  reelsLockPill: {
+    flexDirection: "row", alignItems: "center", gap: 7,
+    alignSelf: "flex-start",
+    paddingHorizontal: 12, paddingVertical: 7,
+    borderRadius: 20,
+  },
+  reelsLockDot: { width: 9, height: 9, borderRadius: 5 },
+  reelsLockPillText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
   duckPalHeroPlaceholder: {
     alignSelf: "stretch",
     height: 280,
