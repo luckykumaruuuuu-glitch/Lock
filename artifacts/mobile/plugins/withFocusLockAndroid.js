@@ -210,7 +210,7 @@ const withFocusLockNativeFiles = (config) =>
         if (fs.existsSync(src)) fs.copyFileSync(src, dst);
       }
 
-      const reelsLockCharImages = ["reels_lock_char_instagram"];
+      const reelsLockCharImages = ["reels_lock_char_instagram", "reels_lock_char_youtube"];
       for (const name of reelsLockCharImages) {
         const src = path.join(expoRoot, "assets", `${name}.png`);
         const dst = path.join(drawableDir, `${name}.png`);
@@ -858,9 +858,16 @@ class ReelsLockActivity : Activity() {
          * Add per-platform images here when new platforms are enabled.
          */
         private val REELS_LOCK_CHAR_MAP = mapOf(
-            "com.instagram.android" to "reels_lock_char_instagram",
+            "com.instagram.android"      to "reels_lock_char_instagram",
+            "com.google.android.youtube" to "reels_lock_char_youtube",
         )
-        private const val DEFAULT_CHAR = "reels_lock_char_instagram"
+        /** Per-platform header text shown above the character image. */
+        private val LOCK_TITLE_MAP = mapOf(
+            "com.instagram.android"      to "Reels are locked",
+            "com.google.android.youtube" to "Shorts are locked",
+        )
+        private const val DEFAULT_CHAR  = "reels_lock_char_instagram"
+        private const val DEFAULT_TITLE = "Reels are locked"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -917,9 +924,9 @@ class ReelsLockActivity : Activity() {
             setPadding(dp(28), 0, dp(28), dp(40))
         }
 
-        // "Reels are locked" label at top of content
+        // Per-platform header text ("Reels are locked" / "Shorts are locked" / …)
         val titleLabel = TextView(this).apply {
-            text      = "Reels are locked"
+            text      = LOCK_TITLE_MAP[pkgName] ?: DEFAULT_TITLE
             textSize  = 22f
             setTextColor(Color.WHITE)
             typeface  = Typeface.create("sans-serif", Typeface.BOLD)
@@ -1063,7 +1070,10 @@ class ReelsLockHandler(private val context: Context) : ReelsSignalListener {
         const  val KEY_REELS_LOCK_ENABLED = "reels_lock_enabled"
 
         /** Platforms where Reels Lock is active. Expand later for YouTube/Facebook. */
-        private val SUPPORTED_PACKAGES = setOf("com.instagram.android")
+        private val SUPPORTED_PACKAGES = setOf(
+            "com.instagram.android",
+            "com.google.android.youtube",
+        )
     }
 
     fun isEnabled(): Boolean =
