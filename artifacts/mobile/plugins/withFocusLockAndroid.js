@@ -210,7 +210,7 @@ const withFocusLockNativeFiles = (config) =>
         if (fs.existsSync(src)) fs.copyFileSync(src, dst);
       }
 
-      const reelsLockCharImages = ["reels_lock_char_instagram", "reels_lock_char_youtube"];
+      const reelsLockCharImages = ["reels_lock_char_instagram", "reels_lock_char_youtube", "reels_lock_char_facebook"];
       for (const name of reelsLockCharImages) {
         const src = path.join(expoRoot, "assets", `${name}.png`);
         const dst = path.join(drawableDir, `${name}.png`);
@@ -860,11 +860,13 @@ class ReelsLockActivity : Activity() {
         private val REELS_LOCK_CHAR_MAP = mapOf(
             "com.instagram.android"      to "reels_lock_char_instagram",
             "com.google.android.youtube" to "reels_lock_char_youtube",
+            "com.facebook.katana"        to "reels_lock_char_facebook",
         )
         /** Per-platform header text shown above the character image. */
         private val LOCK_TITLE_MAP = mapOf(
             "com.instagram.android"      to "Reels are locked",
             "com.google.android.youtube" to "Shorts are locked",
+            "com.facebook.katana"        to "Reels are locked",
         )
         private const val DEFAULT_CHAR  = "reels_lock_char_instagram"
         private const val DEFAULT_TITLE = "Reels are locked"
@@ -1073,6 +1075,7 @@ class ReelsLockHandler(private val context: Context) : ReelsSignalListener {
         private val SUPPORTED_PACKAGES = setOf(
             "com.instagram.android",
             "com.google.android.youtube",
+            "com.facebook.katana",
         )
     }
 
