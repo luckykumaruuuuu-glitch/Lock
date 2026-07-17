@@ -1,0 +1,17 @@
+"DuckLock project mein ek NAYI native Kotlin Activity banani/redesign karni hai — 'UnlockTasksActivity'.
+Exact location/context: Yeh project Expo (React Native) hai, jisme saare custom-native-Android-features (Accessibility Service, locking-screens, overlay-windows) ek Config-Plugin file ke ANDAR Kotlin-code TEMPLATE-STRINGS ke roop mein likhe hote hain — file: artifacts/mobile/plugins/withFocusLockAndroid.js (ya jo bhi exact path is project mein ho — dhoondh lo withFocusLockAndroid.js naam se). Is file ke andar pehle se bhi kai Activities embedded hain jaise LockOverlayActivity.kt aur ReelsLockActivity.kt — same PATTERN follow karke, isi file ke andar ek NAYI Activity 'UnlockTasksActivity' add/redesign karni hai (agar already koi placeholder-version maujood ho usi naam ki, to use REPLACE karo).
+Abhi SIRF SCREEN/UI banani hai — koi button-click-navigation, koi shortcut, koi doosri screen se integration ABHI MAT JODNA. Bas ek standalone, static screen ready honi chahiye.
+Screen-type: Bottom-sheet/modal style — screen ke UPAR se neeche ki taraf SLIDE karke aaye, pure dark/black background.
+Layout (top se neeche):
+Top-left corner mein chhota back-arrow (<) button
+Uske neeche, ek horizontal GREY DRAG-HANDLE bar (center-aligned)
+Heading: 'Choose a challenge to unlock' — bold, white, large text (~32sp), LEFT-ALIGNED
+Neeche, 2-COLUMN GRID of 5 image-cards:
+Har card: full-bleed background-photo (abhi placeholder-color/image use karo) + neeche dark-se-transparent GRADIENT-OVERLAY + white bold LABEL-TEXT overlay bottom-left/center mein
+Cards ke rounded-corners (~20dp radius), thoda gap unke beech
+5 cards: 'Phone Flip Down', 'Forehead Scan', 'Walk', 'Jump', 'Scroll'
+Last row mein SIRF EK card (5 odd-number), LEFT-SIDE par akela, right-side khaali
+Zaroori:
+Cards par abhi koi click-behavior mat jodna, sirf STATIC/VISUAL rakho
+Baaki koi existing function (locking, DuckPal, permissions, LockOverlayActivity, ReelsLockActivity, Settings) BILKUL MAT CHHEDNA — sirf yeh ek nayi screen ka structure/design banana hai
+Fix ke baad screenshot bhejo"

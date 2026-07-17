@@ -110,6 +110,21 @@ function addReelsLockActivity(application) {
     },
   });
 }
+function addUnlockTasksActivity(application) {
+  const activities = ensureArray(application, "activity");
+  if (hasAttr(activities, "android:name", ".UnlockTasksActivity")) return;
+  activities.push({
+    $: {
+      "android:name": ".UnlockTasksActivity",
+      "android:exported": "false",
+      "android:excludeFromRecents": "true",
+      "android:taskAffinity": "",
+      "android:launchMode": "singleTask",
+      "android:theme": "@android:style/Theme.Black.NoTitleBar.Fullscreen",
+    },
+  });
+}
+
 function addBootReceiver(application) {
   const receivers = ensureArray(application, "receiver");
   if (hasAttr(receivers, "android:name", ".BootReceiver")) return;
@@ -150,6 +165,7 @@ const withFocusLockManifest = (config) =>
       addNotificationService(app);
       addLockOverlayActivity(app);
       addReelsLockActivity(app);
+      addUnlockTasksActivity(app);
       addBootReceiver(app);
       addSpecialUseFgsProperty(app);
     }
@@ -199,6 +215,31 @@ const withFocusLockNativeFiles = (config) =>
         android:interpolator="@android:interpolator/accelerate_cubic"/>
 </set>
 `);
+
+      /* ── res/anim/unlock_tasks_slide_down.xml — UnlockTasksActivity enter (top → centre) ── */
+      fs.writeFileSync(path.join(animDir, "unlock_tasks_slide_down.xml"),
+`<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <translate
+        android:fromYDelta="-100%p"
+        android:toYDelta="0%p"
+        android:duration="340"
+        android:interpolator="@android:interpolator/decelerate_cubic"/>
+</set>
+`);
+
+      /* ── res/anim/unlock_tasks_slide_up.xml — UnlockTasksActivity exit (centre → top) ── */
+      fs.writeFileSync(path.join(animDir, "unlock_tasks_slide_up.xml"),
+`<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <translate
+        android:fromYDelta="0%p"
+        android:toYDelta="-100%p"
+        android:duration="280"
+        android:interpolator="@android:interpolator/accelerate_cubic"/>
+</set>
+`);
+
       /* ── res/drawable — character images for lock overlay ── */
       const drawableDir = path.join(projectRoot, "app/src/main/res/drawable");
       fs.mkdirSync(drawableDir, { recursive: true });
@@ -1037,6 +1078,215 @@ class ReelsLockActivity : Activity() {
         @Suppress("DEPRECATION")
         overridePendingTransition(0, R.anim.reels_lock_slide_down)
         finish()
+    }
+}
+`);
+
+      /* ════════════════════════════════════════════════
+         UnlockTasksActivity.kt
+       ════════════════════════════════════════════════ */
+      fs.writeFileSync(path.join(kotlinDir, "UnlockTasksActivity.kt"),
+`package ${PACKAGE_NAME}
+
+import android.app.Activity
+import android.graphics.*
+import android.graphics.drawable.*
+import android.os.*
+import android.view.*
+import android.widget.*
+
+/**
+ * UnlockTasksActivity — shown when the user wants to unlock a blocked app
+ * by completing a physical challenge.
+ *
+ * Design  : slides in from top (top-sheet / modal); pure black background.
+ * Layout  : drag-handle + back arrow → bold heading → 2-column card grid.
+ * Status  : STATIC / visual-only — no click behaviour yet.
+ */
+class UnlockTasksActivity : Activity() {
+
+    companion object {
+        /** (label, placeholder colour) for each challenge card */
+        private val CHALLENGES = listOf(
+            Pair("Phone Flip Down", "#2A1F14"),
+            Pair("Forehead Scan",   "#112230"),
+            Pair("Walk",            "#0F2018"),
+            Pair("Jump",            "#101828"),
+            Pair("Scroll",          "#1A1228"),
+        )
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        @Suppress("DEPRECATION")
+        overridePendingTransition(R.anim.unlock_tasks_slide_down, 0)
+        buildUi()
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        @Suppress("DEPRECATION")
+        overridePendingTransition(0, R.anim.unlock_tasks_slide_up)
+        finish()
+        @Suppress("DEPRECATION")
+        super.onBackPressed()
+    }
+
+    private fun buildUi() {
+        val dm      = resources.displayMetrics
+        val density = dm.density
+        fun dp(v: Int)   = (v * density).toInt()
+        fun dpF(v: Float) = v * density
+
+        /* ── Root: scrollable column on black ───────────────────────────── */
+        val root = ScrollView(this).apply {
+            setBackgroundColor(Color.BLACK)
+            overScrollMode = View.OVER_SCROLL_NEVER
+        }
+
+        val col = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(8), dp(20), dp(36))
+        }
+        root.addView(col)
+
+        /* ── Top bar: back arrow (left) + drag-handle (centre) ──────────── */
+        val topBar = FrameLayout(this)
+
+        // Drag-handle — grey pill, centre
+        val handle = View(this).apply {
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#5A5A5E"))
+                cornerRadius = dpF(3f)
+            }
+        }
+        topBar.addView(handle, FrameLayout.LayoutParams(dp(36), dp(4)).apply {
+            gravity = Gravity.CENTER
+        })
+
+        // Back arrow — left-aligned, vertically centred
+        val backBtn = TextView(this).apply {
+            text      = "‹"
+            textSize  = 28f
+            setTextColor(Color.WHITE)
+            typeface  = Typeface.create("sans-serif-light", Typeface.NORMAL)
+            gravity   = Gravity.CENTER
+            setPadding(dp(4), 0, dp(20), 0)
+            // Static — no click handler yet
+        }
+        topBar.addView(backBtn, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        ).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL })
+
+        col.addView(topBar, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, dp(48)
+        ))
+
+        /* ── Heading ────────────────────────────────────────────────────── */
+        val heading = TextView(this).apply {
+            text     = "Choose a challenge to unlock"
+            textSize = 26f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+            gravity  = Gravity.START
+            setPadding(0, dp(6), 0, dp(22))
+        }
+        col.addView(heading, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ))
+
+        /* ── 2-column card grid ─────────────────────────────────────────── */
+        val gap    = dp(12)
+        // Available width = screen width minus the col left+right padding (20+20)
+        val colW   = dm.widthPixels - dp(40)
+        val cardW  = (colW - gap) / 2
+        val cardH  = (cardW * 1.22f).toInt()
+        val corner = dpF(20f)
+
+        // Rows: [0,1], [2,3], [4]  (last row has only 1 card on the left)
+        val rows = listOf(listOf(0, 1), listOf(2, 3), listOf(4))
+        rows.forEach { indices ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity     = Gravity.TOP or Gravity.START
+            }
+            indices.forEachIndexed { pos, idx ->
+                if (pos > 0) {
+                    row.addView(View(this), LinearLayout.LayoutParams(gap, cardH))
+                }
+                row.addView(
+                    buildCard(idx, cardW, cardH, corner, density),
+                    LinearLayout.LayoutParams(cardW, cardH)
+                )
+            }
+            col.addView(row, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = gap })
+        }
+
+        setContentView(root)
+    }
+
+    /** Single challenge card: placeholder bg + bottom gradient + label */
+    private fun buildCard(
+        idx: Int,
+        w: Int, h: Int,
+        radius: Float,
+        density: Float
+    ): FrameLayout {
+        fun dp(v: Int) = (v * density).toInt()
+        val (label, colour) = CHALLENGES[idx]
+
+        val card = FrameLayout(this)
+
+        // Clip child views to rounded rect
+        card.outlineProvider = object : ViewOutlineProvider() {
+            override fun getOutline(view: View, outline: Outline) {
+                outline.setRoundRect(0, 0, view.width, view.height, radius)
+            }
+        }
+        card.clipToOutline = true
+
+        // Solid placeholder background
+        card.setBackgroundColor(Color.parseColor(colour))
+
+        // Dark gradient overlay (transparent → near-black) at the bottom half
+        val gradientView = object : View(this) {
+            override fun onDraw(canvas: Canvas) {
+                val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+                paint.shader = LinearGradient(
+                    0f, 0f, 0f, height.toFloat(),
+                    intArrayOf(Color.TRANSPARENT, Color.parseColor("#D9000000")),
+                    floatArrayOf(0.35f, 1f),
+                    Shader.TileMode.CLAMP
+                )
+                canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+            }
+        }
+        card.addView(gradientView, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        ))
+
+        // White bold label — bottom-left
+        val labelView = TextView(this).apply {
+            text      = label
+            textSize  = 14f
+            setTextColor(Color.WHITE)
+            typeface  = Typeface.create("sans-serif", Typeface.BOLD)
+            gravity   = Gravity.START
+            setPadding(dp(12), 0, dp(12), dp(14))
+        }
+        card.addView(labelView, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT
+        ).apply { gravity = Gravity.BOTTOM or Gravity.START })
+
+        return card
     }
 }
 `);
