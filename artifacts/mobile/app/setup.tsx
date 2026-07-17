@@ -20,7 +20,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Toast } from "@/components/ui/Toast";
 import { checkNativePermissions } from "@/lib/nativePermissionCheck";
 import { openBatteryOptimizationSettings } from "@/lib/openBatteryOptimizationSettings";
 import { PermissionId, usePermissionStatus } from "@/hooks/usePermissionStatus";
@@ -223,19 +222,12 @@ export default function SetupScreen() {
   const whyHeight               = useRef(new Animated.Value(0)).current;
   const continueAnim            = useRef(new Animated.Value(0)).current;
 
-  // Consistent grant-detected feedback (haptic + toast) for ALL 6 permissions,
-  // regardless of whether the grant was caught by the native watcher (auto-return)
-  // or by the AppState/backoff resume-check (manual-return). See
-  // `handlePermissionGranted` below — it's the single trigger point for both.
-  const [toastVisible, setToastVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-
+  // Haptic feedback fires on every permission grant (auto-return via watcher
+  // or manual-return via AppState/backoff). Visual toast has been removed —
+  // the row's green checkmark alone is the grant indicator.
   const handlePermissionGranted = useCallback((id: PermissionId) => {
-    const perm = PERMS.find((p) => p.id === id);
-    console.log("[PermSetup] Grant detected for", id, "— firing haptic + toast feedback");
+    console.log("[PermSetup] Grant detected for", id, "— firing haptic feedback");
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    setToastMessage(`Auto-detected! ${perm?.label ?? "Permission"} enabled`);
-    setToastVisible(true);
   }, []);
 
   const appStateRef   = useRef<AppStateStatus>(AppState.currentState);
@@ -436,12 +428,6 @@ export default function SetupScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: topPad, paddingBottom: botPad }]}>
-      <Toast
-        visible={toastVisible}
-        message={toastMessage}
-        type="success"
-        onHide={() => setToastVisible(false)}
-      />
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
