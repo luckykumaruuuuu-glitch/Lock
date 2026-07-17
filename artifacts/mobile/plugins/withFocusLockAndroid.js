@@ -2737,6 +2737,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -2756,6 +2757,10 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
     : ReactContextBaseJavaModule(ctx) {
 
     override fun getName() = "FocusLockPermissionChecker"
+
+    companion object {
+        private const val TAG = "DuckLock:PermChecker"
+    }
 
     // Active watchers keyed by permissionId — at most one per id at a time.
     // ContentObserver is used for Accessibility (has a real Settings.Secure key);
@@ -3054,6 +3059,8 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
                 ctx.contentResolver,
                 Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
             ) ?: return false
+            Log.d(TAG, "RAW enabled-services from OS: \$enabledServicesSetting")
+            Log.d(TAG, "EXPECTED componentName: \$expectedComponentName")
             enabledServicesSetting.split(':').any {
                 it.equals(expectedComponentName, ignoreCase = true)
             }
