@@ -18,8 +18,10 @@ import { SafeKeyboardProvider } from "@/components/SafeKeyboardProvider";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { DebugLogViewer } from "@/components/ui/DebugLogViewer";
 import { UpdateModal } from "@/components/ui/UpdateModal";
 import { AppModeProvider } from "@/context/AppModeContext";
+import { DebugLogProvider } from "@/context/DebugLogContext";
 import { FirebaseSyncProvider, useFirebaseSyncContext } from "@/context/FirebaseSyncContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { LockProvider } from "@/context/LockContext";
@@ -233,11 +235,15 @@ export default function RootLayout() {
             <LockProvider>
               <FirebaseSyncProvider>
                 <UpdateCheckProvider>
-                  <GestureHandlerRootView>
-                    <SafeKeyboardProvider>
-                      <RootLayoutNav />
-                    </SafeKeyboardProvider>
-                  </GestureHandlerRootView>
+                  <DebugLogProvider>
+                    <GestureHandlerRootView>
+                      <SafeKeyboardProvider>
+                        <RootLayoutNav />
+                        {/* Floating debug icon — only renders when toggled ON in Settings */}
+                        <DebugLogViewer />
+                      </SafeKeyboardProvider>
+                    </GestureHandlerRootView>
+                  </DebugLogProvider>
                 </UpdateCheckProvider>
               </FirebaseSyncProvider>
             </LockProvider>

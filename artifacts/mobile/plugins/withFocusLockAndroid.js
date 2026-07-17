@@ -2992,8 +2992,8 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
                 @Suppress("DEPRECATION")
                 appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, uid, pkg)
             }
-            Log.d(TAG, "RAW AppOps mode from OS (OPSTR_GET_USAGE_STATS): \${mode}")
-            Log.d(TAG, "EXPECTED mode for granted: \${AppOpsManager.MODE_ALLOWED}")
+            DebugLogger.log(TAG, "RAW AppOps mode from OS (OPSTR_GET_USAGE_STATS): \${mode}")
+            DebugLogger.log(TAG, "EXPECTED mode for granted: \${AppOpsManager.MODE_ALLOWED}")
             mode == AppOpsManager.MODE_ALLOWED
         } catch (e: Exception) { false }
     }
@@ -3030,13 +3030,13 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
             // Samsung OneUI) set MODE_DEFAULT instead of MODE_ALLOWED after the user grants
             // overlay permission, causing a false-negative if we only check MODE_ALLOWED.
             val result = mode == AppOpsManager.MODE_ALLOWED || mode == AppOpsManager.MODE_DEFAULT
-            Log.d(TAG, "RAW AppOps mode from OS (OPSTR_SYSTEM_ALERT_WINDOW): \${mode}")
-            Log.d(TAG, "EXPECTED mode for granted: MODE_ALLOWED(\${AppOpsManager.MODE_ALLOWED}) or MODE_DEFAULT(\${AppOpsManager.MODE_DEFAULT})")
-            android.util.Log.d("DuckLock", "canDrawOverlays: AppOpsManager mode=\${mode}, granted=\${result}, pkg=\${pkg}")
+            DebugLogger.log(TAG, "RAW AppOps mode from OS (OPSTR_SYSTEM_ALERT_WINDOW): \${mode}")
+            DebugLogger.log(TAG, "EXPECTED mode for granted: MODE_ALLOWED(\${AppOpsManager.MODE_ALLOWED}) or MODE_DEFAULT(\${AppOpsManager.MODE_DEFAULT})")
+            DebugLogger.log("DuckLock", "canDrawOverlays: AppOpsManager mode=\${mode}, granted=\${result}, pkg=\${pkg}")
             result
         } catch (e: Exception) {
             // Absolute last-resort fallback
-            android.util.Log.d("DuckLock", "canDrawOverlays: AppOpsManager failed (\${e.message}), fallback to Settings API")
+            DebugLogger.log("DuckLock", "canDrawOverlays: AppOpsManager failed (\${e.message}), fallback to Settings API")
             Settings.canDrawOverlays(ctx)
         }
     }
@@ -3047,8 +3047,8 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
             val dpm       = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
             val component = ComponentName(ctx, "\${ctx.packageName}.DeviceAdminReceiver")
             val result    = dpm.isAdminActive(component)
-            Log.d(TAG, "RAW isAdminActive from OS (component=\${component.flattenToString()}): \${result}")
-            Log.d(TAG, "EXPECTED component: \${component.flattenToString()}")
+            DebugLogger.log(TAG, "RAW isAdminActive from OS (component=\${component.flattenToString()}): \${result}")
+            DebugLogger.log(TAG, "EXPECTED component: \${component.flattenToString()}")
             result
         } catch (e: Exception) { false }
     }
@@ -3071,8 +3071,8 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
                 ctx.contentResolver,
                 Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
             ) ?: return false
-            Log.d(TAG, "RAW enabled-services from OS: \$enabledServicesSetting")
-            Log.d(TAG, "EXPECTED componentName: \$expectedComponentName")
+            DebugLogger.log(TAG, "RAW enabled-services from OS: \$enabledServicesSetting")
+            DebugLogger.log(TAG, "EXPECTED componentName: \$expectedComponentName")
             enabledServicesSetting.split(':').any {
                 it.equals(expectedComponentName, ignoreCase = true)
             }
@@ -3084,11 +3084,132 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
         return try {
             val pm     = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager
             val result = pm.isIgnoringBatteryOptimizations(ctx.packageName)
-            Log.d(TAG, "RAW isIgnoringBatteryOptimizations from OS (pkg=\${ctx.packageName}): \${result}")
-            Log.d(TAG, "EXPECTED: true (app must be ignoring battery optimizations)")
+            DebugLogger.log(TAG, "RAW isIgnoringBatteryOptimizations from OS (pkg=\${ctx.packageName}): \${result}")
+            DebugLogger.log(TAG, "EXPECTED: true (app must be ignoring battery optimizations)")
             result
         } catch (e: Exception) { true }
     }
+}
+`
+      );
+
+      /* ── DebugLogger.kt ── */
+      fs.writeFileSync(
+        path.join(kotlinDir, "DebugLogger.kt"),
+`package ${PACKAGE_NAME}
+
+import android.util.Log
+import java.util.Collections
+
+/**
+ * Global, reusable in-app debug log buffer.
+ *
+ * Drop-in replacement for Log.d() calls anywhere in the native layer.
+ * Every entry is:
+ *   1. Written to Logcat as usual (so ADB still works).
+ *   2. Stored in an in-memory ring-buffer (newest entry first) so the
+ *      JS DebugLogModule can expose it to the floating in-app log viewer
+ *      WITHOUT needing ADB or a connected terminal.
+ *
+ * Usage:
+ *   DebugLogger.log("MyTag", "Some message: \${someValue}")
+ *
+ * Thread-safe: synchronized on the object monitor.
+ */
+object DebugLogger {
+
+    private const val MAX_SIZE = 2000
+
+    // Collections.synchronizedList for thread safety across Accessibility-
+    // service callbacks, AppOps listeners, and the RN bridge thread.
+    private val buffer: MutableList<String> =
+        Collections.synchronizedList(ArrayList(MAX_SIZE + 1))
+
+    /**
+     * Log a message. Writes to Logcat AND appends to the in-memory buffer.
+     * Newest entries are prepended (index 0) so the viewer shows them first.
+     */
+    fun log(tag: String, message: String) {
+        Log.d(tag, message)                          // normal Logcat
+        val entry = "[\$tag] \$message"
+        synchronized(buffer) {
+            buffer.add(0, entry)                     // newest first
+            if (buffer.size > MAX_SIZE) buffer.removeAt(buffer.size - 1)
+        }
+    }
+
+    /** Returns all buffered log lines joined by newline (newest first). */
+    fun getAllLogs(): String = synchronized(buffer) { buffer.joinToString("\\n") }
+
+    /** Clears the in-memory buffer (Logcat is not affected). */
+    fun clear() = synchronized(buffer) { buffer.clear() }
+}
+`
+      );
+
+      /* ── DebugLogModule.kt ── */
+      fs.writeFileSync(
+        path.join(kotlinDir, "DebugLogModule.kt"),
+`package ${PACKAGE_NAME}
+
+import com.facebook.react.bridge.Promise
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod
+
+/**
+ * React Native bridge for DebugLogger.
+ *
+ * JS usage:
+ *   import { NativeModules } from 'react-native';
+ *   const logs = await NativeModules.DuckLockDebugLog.getAllLogs();
+ *   await NativeModules.DuckLockDebugLog.clear();
+ */
+class DebugLogModule(ctx: ReactApplicationContext)
+    : ReactContextBaseJavaModule(ctx) {
+
+    override fun getName() = "DuckLockDebugLog"
+
+    /** Returns all buffered log lines as a single newline-separated string. */
+    @ReactMethod
+    fun getAllLogs(promise: Promise) {
+        try {
+            promise.resolve(DebugLogger.getAllLogs())
+        } catch (e: Exception) {
+            promise.reject("DEBUG_LOG_ERROR", e.message ?: "Unknown error", e)
+        }
+    }
+
+    /** Clears the in-memory log buffer. */
+    @ReactMethod
+    fun clear(promise: Promise) {
+        try {
+            DebugLogger.clear()
+            promise.resolve(null)
+        } catch (e: Exception) {
+            promise.reject("DEBUG_LOG_CLEAR_ERROR", e.message ?: "Unknown error", e)
+        }
+    }
+}
+`
+      );
+
+      /* ── DebugLogPackage.kt ── */
+      fs.writeFileSync(
+        path.join(kotlinDir, "DebugLogPackage.kt"),
+`package ${PACKAGE_NAME}
+
+import com.facebook.react.ReactPackage
+import com.facebook.react.bridge.NativeModule
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.uimanager.ViewManager
+
+class DebugLogPackage : ReactPackage {
+    override fun createNativeModules(ctx: ReactApplicationContext): List<NativeModule> =
+        listOf(DebugLogModule(ctx))
+
+    override fun createViewManagers(ctx: ReactApplicationContext): List<ViewManager<*, *>> =
+        emptyList()
 }
 `
       );
@@ -3220,6 +3341,42 @@ class PermissionCheckerPackage : ReactPackage {
           console.log(`[withFocusLockAndroid] PermissionCheckerPackage registered via pattern: ${matchedPattern}`);
         } else {
           console.log("[withFocusLockAndroid] PermissionCheckerPackage already present in MainApplication.kt — skipping patch.");
+        }
+
+        // Register DebugLogPackage (in-app debug log viewer bridge)
+        if (!content.includes("DebugLogPackage")) {
+          const DEBUG_LOG_PATTERNS = [
+            {
+              regex: /(PackageList\(this\)\.packages\.apply\s*\{)/,
+              replacement: "$1\n              add(DebugLogPackage())",
+            },
+            {
+              regex: /(PackageList\(this\)\.packages\.also\s*\{)/,
+              replacement: "$1\n              it.add(DebugLogPackage())",
+            },
+            {
+              regex: /(val packages = PackageList\(this\)\.packages)/,
+              replacement: "$1\n          packages.add(DebugLogPackage())",
+            },
+          ];
+          let patchedDbg = content;
+          let matchedPatternDbg = null;
+          for (const { regex, replacement } of DEBUG_LOG_PATTERNS) {
+            const result = content.replace(regex, replacement);
+            if (result !== content) {
+              patchedDbg = result;
+              matchedPatternDbg = regex.toString();
+              break;
+            }
+          }
+          if (!matchedPatternDbg) {
+            console.warn("[withFocusLockAndroid] DebugLogPackage could NOT be auto-registered. Add add(DebugLogPackage()) manually.");
+          } else {
+            content = patchedDbg;
+            console.log(`[withFocusLockAndroid] DebugLogPackage registered via pattern: ${matchedPatternDbg}`);
+          }
+        } else {
+          console.log("[withFocusLockAndroid] DebugLogPackage already present in MainApplication.kt — skipping patch.");
         }
 
         // Register ReelsLockPackage (Reels Lock toggle JS bridge)

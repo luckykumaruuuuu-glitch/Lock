@@ -16,6 +16,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientBackground } from "@/components/ui/GradientBackground";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
+import { useDebugLog } from "@/context/DebugLogContext";
 import { useUpdateCheckContext } from "@/context/UpdateCheckContext";
 import { useLanguage, LANGUAGES } from "@/context/LanguageContext";
 import { useSounds } from "@/hooks/useSounds";
@@ -371,6 +373,7 @@ export default function SettingsScreen() {
   const { muted, setMuted, playPreview } = useSounds();
   const { t, currentLanguage } = useLanguage();
   const { hasUpdate, reopenModal } = useUpdateCheckContext();
+  const { showDebugIcon, setShowDebugIcon } = useDebugLog();
 
   const topPad    = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 + 84 : 60 + insets.bottom;
@@ -454,6 +457,23 @@ export default function SettingsScreen() {
             last
           />
         </GlassCard>
+
+        {/* DEVELOPER */}
+        {Platform.OS === "android" && (
+          <>
+            <SectionLabel label="Developer" />
+            <GlassCard padding={0}>
+              <Pressable
+                onPress={() => setShowDebugIcon(!showDebugIcon)}
+                style={({ pressed }) => [styles.row, { opacity: pressed ? 0.65 : 1 }]}
+              >
+                <FlatIcon name="terminal" />
+                <Text style={styles.rowLabel}>Show Debug Log Icon</Text>
+                <ToggleSwitch value={showDebugIcon} onValueChange={setShowDebugIcon} />
+              </Pressable>
+            </GlassCard>
+          </>
+        )}
 
         {/* ABOUT */}
         <GlassCard padding={0}>
