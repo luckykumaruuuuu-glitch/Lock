@@ -799,8 +799,9 @@ class AppBlockerAccessibilityService : AccessibilityService() {
     private val lastBlockedTimes = mutableMapOf<String, Long>()
     private val DEBOUNCE_MS     = 2_000L
 
-    // ── Reel detection (Phase 3A) — independent from locking ──────────────────
+    // ── Reel detection — independent from locking ─────────────────────────────
     private var reelDetector: ReelDetector? = null
+    private var duckPalHandler: DuckPalReelsHandler? = null
 
     private val HOME_LAUNCHERS = setOf(
         "com.android.launcher",
@@ -815,6 +816,36 @@ class AppBlockerAccessibilityService : AccessibilityService() {
         "com.oneplus.launcher",
         "com.nothing.launcher",
     )
+
+    companion object {
+        /**
+         * Platform registry for reel/short-video detection.
+         * Add new PlatformReelConfig entries here to enable detection on additional
+         * platforms — no changes to ReelDetector logic required.
+         */
+        private val PLATFORM_CONFIGS: Map<String, PlatformReelConfig> = listOf(
+            PlatformReelConfig(
+                packageName         = "com.instagram.android",
+                pagerIdKeywords     = listOf(
+                    "clips_viewer_view_pager",
+                    "reel_viewer_pager",
+                    "clips_tab_fragment",
+                    "video_feed_view_pager",
+                    "reels_tray_container",
+                ),
+                classKeywords       = listOf(
+                    "ReelViewer",
+                    "ClipsViewer",
+                    "ClipsVideo",
+                    "VideoWatch",
+                    "ReelsTab",
+                    "ClipsTab",
+                    "IgReels",
+                ),
+                hasSponsoredContent = true,
+            ),
+        ).associateBy { it.packageName }
+    }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -838,8 +869,9 @@ class AppBlockerAccessibilityService : AccessibilityService() {
 
         FocusLockNotificationService.cancelTamperNotification(applicationContext)
 
-        // Initialise reel detector (independent — no locking side-effects)
-        reelDetector = ReelDetector(applicationContext)
+        // Initialise reel detector + DuckPal handler (independent — no locking side-effects)
+        val handler = DuckPalReelsHandler(applicationContext).also { duckPalHandler = it }
+        reelDetector = ReelDetector(applicationContext, PLATFORM_CONFIGS, handler)
 
         // ⚠️ DEBUG — remove before production
         val lockFilePath = applicationContext.filesDir.absolutePath + "/focuslock_data.json"
@@ -915,13 +947,13 @@ class AppBlockerAccessibilityService : AccessibilityService() {
 
     override fun onInterrupt() {
         // Safety-net: hide overlay immediately if service is interrupted
-        reelDetector?.hideOverlay()
+        duckPalHandler?.hideOverlay()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         // Safety-net: hide overlay so it never gets stuck on screen if service is killed
-        reelDetector?.hideOverlay()
+        duckPalHandler?.hideOverlay()
 
         if (::repo.isInitialized && repo.hasActiveLocks()) {
             FocusLockNotificationService.showTamperNotification(
@@ -968,8 +1000,67 @@ class BootReceiver : BroadcastReceiver() {
 `);
 
       /* ════════════════════════════════════════════════
-         ReelDetector.kt  (Phase 3A — Instagram only)
-      ════════════════════════════════════════════════ */
+         PlatformReelConfig.kt  (shared platform registry)
+       ════════════════════════════════════════════════ */
+      fs.writeFileSync(path.join(kotlinDir, "PlatformReelConfig.kt"),
+`package ${PACKAGE_NAME}
+
+/**
+ * Configuration for a single platform's reel/short-video detection.
+ *
+ * @param packageName          Android package name (e.g. "com.instagram.android").
+ * @param pagerIdKeywords      Partial resource-ID strings that identify the short-video ViewPager.
+ * @param classKeywords        Fragments of fragment/activity class names that indicate the user
+ *                             is inside the short-video section of this platform.
+ * @param hasSponsoredContent  Whether this platform shows sponsored/ad content that should
+ *                             be detected and excluded from the reel count.
+ */
+data class PlatformReelConfig(
+    val packageName: String,
+    val pagerIdKeywords: List<String>,
+    val classKeywords: List<String>,
+    val hasSponsoredContent: Boolean,
+)
+`);
+
+      /* ════════════════════════════════════════════════
+         ReelsSignalListener.kt  (detection → consumer interface)
+       ════════════════════════════════════════════════ */
+      fs.writeFileSync(path.join(kotlinDir, "ReelsSignalListener.kt"),
+`package ${PACKAGE_NAME}
+
+/**
+ * Decouples pure reel-detection (ReelDetector) from consumer-specific behaviour
+ * (DuckPal counting+overlay, future Reels Lock enforcement, etc.).
+ *
+ * Implement this interface and register it with ReelDetector to receive detection
+ * signals without depending on any platform-specific internals.
+ */
+interface ReelsSignalListener {
+
+    /**
+     * Called when the user enters or leaves a Reels/short-video context.
+     *
+     * @param pkg    The platform's Android package name.
+     * @param active true  → user just entered Reels (first reel on screen).
+     *               false → user left Reels or switched away from the platform.
+     */
+    fun onReelsContextChanged(pkg: String, active: Boolean)
+
+    /**
+     * Called when a brand-new reel has been watched long enough to count
+     * (dwell ≥ THRESHOLD_MS) and has been classified for sponsored content.
+     *
+     * @param pkg         The platform's Android package name.
+     * @param isSponsored true if the reel is a sponsored/ad post (skip counting).
+     */
+    fun onNewReelAdvanced(pkg: String, isSponsored: Boolean)
+}
+`);
+
+      /* ════════════════════════════════════════════════
+         ReelDetector.kt  (generic multi-platform)
+       ════════════════════════════════════════════════ */
       fs.writeFileSync(path.join(kotlinDir, "ReelDetector.kt"),
 `package ${PACKAGE_NAME}
 
@@ -980,297 +1071,223 @@ import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import org.json.JSONObject
-import java.io.File
 import java.lang.ref.WeakReference
-import java.text.SimpleDateFormat
-import java.util.*
 
 /**
- * ReelDetector — Phase 3A: Instagram Reel counting via Accessibility tree.
+ * ReelDetector — Generic multi-platform reel/short-video detection.
  *
- * COMPLETELY INDEPENDENT from app-locking logic. Instantiated by
- * AppBlockerAccessibilityService and receives events via onEvent().
- * It never reads or modifies any lock state.
+ * Driven by a Map<String, PlatformReelConfig> rather than hardcoded per-platform
+ * constants. Each tracked platform gets its own independent ReelSessionTracker so
+ * scroll-session state never bleeds across platforms.
  *
- * ── Detection strategy ────────────────────────────────────────────────────────
+ * Detection results are emitted via ReelsSignalListener — this class never touches
+ * the overlay, counting storage, or any locking logic directly.
  *
- * 1. WINDOW_STATE_CHANGED (Instagram foreground / navigation):
- *    - Tracks the current foreground package.
- *    - Sets isInReelsContext=true when the incoming window className matches
- *      known Reels fragment/activity name fragments (see REELS_CLASS_KEYWORDS).
- *    - Resets context when the user navigates away from Reels or leaves Instagram.
+ * ── Detection strategy ─────────────────────────────────────────────────────────
+ * (unchanged from Phase 3A — only the platform abstraction is new)
  *
- * 2. VIEW_SCROLLED (reel-to-reel transition):
- *    - Fires on every scroll. We filter to Instagram only.
- *    - We identify the Reels ViewPager by its resource-ID (REEL_PAGER_ID_KEYWORDS)
- *      or, while already in Reels context, by className containing ViewPager/RecyclerView.
- *    - On first matching scroll, isInReelsContext is promoted to true and the sponsored
- *      check for the now-visible reel is scheduled.
- *    - Each subsequent qualifying scroll = user moved to a new reel:
- *      * dwell time = now − reelEnteredAt
- *      * If dwell >= THRESHOLD_MS (2500 ms) AND currentReelSponsored == false → count +1
- *      * reelEnteredAt is reset and a fresh sponsored check is scheduled for the new reel.
+ * 1. TYPE_WINDOW_STATE_CHANGED — tracks foreground package + Reels context entry/exit.
+ * 2. TYPE_VIEW_SCROLLED        — detects reel-to-reel transitions via ViewPager scrolls.
+ * 3. Sponsored detection       — 300 ms delayed rootInActiveWindow traversal (depth ≤ 8).
+ *    Only runs for platforms where hasSponsoredContent == true.
  *
- * 3. Sponsored detection — proactive sampling (fixes rootInActiveWindow timing):
- *    - When a new reel ENTERS the screen (timer reset), a 300 ms delayed check is
- *      scheduled via Handler. This gives Instagram time to render the "Sponsored"
- *      chip before we sample.
- *    - rootInActiveWindow is traversed (depth ≤ 8) for any node whose text or
- *      contentDescription equals "Sponsored" (case-insensitive).
- *    - The result is stored in currentReelSponsored and used when the NEXT scroll
- *      decides whether to count the reel that just scrolled away.
- *    - This avoids the race where rootInActiveWindow already shows the NEW reel
- *      at scroll-away evaluation time.
- *
- * ── Storage format (reelcount_data.json in context.filesDir) ─────────────────
- *   { "date": "2025-01-15", "count": 42, "updatedAt": 1705305600000 }
- *   If the saved date != today the count is reset to 0 (daily reset).
- *
- * ── Instagram Reels ViewPager IDs (observed across Instagram versions) ────────
- *   clips_viewer_view_pager, reel_viewer_pager, clips_tab_fragment_container,
- *   video_feed_view_pager, reels_tray_container
- *   These are Instagram-internal resource names that may change across app
- *   updates. The className-based fallback (ViewPager2 / RecyclerView while
- *   isInReelsContext is true) ensures counting still works if IDs change.
+ * ── Adding a new platform ──────────────────────────────────────────────────────
+ * Add a PlatformReelConfig entry to the PLATFORM_CONFIGS map in
+ * AppBlockerAccessibilityService. No changes to this class are required.
  */
-class ReelDetector(private val context: Context) {
+class ReelDetector(
+    private val context: Context,
+    private val platformConfigs: Map<String, PlatformReelConfig>,
+    var listener: ReelsSignalListener? = null,
+) {
 
     companion object {
-        private const val TAG          = "DuckLock:ReelDetector"
-        const  val INSTAGRAM_PKG       = "com.instagram.android"
-        const  val THRESHOLD_MS        = 2_500L
-        const  val COUNT_FILE          = "reelcount_data.json"
-        const  val DATE_FORMAT         = "yyyy-MM-dd"
+        private const val TAG                      = "DuckLock:ReelDetector"
+        const  val THRESHOLD_MS                    = 2_500L
         private const val SPONSORED_CHECK_DELAY_MS = 300L
-
-        /** Partial resource-ID strings that identify the Reels ViewPager. */
-        val REEL_PAGER_ID_KEYWORDS = listOf(
-            "clips_viewer_view_pager",
-            "reel_viewer_pager",
-            "clips_tab_fragment",
-            "video_feed_view_pager",
-            "reels_tray_container",
-        )
-
-        /**
-         * Fragments of Instagram fragment/activity class names that indicate the
-         * user is inside the Reels section (not Feed, Explore, Profile, etc.).
-         */
-        val REELS_CLASS_KEYWORDS = listOf(
-            "ReelViewer",
-            "ClipsViewer",
-            "ClipsVideo",
-            "VideoWatch",
-            "ReelsTab",
-            "ClipsTab",
-            "IgReels",
-        )
     }
 
-    // ── Runtime state ─────────────────────────────────────────────────────────
-    private var isInReelsContext      = false
-    private var reelEnteredAt         = 0L      // epoch-ms when current reel appeared
-    private var currentFgPkg          = ""
+    // ── Per-platform runtime state ─────────────────────────────────────────────
+    // Each map is keyed by platform packageName.
+    private val sessionTrackers      = platformConfigs.mapValues { ReelSessionTracker() }
+    private val isInReelsContext     = mutableMapOf<String, Boolean>()
+    private val reelEnteredAt        = mutableMapOf<String, Long>()
+    private val currentReelSponsored = mutableMapOf<String, Boolean>()
+    private val sponsoredRunnables   = mutableMapOf<String, Runnable?>()
 
-    // ── Phase 3B: duplicate-prevention session tracker ────────────────────────
-    private val sessionTracker = ReelSessionTracker()
-    // ── Phase 3C: floating duck overlay ──────────────────────────────────────
-    private val overlayManager = ReelOverlayManager(context)
-    /**
-     * Sponsored state of the reel CURRENTLY on screen.
-     * Set to false when a new reel enters, then updated after
-     * SPONSORED_CHECK_DELAY_MS by the proactive check runnable.
-     * Read at scroll-away time to decide whether to count.
-     */
-    private var currentReelSponsored  = false
+    private var currentFgPkg = ""
+    private val handler      = Handler(Looper.getMainLooper())
 
-    private val handler                = Handler(Looper.getMainLooper())
-    private var sponsoredCheckRunnable: Runnable? = null
-
-    // ── Entry point (called from AppBlockerAccessibilityService) ──────────────
+    // ── Entry point (called from AppBlockerAccessibilityService) ───────────────
     fun onEvent(event: AccessibilityEvent, service: AccessibilityService) {
         val pkg = event.packageName?.toString() ?: return
 
         when (event.eventType) {
+            // Window events must reach us for ALL packages so we can detect
+            // when the user leaves a tracked platform.
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ->
                 handleWindowState(pkg, event, service)
+            // Scroll events are only relevant for tracked platforms.
             AccessibilityEvent.TYPE_VIEW_SCROLLED ->
-                handleScroll(pkg, event, service)
-            // TYPE_WINDOW_CONTENT_CHANGED not processed — sponsored sampling is
-            // done proactively via the delayed Handler, not reactively here.
+                if (platformConfigs.containsKey(pkg)) handleScroll(pkg, event, service)
             else -> Unit
         }
     }
 
-    // ── Window state: track Instagram foreground + Reels context ──────────────
+    // ── Window state: track fg package + Reels context entry / exit ───────────
     private fun handleWindowState(pkg: String, event: AccessibilityEvent, service: AccessibilityService) {
         val prevPkg = currentFgPkg
         currentFgPkg = pkg
 
-        if (pkg != INSTAGRAM_PKG) {
-            // Left Instagram entirely — discard any in-flight reel
-            if (prevPkg == INSTAGRAM_PKG && isInReelsContext) {
-                Log.d(TAG, "Left Instagram — discarding in-flight reel timer")
-                cancelSponsoredCheck()
-                reelEnteredAt        = 0L
-                currentReelSponsored = false
-                isInReelsContext     = false
-                sessionTracker.reset()   // Phase 3B: end session on app switch
-                overlayManager.hide()
+        val config = platformConfigs[pkg]
+
+        if (config == null) {
+            // New fg package is not a tracked platform.
+            // If the previous fg was a tracked platform mid-session, end that session.
+            if (platformConfigs.containsKey(prevPkg) && isInReelsContext[prevPkg] == true) {
+                Log.d(TAG, "Left \${prevPkg} (switched to \${pkg}) — ending Reels session")
+                endReelsSession(prevPkg)
             }
             return
         }
 
-        // Instagram is (or stays) foreground — check if this window is Reels
+        // pkg IS a tracked platform — check className for Reels context
         val className     = event.className?.toString() ?: ""
-        val isReelsWindow = REELS_CLASS_KEYWORDS.any { className.contains(it, ignoreCase = true) }
+        val isReelsWindow = config.classKeywords.any { className.contains(it, ignoreCase = true) }
 
-        if (isReelsWindow && !isInReelsContext) {
-            Log.d(TAG, "Entered Reels context via window: className=\${className}")
-            isInReelsContext = true
-            sessionTracker.onSessionEntered()   // Phase 3B: fresh session, reel-0 is now visible
-            startReelTimer(service)
-            overlayManager.show(readEntry().second)
-        } else if (!isReelsWindow && className.isNotEmpty() && isInReelsContext) {
-            // Navigated away from Reels within Instagram (e.g. back to Feed)
-            Log.d(TAG, "Left Reels context: className=\${className}")
-            cancelSponsoredCheck()
-            reelEnteredAt        = 0L
-            currentReelSponsored = false
-            isInReelsContext     = false
-            sessionTracker.reset()   // Phase 3B: end session on Reels exit
-            overlayManager.hide()
+        if (isReelsWindow && isInReelsContext[pkg] != true) {
+            Log.d(TAG, "Entered Reels context via window: pkg=\${pkg} className=\${className}")
+            isInReelsContext[pkg] = true
+            sessionTrackers[pkg]?.onSessionEntered()
+            startReelTimer(pkg, service, config)
+            listener?.onReelsContextChanged(pkg, true)
+        } else if (!isReelsWindow && className.isNotEmpty() && isInReelsContext[pkg] == true) {
+            Log.d(TAG, "Left Reels context: pkg=\${pkg} className=\${className}")
+            endReelsSession(pkg)
         }
     }
 
-    // ── Scroll: detect reel-to-reel transition ────────────────────────────────
+    // ── Scroll: detect reel-to-reel transition ─────────────────────────────────
     private fun handleScroll(pkg: String, event: AccessibilityEvent, service: AccessibilityService) {
-        if (pkg != INSTAGRAM_PKG) return
+        val config = platformConfigs[pkg] ?: return
 
         val srcNode   = event.source
         val viewId    = srcNode?.viewIdResourceName ?: ""
         val className = event.className?.toString() ?: ""
 
         // Is this scroll from a Reels ViewPager?
-        val isReelsPagerById    = REEL_PAGER_ID_KEYWORDS.any { viewId.contains(it, ignoreCase = true) }
-        val isReelsPagerByClass = isInReelsContext && (
-            className.contains("ViewPager", ignoreCase = true) ||
+        val isReelsPagerById    = config.pagerIdKeywords.any { viewId.contains(it, ignoreCase = true) }
+        val isReelsPagerByClass = isInReelsContext[pkg] == true && (
+            className.contains("ViewPager",    ignoreCase = true) ||
             className.contains("RecyclerView", ignoreCase = true)
         )
-        val isReelsPagerScroll = isReelsPagerById || isReelsPagerByClass
-
-        if (!isReelsPagerScroll) {
+        if (!isReelsPagerById && !isReelsPagerByClass) {
             srcNode?.recycle()
             return
         }
 
         // First qualifying scroll: promote to Reels context if not already set
-        if (!isInReelsContext) {
-            Log.d(TAG, "Reels context set via first ViewPager scroll: viewId=\${viewId}")
-            isInReelsContext = true
-            sessionTracker.onSessionEntered()   // Phase 3B: reel-0 visible, fresh session
-            startReelTimer(service)       // start clock + schedule sponsored check
-            overlayManager.show(readEntry().second)
+        if (isInReelsContext[pkg] != true) {
+            Log.d(TAG, "Reels context set via first ViewPager scroll: pkg=\${pkg} viewId=\${viewId}")
+            isInReelsContext[pkg] = true
+            sessionTrackers[pkg]?.onSessionEntered()
+            startReelTimer(pkg, service, config)
+            listener?.onReelsContextChanged(pkg, true)
             srcNode?.recycle()
             return  // nothing to count yet — no previous reel to evaluate
         }
 
-        // ── Phase 3B: direction detection + duplicate-prevention ─────────────
-        // Must run BEFORE Phase 3A dwell check. Detects forward/backward and
-        // skips counting entirely for revisit reels — Phase 3A logic unchanged.
-        val direction = sessionTracker.detectScrollDirection(event)
+        // ── Direction detection + duplicate-prevention (Phase 3B) ─────────────
+        val tracker   = sessionTrackers[pkg] ?: run { srcNode?.recycle(); return }
+        val direction = tracker.detectScrollDirection(event)
 
         if (direction == ReelSessionTracker.ScrollDirection.UNKNOWN) {
-            // Cannot determine direction (e.g. first Tier-3 sample, delta=0).
-            // Hold all state intact — timer keeps running, don't advance session.
-            // The next scroll will have a reliable direction reading.
+            // Cannot determine direction — hold state intact, wait for next scroll
             srcNode?.recycle()
             return
         }
 
-        val isNewReel = sessionTracker.advance(direction)
+        val isNewReel = tracker.advance(direction)
         if (!isNewReel) {
-            // Revisit reel (backward scroll, or forward through already-seen).
-            // Cancel timing so dwell cannot accumulate for non-countable reels.
-            cancelSponsoredCheck()
-            reelEnteredAt        = 0L
-            currentReelSponsored = false
+            // Revisit reel (backward, or forward into already-seen) — cancel dwell
+            cancelSponsoredCheck(pkg)
+            reelEnteredAt[pkg]        = 0L
+            currentReelSponsored[pkg] = false
             srcNode?.recycle()
             return
         }
 
-        // ── Reel transition: evaluate the reel that just scrolled away ────────
-        // (Phase 3A logic — untouched, only reached when isNewReel == true)
-        val now     = System.currentTimeMillis()
-        val dwellMs = if (reelEnteredAt > 0) now - reelEnteredAt else 0L
+        // ── Evaluate the reel that just scrolled away ──────────────────────────
+        val now       = System.currentTimeMillis()
+        val entered   = reelEnteredAt[pkg] ?: 0L
+        val dwellMs   = if (entered > 0) now - entered else 0L
+        val sponsored = currentReelSponsored[pkg] ?: false
 
-        Log.d(TAG, "Reel scroll — dwell=\${dwellMs}ms (need \${THRESHOLD_MS}ms) sponsored=\${currentReelSponsored} [NEW reel]")
+        Log.d(TAG, "Reel scroll — pkg=\${pkg} dwell=\${dwellMs}ms (need \${THRESHOLD_MS}ms) sponsored=\${sponsored} [NEW]")
 
         if (dwellMs >= THRESHOLD_MS) {
-            if (currentReelSponsored) {
-                Log.d(TAG, "Sponsored reel — SKIPPED (dwell=\${dwellMs}ms)")
-            } else {
-                Log.d(TAG, "Reel COUNTED (dwell=\${dwellMs}ms)")
-                incrementTodayCount()
-            }
+            listener?.onNewReelAdvanced(pkg, sponsored)
         } else {
             Log.d(TAG, "Quick scroll — NOT counted (dwell=\${dwellMs}ms < \${THRESHOLD_MS}ms)")
         }
 
-        // New reel entering screen — reset timer and schedule fresh sponsored check
-        startReelTimer(service)
+        // New reel entering screen — reset timer + schedule fresh sponsored check
+        startReelTimer(pkg, service, config)
         srcNode?.recycle()
     }
 
-    // ── New-reel entry: start clock + schedule sponsored check ────────────────
-    /**
-     * Call whenever a new reel appears on screen (first scroll, subsequent scroll,
-     * or Reels window entry). Resets the dwell timer and proactively schedules a
-     * sponsored check after SPONSORED_CHECK_DELAY_MS so the UI has time to render
-     * the "Sponsored" chip before we sample rootInActiveWindow.
-     */
-    private fun startReelTimer(service: AccessibilityService) {
-        reelEnteredAt        = System.currentTimeMillis()
-        currentReelSponsored = false  // optimistic: assume not sponsored
-        scheduleSponsoredCheck(service)
+    // ── Session lifecycle helpers ──────────────────────────────────────────────
+
+    /** Tears down Reels session for the given platform and notifies listener. */
+    private fun endReelsSession(pkg: String) {
+        cancelSponsoredCheck(pkg)
+        reelEnteredAt[pkg]        = 0L
+        currentReelSponsored[pkg] = false
+        isInReelsContext[pkg]     = false
+        sessionTrackers[pkg]?.reset()
+        listener?.onReelsContextChanged(pkg, false)
     }
 
-    private fun cancelSponsoredCheck() {
-        sponsoredCheckRunnable?.let { handler.removeCallbacks(it) }
-        sponsoredCheckRunnable = null
+    // ── New-reel entry: start clock + optionally schedule sponsored check ──────
+
+    private fun startReelTimer(pkg: String, service: AccessibilityService, config: PlatformReelConfig) {
+        reelEnteredAt[pkg]        = System.currentTimeMillis()
+        currentReelSponsored[pkg] = false  // optimistic: assume not sponsored
+        if (config.hasSponsoredContent) scheduleSponsoredCheck(pkg, service)
     }
 
-    private fun scheduleSponsoredCheck(service: AccessibilityService) {
-        cancelSponsoredCheck()
+    private fun cancelSponsoredCheck(pkg: String) {
+        sponsoredRunnables[pkg]?.let { handler.removeCallbacks(it) }
+        sponsoredRunnables[pkg] = null
+    }
+
+    private fun scheduleSponsoredCheck(pkg: String, service: AccessibilityService) {
+        cancelSponsoredCheck(pkg)
         val svcRef = WeakReference(service)
         val runnable = Runnable {
-            sponsoredCheckRunnable = null
+            sponsoredRunnables[pkg] = null
             val svc  = svcRef.get() ?: return@Runnable
             val root = svc.rootInActiveWindow ?: return@Runnable
             val isSponsored = containsSponsoredLabel(root)
             root.recycle()
-            currentReelSponsored = isSponsored
-            if (isSponsored) Log.d(TAG, "⚠️ Current reel is Sponsored — will be skipped when scrolled")
+            currentReelSponsored[pkg] = isSponsored
+            if (isSponsored) Log.d(TAG, "⚠️ Sponsored reel detected (pkg=\${pkg}) — will be skipped")
         }
-        sponsoredCheckRunnable = runnable
+        sponsoredRunnables[pkg] = runnable
         handler.postDelayed(runnable, SPONSORED_CHECK_DELAY_MS)
     }
 
-    // ── Sponsored label tree traversal ───────────────────────────────────────
+    // ── Sponsored label tree traversal ─────────────────────────────────────────
     /**
-     * Depth-first traversal (max 8 levels) looking for Instagram's "Sponsored"
-     * ad label. Instagram renders it as a plain text node or accessibility label
-     * on the ad indicator chip.
+     * Depth-first traversal (max 8 levels) looking for a "Sponsored" ad label.
+     * Instagram renders it as a plain text node or accessibility label on the ad chip.
      */
     private fun containsSponsoredLabel(node: AccessibilityNodeInfo, depth: Int = 0): Boolean {
         if (depth > 8) return false
         val text = node.text?.toString()?.trim() ?: ""
         val cd   = node.contentDescription?.toString()?.trim() ?: ""
         if (text.equals("Sponsored", ignoreCase = true) ||
-            cd.equals("Sponsored",   ignoreCase = true)) {
-            return true
-        }
+            cd.equals("Sponsored",   ignoreCase = true)) return true
         for (i in 0 until node.childCount) {
             val child = node.getChild(i) ?: continue
             val found = containsSponsoredLabel(child, depth + 1)
@@ -1279,56 +1296,9 @@ class ReelDetector(private val context: Context) {
         }
         return false
     }
-
-    // ── Storage ───────────────────────────────────────────────────────────────
-    private fun todayString(): String =
-        SimpleDateFormat(DATE_FORMAT, Locale.US).format(Date())
-
-    private fun countFile(): File = File(context.filesDir, COUNT_FILE)
-
-    /** Returns (todayDateString, currentCount). Resets to 0 on date rollover. */
-    private fun readEntry(): Pair<String, Int> {
-        val today = todayString()
-        return try {
-            val json  = JSONObject(countFile().readText())
-            val saved = json.optString("date", "")
-            val count = if (saved == today) json.optInt("count", 0) else 0
-            Pair(today, count)
-        } catch (e: Exception) {
-            Pair(today, 0)
-        }
-    }
-
-    private fun incrementTodayCount() {
-        val (today, current) = readEntry()
-        val newCount = current + 1
-        try {
-            countFile().writeText(JSONObject().apply {
-                put("date",      today)
-                put("count",     newCount)
-                put("updatedAt", System.currentTimeMillis())
-            }.toString())
-            Log.d(TAG, "💾 Count saved: \${newCount} reels today (\${today})")
-            overlayManager.updateCount(newCount)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to write reel count: \${e.message}")
-        }
-    }
-
-    /** Called by ReelCounterModule to expose today's count to JavaScript. */
-    fun readTodayCount(): JSONObject {
-        val (today, count) = readEntry()
-        return JSONObject().apply {
-            put("date",  today)
-            put("count", count)
-        }
-    }
-
-    /** Safety-net: called by AccessibilityService lifecycle so overlay is always removed
-     *  when the service is interrupted or destroyed (e.g. aggressive battery-management kill). */
-    fun hideOverlay() { overlayManager.hide() }
 }
 `);
+
 
       /* ════════════════════════════════════════════════
          ReelSessionTracker.kt  (Phase 3B — duplicate-prevention)
@@ -1518,6 +1488,105 @@ class ReelSessionTracker {
                 Log.d(TAG, "UNKNOWN direction → REVISIT (safe default)")
                 false
             }
+        }
+    }
+}
+`);
+
+      /* ════════════════════════════════════════════════
+         DuckPalReelsHandler.kt  (counting + overlay consumer)
+       ════════════════════════════════════════════════ */
+      fs.writeFileSync(path.join(kotlinDir, "DuckPalReelsHandler.kt"),
+`package ${PACKAGE_NAME}
+
+import android.content.Context
+import android.util.Log
+import org.json.JSONObject
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
+
+/**
+ * DuckPalReelsHandler — implements ReelsSignalListener and drives:
+ *   1. The floating DuckPal overlay (show / hide / update count).
+ *   2. The persisted daily reel count (sponsored reels excluded).
+ *
+ * This is the ONLY place that touches reelcount_data.json and
+ * ReelOverlayManager. ReelDetector emits signals; this class acts on them.
+ *
+ * Separation of concerns:
+ *   ReelDetector        — pure detection (new reel? dwell passed? sponsored?)
+ *   DuckPalReelsHandler — what to DO about it (count it, show on the overlay)
+ */
+class DuckPalReelsHandler(private val context: Context) : ReelsSignalListener {
+
+    companion object {
+        private const val TAG   = "DuckLock:DuckPalHandler"
+        const  val COUNT_FILE   = "reelcount_data.json"
+        const  val DATE_FORMAT  = "yyyy-MM-dd"
+    }
+
+    private val overlayManager = ReelOverlayManager(context)
+
+    // ── ReelsSignalListener ───────────────────────────────────────────────────
+
+    override fun onReelsContextChanged(pkg: String, active: Boolean) {
+        if (active) {
+            overlayManager.show(readEntry().second)
+            Log.d(TAG, "Overlay shown for \${pkg}")
+        } else {
+            overlayManager.hide()
+            Log.d(TAG, "Overlay hidden for \${pkg}")
+        }
+    }
+
+    override fun onNewReelAdvanced(pkg: String, isSponsored: Boolean) {
+        if (isSponsored) {
+            Log.d(TAG, "Sponsored reel — SKIPPED (pkg=\${pkg})")
+        } else {
+            Log.d(TAG, "Reel COUNTED (pkg=\${pkg})")
+            incrementTodayCount()
+        }
+    }
+
+    // ── Overlay safety-net ────────────────────────────────────────────────────
+    /** Called from AppBlockerAccessibilityService lifecycle (onInterrupt / onDestroy)
+     *  so the overlay is always removed even if the service is killed abruptly. */
+    fun hideOverlay() { overlayManager.hide() }
+
+    // ── Storage ───────────────────────────────────────────────────────────────
+
+    private fun todayString(): String =
+        SimpleDateFormat(DATE_FORMAT, Locale.US).format(Date())
+
+    private fun countFile(): File = File(context.filesDir, COUNT_FILE)
+
+    /** Returns (todayDateString, currentCount). Resets to 0 on date rollover. */
+    fun readEntry(): Pair<String, Int> {
+        val today = todayString()
+        return try {
+            val json  = JSONObject(countFile().readText())
+            val saved = json.optString("date", "")
+            val count = if (saved == today) json.optInt("count", 0) else 0
+            Pair(today, count)
+        } catch (e: Exception) {
+            Pair(today, 0)
+        }
+    }
+
+    private fun incrementTodayCount() {
+        val (today, current) = readEntry()
+        val newCount = current + 1
+        try {
+            countFile().writeText(JSONObject().apply {
+                put("date",      today)
+                put("count",     newCount)
+                put("updatedAt", System.currentTimeMillis())
+            }.toString())
+            Log.d(TAG, "💾 Count saved: \${newCount} reels today (\${today})")
+            overlayManager.updateCount(newCount)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to write reel count: \${e.message}")
         }
     }
 }
@@ -1836,8 +1905,8 @@ class ReelCounterModule(private val ctx: ReactApplicationContext)
     @ReactMethod
     fun getTodayCount(promise: Promise) {
         try {
-            val file  = File(ctx.filesDir, ReelDetector.COUNT_FILE)
-            val today = SimpleDateFormat(ReelDetector.DATE_FORMAT, Locale.US).format(Date())
+            val file  = File(ctx.filesDir, DuckPalReelsHandler.COUNT_FILE)
+            val today = SimpleDateFormat(DuckPalReelsHandler.DATE_FORMAT, Locale.US).format(Date())
             val map   = Arguments.createMap()
 
             if (!file.exists()) {
