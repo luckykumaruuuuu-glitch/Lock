@@ -1,0 +1,16 @@
+"Permission-checking system ko UNIVERSALLY-ROBUST banana hai — kisi bhi Android-device/OEM (Samsung, Xiaomi/MIUI, Oppo/ColorOS, Vivo, OnePlus, stock-Android, koi bhi) par SAHI SE kaam karna chahiye, na ki sirf standard-cases ke liye.
+Fix karne hain (jo audit se pata chale) — SABHI EK SAATH, is baar poori tarah OEM-proof banao:
+1. BUG 1 — Overlay-permission (canDrawOverlays(), line 3027):
+Abhi sirf MODE_ALLOWED accept karta hai. Isko update karo taaki MODE_ALLOWED YA MODE_DEFAULT dono accept ho (kai OEMs par grant hone ke baad MODE_DEFAULT set hota hai, jo effectively-allowed hai):
+Kotlin
+2. BUG 2 — PermissionGuardPopup.tsx mein Battery ke liye backoff missing:
+setup.tsx mein jo exponential-backoff-polling (verifyWithBackoff, 1s→2s→4s→8s) Battery ke liye hai, WAHI PATTERN PermissionGuardPopup.tsx mein bhi add karo — taaki jin OEMs (Xiaomi/Oppo/Vivo) par AppState turant fire nahi hoti, wahan bhi thodi der baad automatically detect ho jaaye, user ko manually recheck na dabana pade.
+3. BUG 3 — PermissionGuardPopup.tsx mein Notification ka galat path:
+case "notification" mein abhi Notifications.requestPermissionsAsync() use ho raha hai (jo MIUI/OneUI/ColorOS par galat canAskAgain return karta hai). Isko setup.tsx jaisa hi PermissionsAndroid.request('android.permission.POST_NOTIFICATIONS') use karne ke liye badlo — dono jagah SAME, CONSISTENT code-path hona chahiye.
+4. BUG 4 — usePermissionGuard.ts mein silent-catch (line 134-136):
+Abhi koi bhi exception aane par chup-chaap [] (khaali-array, matlab 'sab thik hai') return ho jaata hai — isse guard-system silently bypass ho sakta hai. Isko fix karo taaki error ko LOG kiya jaaye (taaki debugging mein pata chale kuch fail hua), aur agar possible ho to safe-default 'kuch missing ho sakta hai' maane, na ki 'sab thik hai'.
+Zaroori — OVERALL GOAL:
+Yeh SIRF ek-do-OEM ke liye patch nahi, balki HAR TARAH ke Android-device/manufacturer ke liye robust-defensive-logic honi chahiye
+Jahan bhi possible ho, STRICT single-value-match ki jagah RANGE-BASED ya MULTIPLE-VALID-STATES accept karne wala logic use karo
+Existing sahi-kaam-karne-wala logic (jo audit mein clean-pass hua — token-system, watcher-lifecycle, DeviceAdmin, UsageAccess-versioning) bilkul mat chhedna
+Fix ke baad confirm karo — sabhi 4 bugs fix ho gaye, aur batao exactly kya-kya badla"

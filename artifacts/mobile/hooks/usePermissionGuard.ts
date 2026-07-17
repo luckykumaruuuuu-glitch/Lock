@@ -131,8 +131,21 @@ async function getMissingPermissions(): Promise<MissingPerm[]> {
     }
 
     return missing;
-  } catch {
-    return [];
+  } catch (e) {
+    // Log so the error is visible in Logcat/Metro — never silently swallow.
+    console.error("[PermGuard] getMissingPermissions threw — defaulting to all-native-missing:", e);
+    // Safe conservative default: assume all 5 native permissions may be missing
+    // rather than returning [] ("all good"), which would silently bypass the guard.
+    // The guard popup will show; once the user taps "recheck" or AppState fires,
+    // the real OS state will be re-read and the popup will clear if everything is fine.
+    const fallback: MissingPerm[] = [
+      { id: "usageAccess",   label: PERM_LABELS["usageAccess"] },
+      { id: "overlay",       label: PERM_LABELS["overlay"] },
+      { id: "deviceAdmin",   label: PERM_LABELS["deviceAdmin"] },
+      { id: "accessibility", label: PERM_LABELS["accessibility"] },
+      { id: "battery",       label: PERM_LABELS["battery"] },
+    ];
+    return fallback;
   }
 }
 

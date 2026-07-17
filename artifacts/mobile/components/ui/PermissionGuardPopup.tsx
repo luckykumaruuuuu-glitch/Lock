@@ -6,6 +6,7 @@ import {
   Alert,
   Modal,
   NativeModules,
+  PermissionsAndroid,
   Platform,
   Pressable,
   ScrollView,
@@ -13,6 +14,8 @@ import {
   Text,
   View,
 } from "react-native";
+
+import { checkNativePermissions } from "@/lib/nativePermissionCheck";
 
 import { MissingPerm } from "@/hooks/usePermissionGuard";
 import { PermissionId } from "@/hooks/usePermissionStatus";
@@ -61,17 +64,36 @@ async function openSettingsForPerm(id: PermissionId): Promise<void> {
           { data: `package:${APP_PACKAGE}` }
         );
         break;
-      case "notification":
-        try {
-          const Notifications = require("expo-notifications");
-          const { status } = await Notifications.requestPermissionsAsync();
-          if (status === "granted") return;
-        } catch {}
-        await IntentLauncher.startActivityAsync(
-          "android.settings.APP_NOTIFICATION_SETTINGS",
-          { extra: { "android.provider.extra.APP_PACKAGE": APP_PACKAGE } }
-        );
+      case "notification": {
+        // Mirror setup.tsx exactly: use PermissionsAndroid.request() directly so the
+        // OS shows its native inline dialog. expo-notifications' requestPermissionsAsync()
+        // has a canAskAgain heuristic that incorrectly returns false on MIUI, OneUI, and
+        // ColorOS, silently swallowing the first request without showing any dialog at all.
+        const apiLevel =
+          typeof Platform.Version === "number"
+            ? Platform.Version
+            : parseInt(Platform.Version as string, 10);
+        if (apiLevel >= 33) {
+          const result = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+          );
+          if (result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+            // OS will no longer show the dialog — send user to app notification settings.
+            try {
+              await IntentLauncher.startActivityAsync(
+                "android.settings.APP_NOTIFICATION_SETTINGS",
+                { extra: { "android.provider.extra.APP_PACKAGE": APP_PACKAGE } },
+              );
+            } catch {
+              try {
+                await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS);
+              } catch {}
+            }
+          }
+          // 'granted' or 'denied': onRecheck() after this block handles the live check.
+        }
         break;
+      }
       case "battery":
         await openBatteryOptimizationSettings();
         break;
@@ -104,6 +126,27 @@ export function PermissionGuardPopup({ missing, onRecheck }: Props) {
     await openSettingsForPerm(id);
     setOpening(null);
     onRecheck();
+
+    if (id === "battery") {
+      // Battery Optimization dialogs on Xiaomi MIUI, Oppo ColorOS, and Vivo ROMs often
+      // render as an overlay that does NOT transition AppState to background, so the
+      // AppState "active" listener in usePermissionGuard may never fire after the user
+      // responds. Mirror setup.tsx: poll with exponential backoff (1s→2s→4s→8s) so the
+      // popup auto-dismisses on those ROMs without requiring a manual "recheck" tap.
+      // Not awaited — runs entirely in the background alongside the AppState listener;
+      // whichever fires first calls onRecheck(); both arriving at the same result is safe.
+      (async () => {
+        const delays = [1000, 2000, 4000, 8000];
+        for (const delay of delays) {
+          await new Promise<void>((resolve) => setTimeout(resolve, delay));
+          const native = await checkNativePermissions();
+          if (native?.battery === true) {
+            onRecheck(); // grant detected — refresh the missing-perms list
+            break;
+          }
+        }
+      })();
+    }
   }
 
   return (

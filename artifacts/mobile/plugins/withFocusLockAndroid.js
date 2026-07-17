@@ -3024,9 +3024,14 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
                 @Suppress("DEPRECATION")
                 appOps.checkOpNoThrow(AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW, uid, pkg)
             }
-            val result = mode == AppOpsManager.MODE_ALLOWED
+            // MODE_ALLOWED (0) = explicitly granted by user.
+            // MODE_DEFAULT (3) = follow system default rules; for SYSTEM_ALERT_WINDOW this
+            // effectively means allowed — several OEMs (Xiaomi MIUI, Oppo ColorOS, older
+            // Samsung OneUI) set MODE_DEFAULT instead of MODE_ALLOWED after the user grants
+            // overlay permission, causing a false-negative if we only check MODE_ALLOWED.
+            val result = mode == AppOpsManager.MODE_ALLOWED || mode == AppOpsManager.MODE_DEFAULT
             Log.d(TAG, "RAW AppOps mode from OS (OPSTR_SYSTEM_ALERT_WINDOW): \${mode}")
-            Log.d(TAG, "EXPECTED mode for granted: \${AppOpsManager.MODE_ALLOWED}")
+            Log.d(TAG, "EXPECTED mode for granted: MODE_ALLOWED(\${AppOpsManager.MODE_ALLOWED}) or MODE_DEFAULT(\${AppOpsManager.MODE_DEFAULT})")
             android.util.Log.d("DuckLock", "canDrawOverlays: AppOpsManager mode=\${mode}, granted=\${result}, pkg=\${pkg}")
             result
         } catch (e: Exception) {
