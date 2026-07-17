@@ -10,6 +10,7 @@ import {
   AppState,
   AppStateStatus,
   NativeModules,
+  PermissionsAndroid,
   Platform,
   Pressable,
   ScrollView,
@@ -158,28 +159,31 @@ async function openOverlay() {
 
 async function openNotification() {
   if (Platform.OS !== "android") return;
-  // POST_NOTIFICATIONS is a runtime permission (Android 13+). Android will only show the
-  // native inline system dialog (requestPermissionsAsync) while canAskAgain is true — the
-  // FIRST time, or after the user hasn't permanently denied it yet.
+  // POST_NOTIFICATIONS is a runtime permission only needed on Android 13+ (API 33+).
+  // On older versions the permission is granted automatically — nothing to request.
+  const apiLevel =
+    typeof Platform.Version === "number"
+      ? Platform.Version
+      : parseInt(Platform.Version as string, 10);
+  if (apiLevel < 33) return;
+
+  // Use PermissionsAndroid.request() directly so the OS shows its native inline
+  // dialog — same pattern as Battery Optimization's Kotlin startActivity.
+  // This bypasses expo-notifications' canAskAgain heuristic which incorrectly
+  // returns false on many ROMs (MIUI, OneUI, ColorOS) and causes an unwanted
+  // Settings redirect on first request.
   //
-  // Once the user has denied it and canAskAgain becomes false, calling
-  // requestPermissionsAsync() again resolves immediately with no dialog at all — at that
-  // point the ONLY way to let the user turn it on is the exact targeted Settings screen:
-  //   Settings.ACTION_APP_NOTIFICATION_SETTINGS + EXTRA_APP_PACKAGE
-  // which opens DuckLock's own app-specific notification settings page directly (not the
-  // generic all-apps notification list).
-  const Notifications = require("expo-notifications");
-  const current = await Notifications.getPermissionsAsync();
-  if (current.status !== "granted" && current.canAskAgain) {
-    // First ask (or still askable) — inline system dialog, no Settings redirect.
-    await Notifications.requestPermissionsAsync();
-    // Return value intentionally ignored: verifyAllPermissions() in handleAllow does the
-    // authoritative live check after this resolves.
-    return;
-  }
-  if (current.status !== "granted") {
-    // Permanently denied — the dialog can no longer be shown, so go straight to the
-    // exact targeted app-notification-settings page.
+  // Return values:
+  //   'granted'          → user allowed; verifyAllPermissions() detects it.
+  //   'denied'           → user dismissed/denied; dialog can be shown again later.
+  //   'never_ask_again'  → permanently denied; only Settings can re-enable it.
+  const result = await PermissionsAndroid.request(
+    PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+  );
+
+  if (result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+    // OS will no longer show the dialog — open the app-specific notification
+    // settings page so the user can re-enable it manually.
     try {
       await IntentLauncher.startActivityAsync("android.settings.APP_NOTIFICATION_SETTINGS", {
         extra: { "android.provider.extra.APP_PACKAGE": APP_PACKAGE },
@@ -188,6 +192,8 @@ async function openNotification() {
       await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.SETTINGS);
     }
   }
+  // 'granted' or 'denied': verifyAllPermissions() in handleAllow does the
+  // authoritative live check after this resolves — no action needed here.
 }
 
 // openBattery moved to @/lib/openBatteryOptimizationSettings (shared with PermissionGuardPopup).
