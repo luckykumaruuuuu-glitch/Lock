@@ -1,0 +1,12 @@
+"Mujhe permission-detection ke poore SYSTEM ka ek FUNCTIONAL AUDIT chahiye — KUCH BHI CHANGE MAT KARNA, sirf REVIEW/ANALYSIS karo aur batao agar kahin logic tooti hui hai, adhoora hai, ya koi cheez detection/continuation rokh sakti hai.
+Yeh sab check karo, ek-ek karke, sabhi 5 permissions (Usage Access, Overlay, Device Admin, Accessibility, Battery) ke liye:
+Har permission ka poora FLOW check karo — jab user 'Allow' button dabata hai, Settings khulti hai, user permission ON karta hai, wapas app mein aata hai — kya HAR STEP par sahi function call ho raha hai, ya koi step MISS ho sakta hai?
+Race-conditions/timing-issues — jaise verifyAllPermissions() ke token-based-stale-check system (jo pehle dikhaya tha), kya kahin aisi situation ban sakti hai jahan ek naya check purane check ko galti se OVERRIDE kar de ya IGNORE kar de?
+AppState-listener + useFocusEffect + ContentObserver (Accessibility ke liye) — kya inme koi DUPLICATE-triggering ho sakti hai (ek hi permission-check baar-baar unnecessarily fire ho), ya koi CASE MISS ho sakta hai (jahan koi bhi listener trigger na ho aur permission-status update hi na ho)?
+startWatchingPermission() / stopWatchingCurrentPerm() — kya inka lifecycle sahi hai? Kya kabhi ek watcher stop hone se pehle hi doosra start ho sakta hai, jisse purana watcher 'leak' ho jaaye ya galat-permission ko watch karta reh jaaye?
+Error-handling — agar kisi bhi native-call mein exception aaye (jaise FocusLockPermissionChecker module hi available na ho, ya koi Android-version-specific-API missing ho), kya poora system silently fail ho jaata hai ya user ko pata chalta hai?
+Har permission ke liye — kya koi EDGE-CASE hai jo detection ko permanently BLOCK kar sakta hai (jaise ek permission ka check-function kabhi bhi true na ban sake kisi specific Android-version/OEM par)?
+Zaroori:
+Yeh SIRF EK AUDIT/REPORT hai — koi code CHANGE mat karo
+Sirf FINDINGS batao — agar kuch tootа hua/galat mila, to exact location aur exact problem batao, guess mat karna
+Agar sab kuch sahi lage, to bhi confirm karke batao ki kya-kya verify kiya"
