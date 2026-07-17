@@ -1,0 +1,29 @@
+Naya ReelsLockActivity (native Kotlin Activity) banao — 'Reels Lock' feature ke liye, PEHLE SIRF INSTAGRAM ke liye poora banao aur test karo, YouTube/Facebook baad mein add karenge.
+Character-image — ZAROORI: Main is screen ke liye Instagram ka ek NAYA, ALAG character-image de raha hoon — yeh us EXISTING lock-char-instagram (jo LockOverlayActivity/app-lock ke liye use ho raha hai) se DIFFERENT hai. Ek NAYA, ALAG map banao (jaise REELS_LOCK_CHAR_MAP) — is naye image ko usme rakho, EXISTING CHAR_MAP (app-lock wala) ko bilkul mat chhedna, dono maps independent rahenge.
+Design (background EXACT REUSE — LockOverlayActivity jaisa hi):
+Dark-brown/black gradient background
+Center mein soft golden radial-glow (vignette-effect) — bilkul wahi jo LockOverlayActivity mein hai
+Content (top se neeche):
+Upar text — 'Reels are locked' (Instagram ke liye fixed text abhi)
+Center — naya Instagram-character-image (jo abhi upload kar raha hoon, REELS_LOCK_CHAR_MAP se)
+Neeche do buttons, ek row mein ya stacked (jaisa pehle LockOverlayActivity mein 'Unlock Reels' tha, waisa hi layout):
+'Unlock' button — app ke EXISTING golden-theme button-style se exact-match banao (jo already kisi aur jagah app mein use ho raha hai us defined-golden-color-scheme ke saath — pata karo kahan use hota hai aur wahi style copy karo)
+'Skip' button — DEFAULT/PLAIN style, koi color-highlight nahi (jaise ek neutral/transparent-outline button)
+Trigger-integration (naye shared detection-system se):
+ReelsSignalListener ka ek naya consumer/handler banao (jaise ReelsLockHandler)
+Jab onReelsContextChanged(pkg="com.instagram.android", active=true) fire ho AUR 'Reels Lock' toggle (SharedPreferences se) ON ho, tab ReelsLockActivity launch karo
+Agar toggle OFF hai, kuch mat karo — DuckPal (DuckPalReelsHandler) apna normal kaam kare jaisa abhi hota hai (koi change nahi usme)
+Dono handlers (DuckPalReelsHandler aur naya ReelsLockHandler) ek hi signal sunenge, bas toggle ke hisaab se sirf EK hi react karega kabhi bhi (mutually exclusive)
+Animation — ZAROORI:
+Activity SMOOTH BOTTOM-TO-TOP SLIDE-UP animation ke saath khule (jaise bottom-sheet upar uthta hai) — koi sudden/jarring pop nahi
+Illusion aisa bane ki yeh screen Instagram ke UPAR hi aayi hai — user ko DuckLock mein redirect hone ka ehsaas na ho
+Android overridePendingTransition ya custom window-animation-style use karo
+Buttons ka behavior:
+'Skip' — tap karne par Instagram ki NORMAL home-feed par le jaaye (Reels/Shorts band karke), turant
+'Unlock' — ABHI SIRF PLACEHOLDER, tap par kuch mat karo (ya ek chhota Toast/log 'Task-flow coming soon' — task-based-unlock-system baad mein banega)
+Back-button behavior — ZAROORI:
+Android hardware/gesture back-button dabane par → Activity band ho jaaye aur Instagram ki APNI home-screen par jaaye (DuckLock ki home-screen NAHI). Instagram ka launcher-intent chalao is Activity ko finish karne se pehle.
+Zaroori — kuch bhi mat chhedna:
+LockOverlayActivity, existing CHAR_MAP, DuckPal, floating-overlay (ReelOverlayManager), permissions, existing 'Reels Lock' toggle-UI (jo pehle bana tha) — kuch bhi mat chhedna
+Sirf Instagram ke liye abhi banao — YouTube/Facebook ka trigger abhi mat jodna is handler mein
+Fix ke baad confirm karo — screenshot bhejo, aur batao ki animation/back-button/skip-button sahi implement hue ya nahi (real-device test baad mein hoga, abhi sirf code-structure confirm karo)."

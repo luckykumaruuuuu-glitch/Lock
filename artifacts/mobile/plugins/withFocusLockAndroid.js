@@ -94,6 +94,22 @@ function addLockOverlayActivity(application) {
   });
 }
 
+
+function addReelsLockActivity(application) {
+  const activities = ensureArray(application, "activity");
+  if (hasAttr(activities, "android:name", ".ReelsLockActivity")) return;
+  activities.push({
+    $: {
+      "android:name": ".ReelsLockActivity",
+      "android:exported": "false",
+      "android:excludeFromRecents": "true",
+      "android:taskAffinity": "",
+      "android:launchMode": "singleTask",
+      "android:windowSoftInputMode": "adjustNothing",
+      "android:theme": "@android:style/Theme.Black.NoTitleBar.Fullscreen",
+    },
+  });
+}
 function addBootReceiver(application) {
   const receivers = ensureArray(application, "receiver");
   if (hasAttr(receivers, "android:name", ".BootReceiver")) return;
@@ -133,6 +149,7 @@ const withFocusLockManifest = (config) =>
       addAccessibilityService(app);
       addNotificationService(app);
       addLockOverlayActivity(app);
+      addReelsLockActivity(app);
       addBootReceiver(app);
       addSpecialUseFgsProperty(app);
     }
@@ -155,6 +172,33 @@ const withFocusLockNativeFiles = (config) =>
       const valuesDir = path.join(projectRoot, "app/src/main/res/values");
       fs.mkdirSync(valuesDir, { recursive: true });
 
+
+      const animDir = path.join(projectRoot, "app/src/main/res/anim");
+      fs.mkdirSync(animDir, { recursive: true });
+
+      /* ── res/anim/reels_lock_slide_up.xml — enter animation ── */
+      fs.writeFileSync(path.join(animDir, "reels_lock_slide_up.xml"),
+`<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <translate
+        android:fromYDelta="100%p"
+        android:toYDelta="0%p"
+        android:duration="340"
+        android:interpolator="@android:interpolator/decelerate_cubic"/>
+</set>
+`);
+
+      /* ── res/anim/reels_lock_slide_down.xml — exit animation ── */
+      fs.writeFileSync(path.join(animDir, "reels_lock_slide_down.xml"),
+`<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <translate
+        android:fromYDelta="0%p"
+        android:toYDelta="100%p"
+        android:duration="280"
+        android:interpolator="@android:interpolator/accelerate_cubic"/>
+</set>
+`);
       /* ── res/drawable — character images for lock overlay ── */
       const drawableDir = path.join(projectRoot, "app/src/main/res/drawable");
       fs.mkdirSync(drawableDir, { recursive: true });
@@ -166,6 +210,12 @@ const withFocusLockNativeFiles = (config) =>
         if (fs.existsSync(src)) fs.copyFileSync(src, dst);
       }
 
+      const reelsLockCharImages = ["reels_lock_char_instagram"];
+      for (const name of reelsLockCharImages) {
+        const src = path.join(expoRoot, "assets", `${name}.png`);
+        const dst = path.join(drawableDir, `${name}.png`);
+        if (fs.existsSync(src)) fs.copyFileSync(src, dst);
+      }
       const kotlinDir = path.join(projectRoot, `app/src/main/java/${packagePath}`);
       fs.mkdirSync(kotlinDir, { recursive: true });
 
@@ -770,6 +820,321 @@ class LockOverlayActivity : Activity() {
 `);
 
       /* ════════════════════════════════════════════════
+         ReelsLockActivity.kt
+       ════════════════════════════════════════════════ */
+      fs.writeFileSync(path.join(kotlinDir, "ReelsLockActivity.kt"),
+`package ${PACKAGE_NAME}
+
+import android.app.Activity
+import android.content.Intent
+import android.graphics.*
+import android.os.*
+import android.view.*
+import android.widget.*
+
+/**
+ * Full-screen overlay shown when Reels Lock is active and the user
+ * opens a Reels/Shorts section on a tracked platform.
+ *
+ * Design:  Same dark-brown/black + golden radial-glow background as
+ *          LockOverlayActivity — completely distinct from it at runtime.
+ *
+ * Buttons:
+ *   Unlock — placeholder (Toast); real task-flow comes later.
+ *   Skip   — launches the platform's main/home screen so the user
+ *            lands on the regular feed, away from Reels.
+ *
+ * Animation: slide-up from bottom (overridePendingTransition).
+ * Back press: same as Skip (platform home, NOT DuckLock home).
+ */
+class ReelsLockActivity : Activity() {
+
+    companion object {
+        const val EXTRA_PKG_NAME = "reels_lock_pkg"
+
+        /**
+         * Separate character-image map for the Reels Lock screen.
+         * Completely independent from LockOverlayActivity's CHAR_MAP.
+         * Add per-platform images here when new platforms are enabled.
+         */
+        private val REELS_LOCK_CHAR_MAP = mapOf(
+            "com.instagram.android" to "reels_lock_char_instagram",
+        )
+        private const val DEFAULT_CHAR = "reels_lock_char_instagram"
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        window.addFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN or
+            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+        )
+        // Slide-up enter animation; slide-down exit
+        @Suppress("DEPRECATION")
+        overridePendingTransition(R.anim.reels_lock_slide_up, 0)
+
+        buildUi()
+    }
+
+    private fun buildUi() {
+        val density = resources.displayMetrics.density
+        fun dp(v: Int) = (v * density).toInt()
+
+        val pkgName = intent.getStringExtra(EXTRA_PKG_NAME) ?: ""
+
+        /* ── Root: FrameLayout so bg + content can layer ── */
+        val frame = FrameLayout(this)
+
+        /* ── Background: dark brown-black + soft golden centre glow (same as LockOverlayActivity) ── */
+        val bgView = object : View(this) {
+            override fun onDraw(canvas: Canvas) {
+                val w = width.toFloat(); val h = height.toFloat()
+                val cx = w / 2f;         val cy = h * 0.45f
+                canvas.drawColor(Color.parseColor("#120A06"))
+                val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+                glowPaint.shader = RadialGradient(
+                    cx, cy, minOf(w, h) * 0.65f,
+                    intArrayOf(
+                        Color.parseColor("#6B4510"),
+                        Color.parseColor("#3A1E07"),
+                        Color.parseColor("#120A06"),
+                    ),
+                    floatArrayOf(0f, 0.46f, 1f),
+                    Shader.TileMode.CLAMP
+                )
+                canvas.drawRect(0f, 0f, w, h, glowPaint)
+            }
+        }
+        frame.addView(bgView, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        ))
+
+        /* ── Content column ── */
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity     = Gravity.CENTER
+            setPadding(dp(28), 0, dp(28), dp(40))
+        }
+
+        // "Reels are locked" label at top of content
+        val titleLabel = TextView(this).apply {
+            text      = "Reels are locked"
+            textSize  = 22f
+            setTextColor(Color.WHITE)
+            typeface  = Typeface.create("sans-serif", Typeface.BOLD)
+            gravity   = Gravity.CENTER
+            setPadding(0, 0, 0, dp(20))
+        }
+        content.addView(titleLabel)
+
+        // Character image (from REELS_LOCK_CHAR_MAP — independent from LockOverlayActivity)
+        val charResName = REELS_LOCK_CHAR_MAP[pkgName] ?: DEFAULT_CHAR
+        val charResId   = resources.getIdentifier(charResName, "drawable", packageName)
+        val imageView = ImageView(this).apply {
+            if (charResId != 0) setImageResource(charResId)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+        }
+        val imgSize = dp(260)
+        content.addView(imageView, LinearLayout.LayoutParams(imgSize, imgSize))
+
+        // Spacer
+        val spacer = View(this)
+        content.addView(spacer, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, dp(28)
+        ))
+
+        // ── Button row ──────────────────────────────────────────────────────
+
+        val btnRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity     = Gravity.CENTER
+        }
+
+        // "Unlock" button — golden gradient style (matches app CTA)
+        val unlockBtn = TextView(this).apply {
+            text      = "Unlock"
+            textSize  = 17f
+            setTextColor(Color.WHITE)
+            typeface  = Typeface.create("sans-serif", Typeface.BOLD)
+            gravity   = Gravity.CENTER
+            setPadding(dp(28), dp(14), dp(28), dp(14))
+            background = android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(Color.parseColor("#FFBF80"), Color.parseColor("#FFA660"))
+            ).apply {
+                cornerRadius = dp(14).toFloat()
+            }
+            setOnClickListener {
+                // Placeholder — task-based unlock system coming later
+                Toast.makeText(this@ReelsLockActivity, "Task flow coming soon", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // "Skip" button — plain outline style
+        val skipBtn = TextView(this).apply {
+            text      = "Skip"
+            textSize  = 17f
+            setTextColor(Color.WHITE)
+            gravity   = Gravity.CENTER
+            setPadding(dp(28), dp(14), dp(28), dp(14))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(Color.TRANSPARENT)
+                cornerRadius = dp(14).toFloat()
+                setStroke(dp(1), Color.parseColor("#80FFFFFF"))
+            }
+            setOnClickListener { goToPlatformHome() }
+        }
+
+        val btnParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { weight = 0f }
+
+        val spaceBetween = LinearLayout.LayoutParams(dp(14), 1)
+
+        btnRow.addView(unlockBtn, btnParams)
+        btnRow.addView(View(this), spaceBetween)
+        btnRow.addView(skipBtn,   btnParams)
+
+        content.addView(btnRow, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { gravity = Gravity.CENTER_HORIZONTAL })
+
+        frame.addView(content, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        ))
+
+        setContentView(frame)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() = goToPlatformHome()
+
+    /** Navigate to the platform's home/main feed (away from Reels), then finish. */
+    private fun goToPlatformHome() {
+        val pkg = intent.getStringExtra(EXTRA_PKG_NAME) ?: ""
+        try {
+            val launchIntent = packageManager.getLaunchIntentForPackage(pkg)
+            if (launchIntent != null) {
+                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                startActivity(launchIntent)
+            }
+        } catch (e: Exception) {
+            // If the platform app is not installed, just finish
+        }
+        @Suppress("DEPRECATION")
+        overridePendingTransition(0, R.anim.reels_lock_slide_down)
+        finish()
+    }
+}
+`);
+
+      /* ════════════════════════════════════════════════
+         ReelsLockHandler.kt
+       ════════════════════════════════════════════════ */
+      fs.writeFileSync(path.join(kotlinDir, "ReelsLockHandler.kt"),
+`package ${PACKAGE_NAME}
+
+import android.content.Context
+import android.content.Intent
+import android.util.Log
+
+/**
+ * ReelsLockHandler — implements ReelsSignalListener for the "Reels Lock" feature.
+ *
+ * When the Reels Lock toggle is ON (SharedPreferences) and the user enters a
+ * Reels/short-video context on a supported platform, this handler launches
+ * ReelsLockActivity to block access.
+ *
+ * Currently only Instagram is supported.  YouTube / Facebook can be enabled by
+ * adding their package names to SUPPORTED_PACKAGES below.
+ *
+ * Mutually exclusive with DuckPalReelsHandler — only one will react at a time,
+ * controlled by the ReelsSignalRouter based on isEnabled().
+ */
+class ReelsLockHandler(private val context: Context) : ReelsSignalListener {
+
+    companion object {
+        private const val TAG             = "DuckLock:ReelsLockHandler"
+        const  val PREFS_NAME             = "focuslock_prefs"
+        const  val KEY_REELS_LOCK_ENABLED = "reels_lock_enabled"
+
+        /** Platforms where Reels Lock is active. Expand later for YouTube/Facebook. */
+        private val SUPPORTED_PACKAGES = setOf("com.instagram.android")
+    }
+
+    fun isEnabled(): Boolean =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+               .getBoolean(KEY_REELS_LOCK_ENABLED, false)
+
+    // ── ReelsSignalListener ───────────────────────────────────────────────────
+
+    override fun onReelsContextChanged(pkg: String, active: Boolean) {
+        if (!active) return                    // leaving Reels — nothing to do
+        if (pkg !in SUPPORTED_PACKAGES) return // platform not yet supported
+        if (!isEnabled()) return               // toggle is OFF — router ensures we're not called, but guard anyway
+
+        Log.d(TAG, "Reels Lock triggered for \${pkg} — launching ReelsLockActivity")
+
+        val intent = Intent(context, ReelsLockActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(ReelsLockActivity.EXTRA_PKG_NAME, pkg)
+        }
+        context.startActivity(intent)
+    }
+
+    override fun onNewReelAdvanced(pkg: String, isSponsored: Boolean) {
+        // Reels Lock does not count reels — that is DuckPal's concern.
+    }
+}
+`);
+
+      /* ════════════════════════════════════════════════
+         ReelsSignalRouter.kt
+       ════════════════════════════════════════════════ */
+      fs.writeFileSync(path.join(kotlinDir, "ReelsSignalRouter.kt"),
+`package ${PACKAGE_NAME}
+
+/**
+ * Routes ReelDetector signals to either DuckPalReelsHandler or ReelsLockHandler
+ * depending on the current Reels Lock toggle state.
+ *
+ * At any moment exactly ONE handler is active:
+ *   • toggle OFF → DuckPalReelsHandler (counting + floating overlay)
+ *   • toggle ON  → ReelsLockHandler   (blocks access with ReelsLockActivity)
+ *
+ * The router is read live on every signal so the user can toggle mid-session
+ * without restarting the accessibility service.
+ */
+class ReelsSignalRouter(
+    private val duckPalHandler:   DuckPalReelsHandler,
+    private val reelsLockHandler: ReelsLockHandler,
+) : ReelsSignalListener {
+
+    override fun onReelsContextChanged(pkg: String, active: Boolean) {
+        if (reelsLockHandler.isEnabled()) {
+            reelsLockHandler.onReelsContextChanged(pkg, active)
+        } else {
+            duckPalHandler.onReelsContextChanged(pkg, active)
+        }
+    }
+
+    override fun onNewReelAdvanced(pkg: String, isSponsored: Boolean) {
+        if (reelsLockHandler.isEnabled()) {
+            reelsLockHandler.onNewReelAdvanced(pkg, isSponsored)
+        } else {
+            duckPalHandler.onNewReelAdvanced(pkg, isSponsored)
+        }
+    }
+}
+`);
+
+      /* ════════════════════════════════════════════════
          AppBlockerAccessibilityService.kt
       ════════════════════════════════════════════════ */
       fs.writeFileSync(path.join(kotlinDir, "AppBlockerAccessibilityService.kt"),
@@ -802,6 +1167,7 @@ class AppBlockerAccessibilityService : AccessibilityService() {
     // ── Reel detection — independent from locking ─────────────────────────────
     private var reelDetector: ReelDetector? = null
     private var duckPalHandler: DuckPalReelsHandler? = null
+    private var reelsLockHandler: ReelsLockHandler? = null
 
     private val HOME_LAUNCHERS = setOf(
         "com.android.launcher",
@@ -908,8 +1274,10 @@ class AppBlockerAccessibilityService : AccessibilityService() {
         FocusLockNotificationService.cancelTamperNotification(applicationContext)
 
         // Initialise reel detector + DuckPal handler (independent — no locking side-effects)
-        val handler = DuckPalReelsHandler(applicationContext).also { duckPalHandler = it }
-        reelDetector = ReelDetector(applicationContext, PLATFORM_CONFIGS, handler)
+        val duckPal  = DuckPalReelsHandler(applicationContext).also { duckPalHandler = it }
+        val reelsLock = ReelsLockHandler(applicationContext).also { reelsLockHandler = it }
+        val router   = ReelsSignalRouter(duckPal, reelsLock)
+        reelDetector = ReelDetector(applicationContext, PLATFORM_CONFIGS, router)
 
         // ⚠️ DEBUG — remove before production
         val lockFilePath = applicationContext.filesDir.absolutePath + "/focuslock_data.json"
@@ -1986,6 +2354,76 @@ class ReelCounterPackage : ReactPackage {
 }
 `);
 
+
+      /* ════════════════════════════════════════════════
+         ReelsLockModule.kt  — JS bridge for toggle persistence
+       ════════════════════════════════════════════════ */
+      fs.writeFileSync(path.join(kotlinDir, "ReelsLockModule.kt"),
+`package ${PACKAGE_NAME}
+
+import android.content.Context
+import com.facebook.react.bridge.Promise
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod
+
+/**
+ * Exposes Reels Lock toggle persistence to JavaScript.
+ *
+ * JS usage (React Native):
+ *   import { NativeModules } from 'react-native';
+ *   const { ReelsLock } = NativeModules;
+ *
+ *   // Write (call on toggle change)
+ *   ReelsLock.setEnabled(true);
+ *
+ *   // Read (call on mount to restore persisted state)
+ *   const enabled = await ReelsLock.getEnabled();  // → boolean
+ */
+class ReelsLockModule(private val ctx: ReactApplicationContext)
+    : ReactContextBaseJavaModule(ctx) {
+
+    override fun getName() = "ReelsLock"
+
+    private fun prefs() = ctx.getSharedPreferences(
+        ReelsLockHandler.PREFS_NAME, Context.MODE_PRIVATE
+    )
+
+    /** Persists the toggle state so the Accessibility Service can read it. */
+    @ReactMethod
+    fun setEnabled(enabled: Boolean) {
+        prefs().edit().putBoolean(ReelsLockHandler.KEY_REELS_LOCK_ENABLED, enabled).apply()
+    }
+
+    /** Returns the current persisted toggle state. */
+    @ReactMethod
+    fun getEnabled(promise: Promise) {
+        try {
+            promise.resolve(prefs().getBoolean(ReelsLockHandler.KEY_REELS_LOCK_ENABLED, false))
+        } catch (e: Exception) {
+            promise.resolve(false)
+        }
+    }
+}
+`);
+
+      /* ── ReelsLockPackage.kt ── */
+      fs.writeFileSync(path.join(kotlinDir, "ReelsLockPackage.kt"),
+`package ${PACKAGE_NAME}
+
+import com.facebook.react.ReactPackage
+import com.facebook.react.bridge.NativeModule
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.uimanager.ViewManager
+
+class ReelsLockPackage : ReactPackage {
+    override fun createNativeModules(ctx: ReactApplicationContext): List<NativeModule> =
+        listOf(ReelsLockModule(ctx))
+
+    override fun createViewManagers(ctx: ReactApplicationContext): List<ViewManager<*, *>> =
+        emptyList()
+}
+`);
       /* ── duck_overlay_character.webp → android/app/src/main/assets/ ── */
       const assetsDir = path.join(projectRoot, "app/src/main/assets");
       fs.mkdirSync(assetsDir, { recursive: true });
@@ -2499,7 +2937,43 @@ class PermissionCheckerPackage : ReactPackage {
           console.log("[withFocusLockAndroid] PermissionCheckerPackage already present in MainApplication.kt — skipping patch.");
         }
 
-        // Write once — after both patches so both additions land in a single write.
+        // Register ReelsLockPackage (Reels Lock toggle JS bridge)
+        if (!content.includes("ReelsLockPackage")) {
+          const REELS_LOCK_PATTERNS = [
+            {
+              regex: /(PackageList\(this\)\.packages\.apply\s*\{)/,
+              replacement: "$1\n              add(ReelsLockPackage())",
+            },
+            {
+              regex: /(PackageList\(this\)\.packages\.also\s*\{)/,
+              replacement: "$1\n              it.add(ReelsLockPackage())",
+            },
+            {
+              regex: /(val packages = PackageList\(this\)\.packages)/,
+              replacement: "$1\n          packages.add(ReelsLockPackage())",
+            },
+          ];
+          let patched2 = content;
+          let matchedPattern2 = null;
+          for (const { regex, replacement } of REELS_LOCK_PATTERNS) {
+            const result = content.replace(regex, replacement);
+            if (result !== content) {
+              patched2 = result;
+              matchedPattern2 = regex.toString();
+              break;
+            }
+          }
+          if (!matchedPattern2) {
+            console.warn("[withFocusLockAndroid] ReelsLockPackage could NOT be auto-registered. Add add(ReelsLockPackage()) manually.");
+          } else {
+            content = patched2;
+            console.log(`[withFocusLockAndroid] ReelsLockPackage registered via pattern: ${matchedPattern2}`);
+          }
+        } else {
+          console.log("[withFocusLockAndroid] ReelsLockPackage already present in MainApplication.kt — skipping patch.");
+        }
+
+        // Write once — after all patches so all additions land in a single write.
         fs.writeFileSync(mainAppPath, content, "utf8");
       } else {
         throw new Error(

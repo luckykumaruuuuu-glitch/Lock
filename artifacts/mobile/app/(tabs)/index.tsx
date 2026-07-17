@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Image,
+  NativeModules,
   Platform,
   Pressable,
   ScrollView,
@@ -558,6 +559,15 @@ function DuckLockHomeContent() {
   const { t } = useLanguage();
   const [toast, setToast] = React.useState(false);
   const [reelsLockEnabled, setReelsLockEnabled] = useState(false);
+
+  // Load persisted Reels Lock toggle state on mount (Android only)
+  useEffect(() => {
+    if (Platform.OS === "android" && NativeModules.ReelsLock) {
+      NativeModules.ReelsLock.getEnabled()
+        .then((enabled: boolean) => setReelsLockEnabled(enabled))
+        .catch(() => {/* ignore — defaults to false */});
+    }
+  }, []);
   const { missingPerms, recheck } = usePermissionGuard();
   const { toggleAppMode } = useAppMode();
 
@@ -626,7 +636,13 @@ function DuckLockHomeContent() {
             </View>
             <ToggleSwitch
               value={reelsLockEnabled}
-              onValueChange={setReelsLockEnabled}
+              onValueChange={(v: boolean) => {
+                setReelsLockEnabled(v);
+                // Persist to SharedPreferences so AccessibilityService reads it live
+                if (Platform.OS === "android" && NativeModules.ReelsLock) {
+                  NativeModules.ReelsLock.setEnabled(v);
+                }
+              }}
               trackColorOff="#3A3A3C"
               trackColorOn="#30D158"
             />
