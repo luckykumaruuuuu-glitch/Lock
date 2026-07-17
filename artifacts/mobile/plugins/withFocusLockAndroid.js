@@ -2992,6 +2992,8 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
                 @Suppress("DEPRECATION")
                 appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, uid, pkg)
             }
+            Log.d(TAG, "RAW AppOps mode from OS (OPSTR_GET_USAGE_STATS): \${mode}")
+            Log.d(TAG, "EXPECTED mode for granted: \${AppOpsManager.MODE_ALLOWED}")
             mode == AppOpsManager.MODE_ALLOWED
         } catch (e: Exception) { false }
     }
@@ -3023,6 +3025,8 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
                 appOps.checkOpNoThrow(AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW, uid, pkg)
             }
             val result = mode == AppOpsManager.MODE_ALLOWED
+            Log.d(TAG, "RAW AppOps mode from OS (OPSTR_SYSTEM_ALERT_WINDOW): \${mode}")
+            Log.d(TAG, "EXPECTED mode for granted: \${AppOpsManager.MODE_ALLOWED}")
             android.util.Log.d("DuckLock", "canDrawOverlays: AppOpsManager mode=\${mode}, granted=\${result}, pkg=\${pkg}")
             result
         } catch (e: Exception) {
@@ -3037,7 +3041,10 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
         return try {
             val dpm       = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
             val component = ComponentName(ctx, "\${ctx.packageName}.DeviceAdminReceiver")
-            dpm.isAdminActive(component)
+            val result    = dpm.isAdminActive(component)
+            Log.d(TAG, "RAW isAdminActive from OS (component=\${component.flattenToString()}): \${result}")
+            Log.d(TAG, "EXPECTED component: \${component.flattenToString()}")
+            result
         } catch (e: Exception) { false }
     }
 
@@ -3070,8 +3077,11 @@ class PermissionCheckerModule(private val ctx: ReactApplicationContext)
     /** PowerManager.isIgnoringBatteryOptimizations */
     private fun isIgnoringBatteryOptimizations(): Boolean {
         return try {
-            val pm = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager
-            pm.isIgnoringBatteryOptimizations(ctx.packageName)
+            val pm     = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager
+            val result = pm.isIgnoringBatteryOptimizations(ctx.packageName)
+            Log.d(TAG, "RAW isIgnoringBatteryOptimizations from OS (pkg=\${ctx.packageName}): \${result}")
+            Log.d(TAG, "EXPECTED: true (app must be ignoring battery optimizations)")
+            result
         } catch (e: Exception) { true }
     }
 }
