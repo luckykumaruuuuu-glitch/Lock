@@ -863,6 +863,25 @@ class AppBlockerAccessibilityService : AccessibilityService() {
                 ),
                 hasSponsoredContent = true,
             ),
+            // ── Facebook Reels (best-guess keywords — verify on real device) ──
+            PlatformReelConfig(
+                packageName         = "com.facebook.katana",
+                pagerIdKeywords     = listOf(
+                    "reels_viewer_pager",
+                    "video_reels_container",
+                    "reel_view_pager",
+                    "story_viewer_view_pager",
+                    "video_home_reels_tab",
+                ),
+                classKeywords       = listOf(
+                    "ReelsFragment",
+                    "VideoHomeFragment",
+                    "ReelViewerFragment",
+                    "ShortFormVideoPlayerFragment",
+                    "FBReelsTab",
+                ),
+                hasSponsoredContent = true,
+            ),
         ).associateBy { it.packageName }
     }
 
