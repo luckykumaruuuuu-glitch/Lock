@@ -844,6 +844,25 @@ class AppBlockerAccessibilityService : AccessibilityService() {
                 ),
                 hasSponsoredContent = true,
             ),
+            // ── YouTube Shorts (best-guess keywords — verify on real device) ──
+            PlatformReelConfig(
+                packageName         = "com.google.android.youtube",
+                pagerIdKeywords     = listOf(
+                    "reel_recycler",
+                    "reel_player_page",
+                    "shorts_player",
+                    "shorts_video_container",
+                    "reel_watch_player",
+                ),
+                classKeywords       = listOf(
+                    "ReelWatchFragment",
+                    "ShortsPlayerFragment",
+                    "ReelWatchPage",
+                    "ShortsLockup",
+                    "ReelRecyclerView",
+                ),
+                hasSponsoredContent = true,
+            ),
         ).associateBy { it.packageName }
     }
 
