@@ -260,35 +260,19 @@ export default function MockReelsScreen() {
     }, 620);
   }, []);
 
-  // ── FIX 1 + FIX 2: getItemLayout uses live itemHeightRef (same source as the
-  // viewability handler) so FlatList offset calculations are always consistent. ──
-  const getItemLayout = useCallback(
-    (_: unknown, index: number) => ({
-      length: itemHeightRef.current,
-      offset: itemHeightRef.current * index,
-      index,
-    }),
-    [],
-  );
+  // Refs for onScroll debounce (mouse/trackpad web — see handleScroll below)
+  const scrollDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastScrollY          = useRef(0);
 
-  // ── FIX 2: Viewability-based scroll detection ─────────────────────────────
-  // Replaces onMomentumScrollEnd + onScrollEndDrag.
-  // onViewableItemsChanged fires reliably on BOTH native and web —
-  // momentum events are unreliable (or absent) in browsers.
-  //
-  // Both refs must be initialized once and never reassigned after mount
-  // (FlatList enforces this with a runtime warning).
-  //
-  // maxForwardIdx duplicate-prevention logic is preserved exactly as before.
-  const viewabilityConfig = useRef({
-    itemVisibilityPercentThreshold: 50,
-  }).current;
-
-  const onViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
-      if (!viewableItems.length || completedRef.current) return;
-      const newIdx = viewableItems[0].index ?? 0;
-      if (newIdx === currentIdxRef.current) return; // same reel — no-op
+  // ── Core scroll logic ─────────────────────────────────────────────────────
+  // Takes a settled y-offset and applies maxForwardIdx duplicate-prevention.
+  // Uses SCREEN_H (same value as reel item style height) — critical for correct
+  // Math.round() snapping.  getItemLayout also uses SCREEN_H for consistency.
+  const handleScrollEnd = useCallback(
+    (y: number) => {
+      if (completedRef.current) return;
+      const newIdx = Math.round(y / SCREEN_H);
+      if (newIdx === currentIdxRef.current) return;
       currentIdxRef.current = newIdx;
 
       if (newIdx > maxForwardIdxRef.current) {
@@ -302,7 +286,35 @@ export default function MockReelsScreen() {
       }
       // else: back-scroll or re-scroll to already-seen reel → no-op
     },
-  ).current;
+    // triggerCompletion has [] deps (stable); SCREEN_H is module-level const.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  // onMomentumScrollEnd (native) + onScrollEndDrag (touch-web):
+  // fires AFTER the snap animation completes — safe to update state here.
+  const handleSnapEnd = useCallback(
+    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+      // Cancel any pending debounce — native event takes priority.
+      if (scrollDebounceTimer.current) clearTimeout(scrollDebounceTimer.current);
+      handleScrollEnd(e.nativeEvent.contentOffset.y);
+    },
+    [handleScrollEnd],
+  );
+
+  // onScroll debounce — catches mouse-wheel / trackpad scrolls on web where
+  // onMomentumScrollEnd / onScrollEndDrag do not fire.
+  // Fires 150 ms after the LAST scroll tick, i.e. after the CSS snap has settled.
+  const handleScroll = useCallback(
+    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+      lastScrollY.current = e.nativeEvent.contentOffset.y;
+      if (scrollDebounceTimer.current) clearTimeout(scrollDebounceTimer.current);
+      scrollDebounceTimer.current = setTimeout(() => {
+        handleScrollEnd(lastScrollY.current);
+      }, 150);
+    },
+    [handleScrollEnd],
+  );
 
   // ── FIX 3: Append another page when approaching the end ──────────────────
   const handleEndReached = useCallback(() => {
@@ -331,21 +343,27 @@ export default function MockReelsScreen() {
         pagingEnabled
         showsVerticalScrollIndicator={false}
         decelerationRate="fast"
-        // FIX 2: viewability-based detection — works on web AND native.
-        // FlatList requires these refs to be stable (no post-mount changes).
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        // FIX 1: getItemLayout now reads itemHeightRef.current (same live source
-        // as the viewability handler) so FlatList offsets are always consistent.
-        getItemLayout={getItemLayout}
+        // Native snap (fires AFTER animation completes — no mid-scroll re-renders)
+        onMomentumScrollEnd={handleSnapEnd}
+        onScrollEndDrag={handleSnapEnd}
+        // Web mouse/trackpad fallback: debounce fires 150 ms after last scroll tick
+        onScroll={handleScroll}
+        scrollEventThrottle={100}
+        // SCREEN_H matches reel item style height exactly — critical for correct
+        // Math.round(offset/SCREEN_H) index calculation and pagingEnabled snapping.
+        getItemLayout={(_, index) => ({
+          length: SCREEN_H,
+          offset: SCREEN_H * index,
+          index,
+        })}
         // FIX 3: append another page when user is 50% from the end
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         scrollEnabled={!completedRef.current}
         bounces={false}
         overScrollMode="never"
-        windowSize={7}
-        maxToRenderPerBatch={3}
+        windowSize={9}
+        maxToRenderPerBatch={4}
         initialNumToRender={3}
       />
 
