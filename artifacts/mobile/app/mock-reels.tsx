@@ -143,14 +143,6 @@ const ReelItem = React.memo(function ReelItem({
       {/* ── Right-side action column ──────────────────────────────── */}
       <View style={[styles.rightBar, { paddingBottom: bottomInset + 90 }]}>
 
-        {/* Profile avatar + Follow toggle */}
-        <View style={styles.avatarSection}>
-          <View style={[styles.avatarCircle, { borderColor: item.accent }]}>
-            <Feather name="user" size={17} color={item.accent} />
-          </View>
-          <FollowBtn accent={item.accent} />
-        </View>
-
         {/* Like — animated heart, visual only */}
         <LikeBtn likes={item.likes} />
 
@@ -161,8 +153,15 @@ const ReelItem = React.memo(function ReelItem({
       </View>
 
       {/* ── Bottom info ───────────────────────────────────────────── */}
-      <View style={[styles.bottomInfo, { paddingBottom: bottomInset + 90 }]}>
-        <Text style={styles.reelUser}>{item.user}</Text>
+      <View style={[styles.bottomInfo, { paddingBottom: bottomInset + 18 }]}>
+        {/* Avatar + username + Follow — single row (Instagram layout) */}
+        <View style={styles.userRow}>
+          <View style={[styles.avatarCircle, { borderColor: item.accent }]}>
+            <Feather name="user" size={14} color={item.accent} />
+          </View>
+          <Text style={styles.reelUser} numberOfLines={1}>{item.user}</Text>
+          <FollowBtn accent={item.accent} />
+        </View>
         <Text style={styles.reelCaption} numberOfLines={2}>{item.caption}</Text>
         <View style={styles.musicRow}>
           <Feather name="music" size={12} color="rgba(255,255,255,0.75)" />
@@ -368,24 +367,19 @@ const styles = StyleSheet.create({
     right: 10,
     bottom: 0,
     alignItems: "center",
-    gap: 22,
+    gap: 20,
   },
 
-  // Avatar circle + follow button stacked vertically
-  avatarSection: {
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 2,
-  },
-
+  // Avatar circle (now lives in bottomInfo / userRow)
   avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 2,
     backgroundColor: "rgba(255,255,255,0.08)",
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
 
   // Follow / Following pill button
@@ -436,6 +430,14 @@ const styles = StyleSheet.create({
     left: 14,
     right: 76,
     gap: 4,
+  },
+
+  // Avatar + username + Follow on one row
+  userRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 2,
   },
 
   reelUser: {
