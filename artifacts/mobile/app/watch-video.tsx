@@ -221,8 +221,29 @@ const ccStyles = StyleSheet.create({
 // ── Main screen ───────────────────────────────────────────────────────────
 export default function WatchVideoScreen() {
   const insets        = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
-  const isLandscape   = width > height;
+
+  // Dual orientation detection for reliability in Expo Go:
+  //   1. useWindowDimensions() — works on web and in most RN environments.
+  //   2. Dimensions.addEventListener('change', ...) — fires reliably on Expo Go
+  //      when the device is physically rotated, bypassing React Navigation's
+  //      context which can cause useWindowDimensions to return stale values.
+  // Both feed into a single isLandscape state. Whichever fires first wins.
+  const { width: wdWidth, height: wdHeight } = useWindowDimensions();
+  const [dims, setDims] = useState(() => Dimensions.get("window"));
+
+  useEffect(() => {
+    // Keep dims in sync via the native listener — more reliable than
+    // useWindowDimensions alone in Expo Go on physical rotation.
+    const sub = Dimensions.addEventListener("change", ({ window }) => {
+      setDims(window);
+    });
+    return () => sub.remove();
+  }, []);
+
+  // isLandscape: true if EITHER source reports landscape.
+  // Prefer the Dimensions listener (dims) for native; fall back to
+  // useWindowDimensions for web preview.
+  const isLandscape = dims.width > dims.height || wdWidth > wdHeight;
 
   // ── Playback state ──────────────────────────────────────────────────────
   const [isPlaying,    setIsPlaying]    = useState(false);

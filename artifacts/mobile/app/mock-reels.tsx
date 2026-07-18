@@ -143,12 +143,16 @@ function FollowBtn({ accent }: { accent: string }) {
 const ReelItem = React.memo(function ReelItem({
   item,
   bottomInset,
+  height,
 }: {
   item: ReelData;
   bottomInset: number;
+  height: number;
 }) {
   return (
-    <View style={[styles.reel, { backgroundColor: item.bg }]}>
+    // height must match the FlatList's actual rendered height (not static SCREEN_H)
+    // so that each reel fills exactly one "page" — no overlap, no bleed.
+    <View style={[styles.reel, { backgroundColor: item.bg, height }]}>
       {/* Soft radial glow from accent colour */}
       <View style={[styles.reelGlow, { backgroundColor: item.accent + "18" }]} />
 
@@ -192,11 +196,27 @@ const ReelItem = React.memo(function ReelItem({
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function MockReelsScreen() {
   const insets = useSafeAreaInsets();
-  // useWindowDimensions gives live height — avoids stale SCREEN_H at module load.
-  // Stored in a ref so handleScrollEnd (stable useCallback) always reads current value.
   const { height: windowHeight } = useWindowDimensions();
-  const itemHeightRef = useRef(windowHeight);
-  itemHeightRef.current = windowHeight;
+
+  // listHeightRef holds the ACTUAL rendered height of the FlatList — captured via
+  // onLayout. This is the value pagingEnabled uses for snapping, and must match
+  // the height used in getItemLayout and handleScrollEnd to avoid drift.
+  // On Expo Go / real Android the FlatList's rendered height can differ from
+  // Dimensions.get("window").height due to navigation bars, so we never use the
+  // static SCREEN_H for any layout/snap calculation.
+  const listHeightRef = useRef(windowHeight);
+  const [listHeight, setListHeight] = useState(windowHeight);
+
+  const handleListLayout = useCallback(
+    (e: { nativeEvent: { layout: { height: number } } }) => {
+      const h = e.nativeEvent.layout.height;
+      if (h > 0 && Math.abs(h - listHeightRef.current) > 1) {
+        listHeightRef.current = h;
+        setListHeight(h);
+      }
+    },
+    [],
+  );
 
   // ── FIX 3: Infinite reel list ─────────────────────────────────────────────
   // Start with 3 pages (36 items) so there is always content ahead.
@@ -266,12 +286,12 @@ export default function MockReelsScreen() {
 
   // ── Core scroll logic ─────────────────────────────────────────────────────
   // Takes a settled y-offset and applies maxForwardIdx duplicate-prevention.
-  // Uses SCREEN_H (same value as reel item style height) — critical for correct
-  // Math.round() snapping.  getItemLayout also uses SCREEN_H for consistency.
+  // Uses listHeightRef.current (actual FlatList rendered height) — must match
+  // pagingEnabled's snap interval and each item's rendered height exactly.
   const handleScrollEnd = useCallback(
     (y: number) => {
       if (completedRef.current) return;
-      const newIdx = Math.round(y / SCREEN_H);
+      const newIdx = Math.round(y / listHeightRef.current);
       if (newIdx === currentIdxRef.current) return;
       currentIdxRef.current = newIdx;
 
@@ -338,7 +358,9 @@ export default function MockReelsScreen() {
         data={reelList}
         keyExtractor={(r) => r.uid}
         renderItem={({ item }) => (
-          <ReelItem item={item} bottomInset={insets.bottom} />
+          // Pass listHeight so each reel View is exactly as tall as the FlatList
+          // frame — pagingEnabled will snap to the same interval, zero drift.
+          <ReelItem item={item} bottomInset={insets.bottom} height={listHeight} />
         )}
         pagingEnabled
         showsVerticalScrollIndicator={false}
@@ -349,14 +371,16 @@ export default function MockReelsScreen() {
         // Web mouse/trackpad fallback: debounce fires 150 ms after last scroll tick
         onScroll={handleScroll}
         scrollEventThrottle={100}
-        // SCREEN_H matches reel item style height exactly — critical for correct
-        // Math.round(offset/SCREEN_H) index calculation and pagingEnabled snapping.
+        // listHeightRef.current = actual rendered FlatList height (from onLayout).
+        // Must match item height and pagingEnabled snap interval exactly.
         getItemLayout={(_, index) => ({
-          length: SCREEN_H,
-          offset: SCREEN_H * index,
+          length: listHeightRef.current,
+          offset: listHeightRef.current * index,
           index,
         })}
-        // FIX 3: append another page when user is 50% from the end
+        // Capture the FlatList's actual rendered height so items and snap use it.
+        onLayout={handleListLayout}
+        // append another page when user is 50% from the end
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         scrollEnabled={!completedRef.current}
@@ -424,7 +448,9 @@ const styles = StyleSheet.create({
   // ── Reel ──────────────────────────────────────────────────────────────────
   reel: {
     width: SCREEN_W,
-    height: SCREEN_H,
+    // height is intentionally NOT set here — it is passed as an inline style prop
+    // from the FlatList's onLayout-measured height so it always matches the
+    // pagingEnabled snap interval exactly (no drift on real devices / Expo Go).
     justifyContent: "flex-end",
     overflow: "hidden",
   },
