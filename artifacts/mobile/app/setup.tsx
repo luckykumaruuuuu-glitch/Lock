@@ -20,6 +20,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import Constants from "expo-constants";
+
 import { checkNativePermissions } from "@/lib/nativePermissionCheck";
 import { openBatteryOptimizationSettings } from "@/lib/openBatteryOptimizationSettings";
 import { PermissionId, usePermissionStatus } from "@/hooks/usePermissionStatus";
@@ -246,9 +248,10 @@ export default function SetupScreen() {
     NativeModules.FocusLockPermissionChecker?.stopWatchingPermission?.(id)?.catch?.(() => {});
   }
 
-  const isWeb        = Platform.OS === "web";
-  const grantedCount = isWeb ? PERMS.length : PERMS.filter(p => permissions[p.id]?.granted).length;
-  const allGranted   = isWeb || grantedCount === PERMS.length;
+  // true in Expo Go (appOwnership === 'expo') AND browser-preview — false in real APK / dev-client build
+  const isExpoGoOrWeb = Platform.OS === "web" || Constants.appOwnership === "expo";
+  const grantedCount  = isExpoGoOrWeb ? PERMS.length : PERMS.filter(p => permissions[p.id]?.granted).length;
+  const allGranted    = isExpoGoOrWeb || grantedCount === PERMS.length;
 
   useEffect(() => {
     Animated.spring(continueAnim, {
@@ -439,7 +442,7 @@ export default function SetupScreen() {
         {/* ── Permissions list ── */}
         <View style={styles.listCard}>
           {PERMS.map((perm, i) => {
-            const granted   = isWeb || (permissions[perm.id]?.granted ?? false);
+            const granted   = isExpoGoOrWeb || (permissions[perm.id]?.granted ?? false);
             const isOpening = opening === perm.id;
             const isLast    = i === PERMS.length - 1;
 
@@ -531,8 +534,8 @@ export default function SetupScreen() {
           <Text style={styles.hint}>Grant all permissions to continue</Text>
         )}
 
-        {/* ── Web-preview skip button (NEVER shown in Android APK) ── */}
-        {Platform.OS === "web" && (
+        {/* ── Dev skip button: Expo Go + web-preview ONLY — never shown in real APK / dev-client ── */}
+        {isExpoGoOrWeb && (
           <Pressable
             onPress={handleContinue}
             style={({ pressed }) => [styles.skipBtn, { opacity: pressed ? 0.6 : 1 }]}
