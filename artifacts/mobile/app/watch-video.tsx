@@ -16,7 +16,6 @@
  */
 
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -42,75 +41,102 @@ const VIDEO_DURATION_SECONDS = 60;
 // How long controls auto-hide after a tap while playing (ms)
 const CONTROLS_AUTOHIDE_MS = 2800;
 
-// ── Animated background blob ───────────────────────────────────────────────
-type BlobConfig = {
-  startX: number;   // 0..1 relative to screen
-  startY: number;
-  radius: number;
-  color: string;
-  duration: number; // loop duration ms
-  toX: number;
-  toY: number;
-};
-
-const BLOBS: BlobConfig[] = [
-  { startX: 0.1, startY: 0.15, toX: 0.55, toY: 0.7,  radius: 200, color: "#6D28D9", duration: 7200 },
-  { startX: 0.7, startY: 0.1,  toX: 0.15, toY: 0.75, radius: 170, color: "#1D4ED8", duration: 9400 },
-  { startX: 0.5, startY: 0.55, toX: 0.8,  toY: 0.1,  radius: 150, color: "#0F766E", duration: 8100 },
-  { startX: 0.85,startY: 0.65, toX: 0.05, toY: 0.3,  radius: 130, color: "#B45309", duration: 6800 },
-  { startX: 0.25,startY: 0.8,  toX: 0.7,  toY: 0.35, radius: 110, color: "#9D174D", duration: 10200 },
+// ── Smoke color fade background ────────────────────────────────────────────
+const SMOKE_COLORS = [
+  "#6D28D9", // deep purple
+  "#1D4ED8", // royal blue
+  "#0F766E", // teal
+  "#9D174D", // rose
+  "#B45309", // amber
+  "#065F46", // emerald
+  "#4A1942", // dark plum
+  "#7C3AED", // violet
+  "#0369A1", // sky blue
+  "#BE185D", // pink
 ];
 
-function AnimatedBlob({ cfg, screenW, screenH }: { cfg: BlobConfig; screenW: number; screenH: number }) {
-  const anim = useRef(new Animated.Value(0)).current;
+type SmokeConfig = {
+  color: string;
+  blobSize: number;
+  x: number;
+  y: number;
+};
 
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(anim, { toValue: 1, duration: cfg.duration,      useNativeDriver: true, isInteraction: false }),
-        Animated.timing(anim, { toValue: 0, duration: cfg.duration * 0.9, useNativeDriver: true, isInteraction: false }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, []);
-
-  const translateX = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [cfg.startX * screenW - cfg.radius, cfg.toX * screenW - cfg.radius],
-  });
-  const translateY = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [cfg.startY * screenH - cfg.radius, cfg.toY * screenH - cfg.radius],
-  });
-
-  return (
-    <Animated.View
-      style={{
-        position: "absolute",
-        width: cfg.radius * 2,
-        height: cfg.radius * 2,
-        borderRadius: cfg.radius,
-        backgroundColor: cfg.color,
-        opacity: 0.28,
-        transform: [{ translateX }, { translateY }],
-      }}
-    />
-  );
+function makeSmokeConfig(screenW: number, screenH: number): SmokeConfig {
+  const color = SMOKE_COLORS[Math.floor(Math.random() * SMOKE_COLORS.length)];
+  const blobSize = Math.max(screenW, screenH) * 2.2;
+  const half = blobSize / 2;
+  // Six spawn positions — each corner + top/bottom center
+  const positions = [
+    { x: -half * 0.65, y: -half * 0.65 },                 // top-left corner
+    { x: screenW - half * 0.35, y: -half * 0.65 },        // top-right corner
+    { x: -half * 0.65, y: screenH - half * 0.35 },        // bottom-left corner
+    { x: screenW - half * 0.35, y: screenH - half * 0.35 }, // bottom-right corner
+    { x: screenW / 2 - half, y: -half * 0.55 },           // top center
+    { x: screenW / 2 - half, y: screenH - half * 0.45 },  // bottom center
+  ];
+  const pos = positions[Math.floor(Math.random() * positions.length)];
+  return { color, blobSize, x: pos.x, y: pos.y };
 }
 
-// ── Animated placeholder "video" background ────────────────────────────────
-function AnimatedBackground({ screenW, screenH }: { screenW: number; screenH: number }) {
+function SmokeBackground({ screenW, screenH }: { screenW: number; screenH: number }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale   = useRef(new Animated.Value(0.55)).current;
+  const [cfg, setCfg] = useState<SmokeConfig>(() => makeSmokeConfig(screenW, screenH));
+  const activeRef = useRef(true);
+
+  function runCycle() {
+    if (!activeRef.current) return;
+    // Config update happens while opacity=0, so change is invisible
+    const next = makeSmokeConfig(screenW, screenH);
+    setCfg(next);
+    scale.setValue(0.55);
+
+    Animated.sequence([
+      // Smoke drifts in — grows and brightens
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 0.62, duration: 4500, useNativeDriver: true, isInteraction: false }),
+        Animated.timing(scale,   { toValue: 1.0,  duration: 4500, useNativeDriver: true, isInteraction: false }),
+      ]),
+      // Hold — smoke hangs in air
+      Animated.delay(2800),
+      // Smoke disperses — expands slightly and fades out
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 0,    duration: 4200, useNativeDriver: true, isInteraction: false }),
+        Animated.timing(scale,   { toValue: 1.18, duration: 4200, useNativeDriver: true, isInteraction: false }),
+      ]),
+      // Brief pause before next color
+      Animated.delay(400),
+    ]).start(({ finished }) => {
+      if (finished && activeRef.current) runCycle();
+    });
+  }
+
+  useEffect(() => {
+    activeRef.current = true;
+    const t = setTimeout(runCycle, 80);
+    return () => {
+      activeRef.current = false;
+      clearTimeout(t);
+      opacity.stopAnimation();
+      scale.stopAnimation();
+    };
+  }, []);
+
   return (
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: "#080818", overflow: "hidden" }]}>
-      {BLOBS.map((cfg, i) => (
-        <AnimatedBlob key={i} cfg={cfg} screenW={screenW} screenH={screenH} />
-      ))}
-      {/* Dark vignette */}
-      <LinearGradient
-        colors={["transparent", "rgba(0,0,0,0.45)"]}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: "#000000", overflow: "hidden" }]}>
+      <Animated.View
+        style={{
+          position: "absolute",
+          width: cfg.blobSize,
+          height: cfg.blobSize,
+          borderRadius: cfg.blobSize / 2,
+          backgroundColor: cfg.color,
+          left: cfg.x,
+          top: cfg.y,
+          opacity,
+          transform: [{ scale }],
+        }}
       />
     </View>
   );
@@ -325,8 +351,8 @@ export default function WatchVideoScreen() {
   return (
     <View style={styles.root}>
 
-      {/* ── Animated placeholder background ──────────────────────────── */}
-      <AnimatedBackground screenW={width} screenH={height} />
+      {/* ── Smoke color-fade background ───────────────────────────────── */}
+      <SmokeBackground screenW={width} screenH={height} />
 
       {/* ── Tap-to-show-controls area ────────────────────────────────── */}
       <Pressable style={StyleSheet.absoluteFill} onPress={handleTap}>
