@@ -16,6 +16,7 @@
  */
 
 import * as Haptics from "expo-haptics";
+import * as ScreenOrientation from "expo-screen-orientation";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -222,28 +223,59 @@ const ccStyles = StyleSheet.create({
 export default function WatchVideoScreen() {
   const insets        = useSafeAreaInsets();
 
-  // Dual orientation detection for reliability in Expo Go:
-  //   1. useWindowDimensions() — works on web and in most RN environments.
-  //   2. Dimensions.addEventListener('change', ...) — fires reliably on Expo Go
-  //      when the device is physically rotated, bypassing React Navigation's
-  //      context which can cause useWindowDimensions to return stale values.
-  // Both feed into a single isLandscape state. Whichever fires first wins.
+  // ── Orientation detection — platform-conditional ──────────────────────
+  // Single shared state driven by whichever source suits the platform.
+  const [isLandscape, setIsLandscape] = useState(() => {
+    const { width, height } = Dimensions.get("window");
+    return width > height;
+  });
+
+  // Hooks must be called unconditionally — these are used by the web path
+  // below and are harmless no-ops on native.
   const { width: wdWidth, height: wdHeight } = useWindowDimensions();
   const [dims, setDims] = useState(() => Dimensions.get("window"));
 
+  // ── WEB path: existing Dimensions.addEventListener approach (unchanged) ─
+  // Dimensions events on web fire from browser resize / orientation change.
   useEffect(() => {
-    // Keep dims in sync via the native listener — more reliable than
-    // useWindowDimensions alone in Expo Go on physical rotation.
+    if (Platform.OS !== "web") return;
     const sub = Dimensions.addEventListener("change", ({ window }) => {
       setDims(window);
+      setIsLandscape(window.width > window.height || wdWidth > wdHeight);
     });
     return () => sub.remove();
   }, []);
 
-  // isLandscape: true if EITHER source reports landscape.
-  // Prefer the Dimensions listener (dims) for native; fall back to
-  // useWindowDimensions for web preview.
-  const isLandscape = dims.width > dims.height || wdWidth > wdHeight;
+  // Web: also react when useWindowDimensions reports a change on its own.
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    setIsLandscape(dims.width > dims.height || wdWidth > wdHeight);
+  }, [dims.width, dims.height, wdWidth, wdHeight]);
+
+  // ── NATIVE path: expo-screen-orientation (sensor-based) ───────────────
+  // Uses Android OrientationEventListener under the hood — fires on physical
+  // rotation regardless of the device's auto-rotate setting.
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    // Seed with the current orientation so the first render is correct.
+    ScreenOrientation.getOrientationAsync()
+      .then((o) => {
+        setIsLandscape(
+          o === ScreenOrientation.Orientation.LANDSCAPE_LEFT ||
+          o === ScreenOrientation.Orientation.LANDSCAPE_RIGHT
+        );
+      })
+      .catch(() => {});
+    // Live sensor listener — independent of auto-rotate setting.
+    const sub = ScreenOrientation.addOrientationChangeListener((event) => {
+      const o = event.orientationInfo.orientation;
+      setIsLandscape(
+        o === ScreenOrientation.Orientation.LANDSCAPE_LEFT ||
+        o === ScreenOrientation.Orientation.LANDSCAPE_RIGHT
+      );
+    });
+    return () => ScreenOrientation.removeOrientationChangeListener(sub);
+  }, []);
 
   // ── Playback state ──────────────────────────────────────────────────────
   const [isPlaying,    setIsPlaying]    = useState(false);

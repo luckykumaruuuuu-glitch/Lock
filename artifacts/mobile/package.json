@@ -68,6 +68,7 @@
     "expo-intent-launcher": "^13.0.8",
     "expo-localization": "~17.0.9",
     "expo-notifications": "^0.32.17",
+    "expo-screen-orientation": "~9.0.9",
     "expo-video": "~3.0.16",
     "firebase": "^12.15.0",
     "i18next": "^26.3.3",
