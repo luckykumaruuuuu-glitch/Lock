@@ -277,6 +277,13 @@ export default function WatchVideoScreen() {
     return () => ScreenOrientation.removeOrientationChangeListener(sub);
   }, []);
 
+  // ── Orientation bypass — manual fallback for users whose sensor misfires ─
+  // When true, portrait-mode check is skipped and video plays anyway.
+  // Sensor-based detection continues running in parallel; it still auto-pauses
+  // if the user later rotates to portrait intentionally (which would be unusual
+  // once they've tapped the fallback, but handled gracefully).
+  const [bypassOrientation, setBypassOrientation] = useState(false);
+
   // ── Playback state ──────────────────────────────────────────────────────
   const [isPlaying,    setIsPlaying]    = useState(false);
   const [elapsed,      setElapsed]      = useState(0);
@@ -309,30 +316,40 @@ export default function WatchVideoScreen() {
     }, 1000);
   }
 
-  // Pause when portrait, resume when landscape (if was playing)
+  // Manual fallback: tapping the subtitle text calls this to start video in portrait.
+  function handleBypassOrientation() {
+    setBypassOrientation(true);
+    if (!completedRef.current) {
+      setIsPlaying(true);
+      startTick();
+    }
+  }
+
+  // Pause when portrait, resume when landscape-or-bypassed (if was playing).
+  // bypassOrientation keeps video running even in portrait mode.
   const wasPlayingRef = useRef(false);
   useEffect(() => {
-    if (!isLandscape) {
-      // Went portrait — pause
+    if (!isLandscape && !bypassOrientation) {
+      // Went portrait with no bypass — pause
       if (isPlaying) { wasPlayingRef.current = true; }
       setIsPlaying(false);
       clearTick();
     } else {
-      // Went landscape — resume if was playing before
+      // Landscape OR bypass active — resume if was playing before
       if (wasPlayingRef.current && !completedRef.current) {
         wasPlayingRef.current = false;
         setIsPlaying(true);
         startTick();
       }
     }
-  }, [isLandscape]);
+  }, [isLandscape, bypassOrientation]);
 
-  // Start/stop tick based on isPlaying
+  // Start/stop tick based on isPlaying — allow tick in portrait when bypassed.
   useEffect(() => {
-    if (isPlaying && isLandscape) startTick();
+    if (isPlaying && (isLandscape || bypassOrientation)) startTick();
     else clearTick();
     return () => clearTick();
-  }, [isPlaying]);
+  }, [isPlaying, bypassOrientation]);
 
   // ── Controls auto-hide ───────────────────────────────────────────────────
   function bumpControlsVisibility() {
@@ -532,11 +549,20 @@ export default function WatchVideoScreen() {
       </Pressable>
 
       {/* ── Portrait rotate-prompt overlay ───────────────────────────── */}
-      {!isLandscape && (
+      {!isLandscape && !bypassOrientation && (
         <View style={styles.rotateOverlay}>
           <RotateIcon />
           <Text style={styles.rotateTitle}>Rotate your phone</Text>
-          <Text style={styles.rotateSubtitle}>Video plays in landscape mode only</Text>
+          {/* Tapping this subtitle bypasses orientation — permanent fallback
+              for users whose sensor doesn't fire reliably. Sensor detection
+              keeps running in parallel so auto-rotate still works if it can. */}
+          <Pressable onPress={handleBypassOrientation} hitSlop={12}>
+            {({ pressed }) => (
+              <Text style={[styles.rotateSubtitle, pressed && styles.rotateSubtitlePressed]}>
+                Video plays in landscape mode only
+              </Text>
+            )}
+          </Pressable>
         </View>
       )}
 
@@ -765,6 +791,11 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     color: "rgba(255,255,255,0.6)",
     textAlign: "center",
+    textDecorationLine: "underline",
+  },
+
+  rotateSubtitlePressed: {
+    opacity: 0.4,
   },
 
   // ── Completion flash ──────────────────────────────────────────────────
