@@ -4,12 +4,12 @@
  * Task: Watch a full video in LANDSCAPE mode for VIDEO_DURATION_SECONDS.
  *
  * Rules:
- *   • Video only plays in LANDSCAPE orientation (width > height).
- *   • If phone is PORTRAIT → video pauses, rotate-prompt overlay appears.
- *   • Resume automatically when phone goes landscape again.
- *   • After full duration: haptic burst + white flash → ReelsLock OFF → Instagram.
+ *   • Screen is LOCKED to landscape the moment this screen mounts.
+ *   • Lock is released when the screen unmounts.
+ *   • Video starts immediately — no rotate-prompt, no orientation detection.
+ *   • After full duration: haptic burst + white flash → Coming Soon screen.
  *
- * Orientation detection: useWindowDimensions() — no extra package needed.
+ * Orientation: expo-screen-orientation lockAsync/unlockAsync only (no listener).
  * Animated placeholder: shifting multi-blob gradient (no real video file).
  *
  * To change target duration: edit VIDEO_DURATION_SECONDS below.
@@ -19,7 +19,7 @@ import * as Haptics from "expo-haptics";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -29,7 +29,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -223,66 +222,17 @@ const ccStyles = StyleSheet.create({
 export default function WatchVideoScreen() {
   const insets        = useSafeAreaInsets();
 
-  // ── Orientation detection — platform-conditional ──────────────────────
-  // Single shared state driven by whichever source suits the platform.
-  const [isLandscape, setIsLandscape] = useState(() => {
-    const { width, height } = Dimensions.get("window");
-    return width > height;
-  });
+  // ── Orientation lock ──────────────────────────────────────────────────
+  // Screen is locked to landscape the moment this screen mounts.
+  // No detection, no listener — just a one-time lock/unlock.
+  const dims = Dimensions.get("window");
 
-  // Hooks must be called unconditionally — these are used by the web path
-  // below and are harmless no-ops on native.
-  const { width: wdWidth, height: wdHeight } = useWindowDimensions();
-  const [dims, setDims] = useState(() => Dimensions.get("window"));
-
-  // ── WEB path: existing Dimensions.addEventListener approach (unchanged) ─
-  // Dimensions events on web fire from browser resize / orientation change.
   useEffect(() => {
-    if (Platform.OS !== "web") return;
-    const sub = Dimensions.addEventListener("change", ({ window }) => {
-      setDims(window);
-      setIsLandscape(window.width > window.height || wdWidth > wdHeight);
-    });
-    return () => sub.remove();
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).catch(() => {});
+    return () => {
+      ScreenOrientation.unlockAsync().catch(() => {});
+    };
   }, []);
-
-  // Web: also react when useWindowDimensions reports a change on its own.
-  useEffect(() => {
-    if (Platform.OS !== "web") return;
-    setIsLandscape(dims.width > dims.height || wdWidth > wdHeight);
-  }, [dims.width, dims.height, wdWidth, wdHeight]);
-
-  // ── NATIVE path: expo-screen-orientation (sensor-based) ───────────────
-  // Uses Android OrientationEventListener under the hood — fires on physical
-  // rotation regardless of the device's auto-rotate setting.
-  useEffect(() => {
-    if (Platform.OS === "web") return;
-    // Seed with the current orientation so the first render is correct.
-    ScreenOrientation.getOrientationAsync()
-      .then((o) => {
-        setIsLandscape(
-          o === ScreenOrientation.Orientation.LANDSCAPE_LEFT ||
-          o === ScreenOrientation.Orientation.LANDSCAPE_RIGHT
-        );
-      })
-      .catch(() => {});
-    // Live sensor listener — independent of auto-rotate setting.
-    const sub = ScreenOrientation.addOrientationChangeListener((event) => {
-      const o = event.orientationInfo.orientation;
-      setIsLandscape(
-        o === ScreenOrientation.Orientation.LANDSCAPE_LEFT ||
-        o === ScreenOrientation.Orientation.LANDSCAPE_RIGHT
-      );
-    });
-    return () => ScreenOrientation.removeOrientationChangeListener(sub);
-  }, []);
-
-  // ── Orientation bypass — manual fallback for users whose sensor misfires ─
-  // When true, portrait-mode check is skipped and video plays anyway.
-  // Sensor-based detection continues running in parallel; it still auto-pauses
-  // if the user later rotates to portrait intentionally (which would be unusual
-  // once they've tapped the fallback, but handled gracefully).
-  const [bypassOrientation, setBypassOrientation] = useState(false);
 
   // ── Playback state ──────────────────────────────────────────────────────
   const [isPlaying,    setIsPlaying]    = useState(false);
@@ -316,40 +266,12 @@ export default function WatchVideoScreen() {
     }, 1000);
   }
 
-  // Manual fallback: tapping the subtitle text calls this to start video in portrait.
-  function handleBypassOrientation() {
-    setBypassOrientation(true);
-    if (!completedRef.current) {
-      setIsPlaying(true);
-      startTick();
-    }
-  }
-
-  // Pause when portrait, resume when landscape-or-bypassed (if was playing).
-  // bypassOrientation keeps video running even in portrait mode.
-  const wasPlayingRef = useRef(false);
+  // Start/stop tick based on isPlaying — screen is always landscape, no check needed.
   useEffect(() => {
-    if (!isLandscape && !bypassOrientation) {
-      // Went portrait with no bypass — pause
-      if (isPlaying) { wasPlayingRef.current = true; }
-      setIsPlaying(false);
-      clearTick();
-    } else {
-      // Landscape OR bypass active — resume if was playing before
-      if (wasPlayingRef.current && !completedRef.current) {
-        wasPlayingRef.current = false;
-        setIsPlaying(true);
-        startTick();
-      }
-    }
-  }, [isLandscape, bypassOrientation]);
-
-  // Start/stop tick based on isPlaying — allow tick in portrait when bypassed.
-  useEffect(() => {
-    if (isPlaying && (isLandscape || bypassOrientation)) startTick();
+    if (isPlaying) startTick();
     else clearTick();
     return () => clearTick();
-  }, [isPlaying, bypassOrientation]);
+  }, [isPlaying]);
 
   // ── Controls auto-hide ───────────────────────────────────────────────────
   function bumpControlsVisibility() {
@@ -415,15 +337,12 @@ export default function WatchVideoScreen() {
   }
 
   // ── Derived values ───────────────────────────────────────────────────────
-  // effectiveLandscape: treat bypass as landscape for ALL layout purposes —
-  // controls, padding, and render logic — so the UI looks like landscape
-  // even when the phone is physically portrait.
-  const effectiveLandscape = isLandscape || bypassOrientation;
-  const progress    = Math.min(elapsed / VIDEO_DURATION_SECONDS, 1);
-  const remaining   = Math.max(VIDEO_DURATION_SECONDS - elapsed, 0);
-  const isDone      = elapsed >= VIDEO_DURATION_SECONDS;
-  const leftPad     = effectiveLandscape ? Math.max(insets.left, 16) : 16;
-  const rightPad    = effectiveLandscape ? Math.max(insets.right, 16) : 16;
+  // Screen is always landscape — padding always uses safe-area insets.
+  const progress  = Math.min(elapsed / VIDEO_DURATION_SECONDS, 1);
+  const remaining = Math.max(VIDEO_DURATION_SECONDS - elapsed, 0);
+  const isDone    = elapsed >= VIDEO_DURATION_SECONDS;
+  const leftPad   = Math.max(insets.left,  16);
+  const rightPad  = Math.max(insets.right, 16);
 
   return (
     <View style={styles.root}>
@@ -552,24 +471,6 @@ export default function WatchVideoScreen() {
 
       </Pressable>
 
-      {/* ── Portrait rotate-prompt overlay ───────────────────────────── */}
-      {!isLandscape && !bypassOrientation && (
-        <View style={styles.rotateOverlay}>
-          <RotateIcon />
-          {/* Tapping this title bypasses orientation — permanent fallback for
-              users whose sensor doesn't fire reliably. Sensor detection keeps
-              running in parallel so auto-rotate still works if it can. */}
-          <Pressable onPress={handleBypassOrientation} hitSlop={12}>
-            {({ pressed }) => (
-              <Text style={[styles.rotateTitle, pressed && styles.rotateTitlePressed]}>
-                Rotate your phone
-              </Text>
-            )}
-          </Pressable>
-          <Text style={styles.rotateSubtitle}>Video plays in landscape mode only</Text>
-        </View>
-      )}
-
       {/* ── Completion flash overlay ──────────────────────────────────── */}
       <Animated.View
         style={[styles.flashOverlay, { opacity: flashOpacity }]}
@@ -577,32 +478,6 @@ export default function WatchVideoScreen() {
       />
 
     </View>
-  );
-}
-
-// ── Animated rotate icon ───────────────────────────────────────────────────
-function RotateIcon() {
-  const spin = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(spin, { toValue: 1, duration: 700, useNativeDriver: true, isInteraction: false }),
-        Animated.delay(1400),
-        Animated.timing(spin, { toValue: 0, duration: 100, useNativeDriver: true, isInteraction: false }),
-        Animated.delay(300),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, []);
-
-  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "-90deg"] });
-
-  return (
-    <Animated.View style={[styles.rotateIconWrap, { transform: [{ rotate }] }]}>
-      <Feather name="smartphone" size={52} color="#FFFFFF" />
-    </Animated.View>
   );
 }
 
@@ -769,36 +644,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-  },
-
-  // ── Rotate overlay ────────────────────────────────────────────────────
-  rotateOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.88)",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 20,
-    zIndex: 20,
-  },
-
-  rotateIconWrap: { marginBottom: 4 },
-
-  rotateTitle: {
-    fontSize: 22,
-    fontFamily: "Inter_700Bold",
-    color: "#FFFFFF",
-    textAlign: "center",
-  },
-
-  rotateSubtitle: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.6)",
-    textAlign: "center",
-  },
-
-  rotateTitlePressed: {
-    opacity: 0.4,
   },
 
   // ── Completion flash ──────────────────────────────────────────────────
