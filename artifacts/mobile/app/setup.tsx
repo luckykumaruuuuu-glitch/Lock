@@ -530,6 +530,16 @@ export default function SetupScreen() {
         {!allGranted && (
           <Text style={styles.hint}>Grant all permissions to continue</Text>
         )}
+
+        {/* ── Web-preview skip button (NEVER shown in Android APK) ── */}
+        {Platform.OS === "web" && (
+          <Pressable
+            onPress={handleContinue}
+            style={({ pressed }) => [styles.skipBtn, { opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Text style={styles.skipBtnText}>⚡ Skip (Web-Testing Only)</Text>
+          </Pressable>
+        )}
       </ScrollView>
     </View>
   );
@@ -667,5 +677,20 @@ const styles = StyleSheet.create({
     color: "#48484A",
     textAlign: "center",
     marginTop: 4,
+  },
+
+  // Web-preview only — never compiled into Android APK (Platform.OS guard in JSX)
+  skipBtn: {
+    marginTop: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#3A3A3C",
+    alignItems: "center",
+  },
+  skipBtnText: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: "#636366",
   },
 });
