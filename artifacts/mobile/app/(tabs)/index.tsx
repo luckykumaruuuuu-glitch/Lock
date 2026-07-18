@@ -559,6 +559,7 @@ function DuckLockHomeContent() {
   const { t } = useLanguage();
   const [toast, setToast] = React.useState(false);
   const [reelsLockEnabled, setReelsLockEnabled] = useState(false);
+  const [popupBypassed, setPopupBypassed] = useState(false); // dev-only; Expo Go + web
 
   // Load persisted Reels Lock toggle state on mount (Android only)
   useEffect(() => {
@@ -704,7 +705,11 @@ function DuckLockHomeContent() {
 
       <Toast visible={toast} message={t("lockActivated")} type="success" onHide={() => setToast(false)} />
 
-      <PermissionGuardPopup missing={missingPerms} onRecheck={recheck} />
+      <PermissionGuardPopup
+        missing={popupBypassed ? [] : missingPerms}
+        onRecheck={recheck}
+        onBypass={() => setPopupBypassed(true)}
+      />
     </GradientBackground>
   );
 }

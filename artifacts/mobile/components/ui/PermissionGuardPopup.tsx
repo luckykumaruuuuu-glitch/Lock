@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import * as IntentLauncher from "expo-intent-launcher";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
@@ -114,10 +115,15 @@ async function openSettingsForPerm(id: PermissionId): Promise<void> {
 interface Props {
   missing: MissingPerm[];
   onRecheck: () => void;
+  onBypass?: () => void;   // Dev-only: Expo Go + web; undefined in real APK
 }
 
-export function PermissionGuardPopup({ missing, onRecheck }: Props) {
+export function PermissionGuardPopup({ missing, onRecheck, onBypass }: Props) {
   const [opening, setOpening] = useState<PermissionId | null>(null);
+
+  // Show bypass button in Expo Go (appOwnership === 'expo') and web-preview only.
+  // In a real APK / dev-client build, appOwnership is null → button never renders.
+  const isExpoGoOrWeb = Platform.OS === "web" || Constants.appOwnership === "expo";
 
   if (missing.length === 0) return null;
 
@@ -224,6 +230,16 @@ export function PermissionGuardPopup({ missing, onRecheck }: Props) {
             <Feather name="refresh-cw" size={14} color="#8E8E93" />
             <Text style={styles.recheckText}>I've granted them — recheck</Text>
           </Pressable>
+
+          {/* Dev bypass — Expo Go + web only; never rendered in real APK */}
+          {isExpoGoOrWeb && onBypass && (
+            <Pressable
+              onPress={onBypass}
+              style={({ pressed }) => [styles.bypassBtn, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Text style={styles.bypassText}>⚡ Bypass (Dev Only)</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </Modal>
@@ -340,5 +356,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_400Regular",
     color: "#8E8E93",
+  },
+
+  // Dev-only bypass button (Expo Go + web; never shown in real APK)
+  bypassBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#3A3A3C",
+    alignSelf: "center",
+    marginTop: 2,
+  },
+  bypassText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "#48484A",
   },
 });
