@@ -123,6 +123,75 @@ function fmt(secs: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+// ── Autoplay toggle pill (visual only) ────────────────────────────────────
+function AutoplayToggle() {
+  return (
+    <View style={apStyles.pill}>
+      <View style={apStyles.iconWrap}>
+        {/* small play triangle */}
+        <View style={apStyles.triangle} />
+      </View>
+    </View>
+  );
+}
+const apStyles = StyleSheet.create({
+  pill: {
+    width: 42,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconWrap: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  triangle: {
+    width: 0,
+    height: 0,
+    borderTopWidth: 4,
+    borderBottomWidth: 4,
+    borderLeftWidth: 7,
+    borderTopColor: "transparent",
+    borderBottomColor: "transparent",
+    borderLeftColor: "#000",
+    marginLeft: 1,
+  },
+});
+
+// ── CC badge (visual only) ─────────────────────────────────────────────────
+function CCBadge() {
+  return (
+    <View style={ccStyles.box}>
+      <Text style={ccStyles.text}>CC</Text>
+    </View>
+  );
+}
+const ccStyles = StyleSheet.create({
+  box: {
+    width: 30,
+    height: 22,
+    borderRadius: 3,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.75)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  text: {
+    fontSize: 10,
+    color: "#fff",
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+});
+
 // ── Main screen ───────────────────────────────────────────────────────────
 export default function WatchVideoScreen() {
   const insets        = useSafeAreaInsets();
@@ -266,45 +335,112 @@ export default function WatchVideoScreen() {
         {showControls && (
           <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
 
-            {/* Top bar — X button */}
-            <View style={[styles.topBar, { paddingTop: insets.top + 6, paddingLeft: leftPad, paddingRight: rightPad }]}>
-              <Pressable onPress={handleBack} hitSlop={14} style={styles.topBtn}>
-                <Feather name="x" size={22} color="rgba(255,255,255,0.9)" />
+            {/* ── TOP BAR ──────────────────────────────────────────────── */}
+            <View style={[styles.topBar, { paddingTop: insets.top + 4, paddingLeft: leftPad, paddingRight: rightPad }]}>
+
+              {/* Back chevron */}
+              <Pressable onPress={handleBack} hitSlop={14} style={styles.topBackBtn}>
+                <Feather name="chevron-down" size={24} color="#FFFFFF" />
               </Pressable>
-              {/* Duration badge */}
-              <View style={styles.durationBadge}>
-                <Text style={styles.durationText}>{VIDEO_DURATION_SECONDS}s challenge</Text>
+
+              {/* Title + channel */}
+              <View style={styles.topTitleBlock}>
+                <Text style={styles.topTitle} numberOfLines={1}>Video Title</Text>
+                <Text style={styles.topChannel}>@channelname</Text>
+              </View>
+
+              {/* Right icon group */}
+              <View style={styles.topRightIcons}>
+                <AutoplayToggle />
+                <Pressable hitSlop={10} style={styles.topIconBtn}>
+                  <Feather name="cast" size={20} color="#FFFFFF" />
+                </Pressable>
+                <Pressable hitSlop={10} style={styles.topIconBtn}>
+                  <CCBadge />
+                </Pressable>
+                <Pressable hitSlop={10} style={styles.topIconBtn}>
+                  <Feather name="settings" size={20} color="#FFFFFF" />
+                </Pressable>
               </View>
             </View>
 
-            {/* Centre play/pause button */}
+            {/* ── CENTRE TRANSPORT CONTROLS ────────────────────────────── */}
             <View style={styles.centreZone} pointerEvents="box-none">
-              <Pressable onPress={handlePlayPause} style={styles.playBtn} hitSlop={16}>
+              {/* Skip previous */}
+              <Pressable hitSlop={16} style={styles.skipBtn}>
+                <Feather name="skip-back" size={34} color="rgba(210,210,210,0.85)" />
+              </Pressable>
+
+              {/* Play / Pause — plain icon, no circle */}
+              <Pressable onPress={handlePlayPause} hitSlop={16} style={styles.playBtnArea}>
                 <Feather
                   name={isPlaying ? "pause" : "play"}
-                  size={36}
+                  size={52}
                   color="#FFFFFF"
-                  style={isPlaying ? {} : { marginLeft: 4 }}
+                  style={isPlaying ? {} : { marginLeft: 5 }}
                 />
+              </Pressable>
+
+              {/* Skip next */}
+              <Pressable hitSlop={16} style={styles.skipBtn}>
+                <Feather name="skip-forward" size={34} color="rgba(210,210,210,0.85)" />
               </Pressable>
             </View>
 
-            {/* Bottom controls bar (YouTube-style) */}
-            <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 14) + 4, paddingLeft: leftPad, paddingRight: rightPad }]}>
+            {/* ── BOTTOM AREA ──────────────────────────────────────────── */}
+            <View style={[styles.bottomArea, { paddingBottom: Math.max(insets.bottom, 10), paddingLeft: leftPad, paddingRight: rightPad }]}>
 
-              {/* Time row */}
-              <View style={styles.timeRow}>
-                <Text style={styles.timeElapsed}>{fmt(elapsed)}</Text>
-                <Text style={styles.timeSep}> / </Text>
-                <Text style={styles.timeTotal}>{fmt(VIDEO_DURATION_SECONDS)}</Text>
+              {/* Time + chapter name + fullscreen */}
+              <View style={styles.timeChapterRow}>
+                <Text style={styles.timeText}>
+                  {fmt(elapsed)}
+                  <Text style={styles.timeSep}> / </Text>
+                  {fmt(VIDEO_DURATION_SECONDS)}
+                </Text>
+                <Text style={styles.chapterText}>{"  "}Chapter Name{"  "}›</Text>
+                <View style={{ flex: 1 }} />
+                <Pressable hitSlop={10}>
+                  <Feather name="minimize" size={18} color="#FFFFFF" />
+                </Pressable>
               </View>
 
-              {/* Progress bar */}
+              {/* Progress bar — YouTube red */}
               <View style={styles.progressTrack}>
-                {/* Filled portion */}
-                <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
-                {/* Scrubber dot */}
+                <View style={[styles.progressFill, { width: `${progress * 100}%` as any }]} />
                 <View style={[styles.scrubberDot, { left: `${progress * 100}%` as any }]} />
+              </View>
+
+              {/* Action bar */}
+              <View style={styles.actionBar}>
+                {/* Left icons */}
+                <Pressable hitSlop={10} style={styles.actionBtn}>
+                  <Feather name="thumbs-up" size={22} color="#FFFFFF" />
+                </Pressable>
+                <Pressable hitSlop={10} style={styles.actionBtn}>
+                  <Feather name="thumbs-down" size={22} color="#FFFFFF" />
+                </Pressable>
+                <Pressable hitSlop={10} style={styles.actionBtn}>
+                  <Feather name="message-square" size={22} color="#FFFFFF" />
+                </Pressable>
+                <Pressable hitSlop={10} style={styles.actionBtn}>
+                  <Feather name="bookmark" size={22} color="#FFFFFF" />
+                </Pressable>
+                <Pressable hitSlop={10} style={styles.actionBtn}>
+                  <Feather name="share-2" size={22} color="#FFFFFF" />
+                </Pressable>
+                <Pressable hitSlop={10} style={styles.actionBtn}>
+                  <Feather name="more-horizontal" size={22} color="#FFFFFF" />
+                </Pressable>
+
+                <View style={{ flex: 1 }} />
+
+                {/* More videos */}
+                <Pressable hitSlop={6} style={styles.moreVideosBtn}>
+                  <Text style={styles.moreVideosText}>More videos</Text>
+                  <View style={styles.moreVideosThumbnail}>
+                    <Feather name="play-circle" size={20} color="rgba(255,255,255,0.7)" />
+                  </View>
+                </Pressable>
               </View>
 
             </View>
@@ -366,62 +502,75 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingBottom: 8,
-  },
-
-  topBtn: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.45)",
-    borderRadius: 18,
-  },
-
-  durationBadge: {
-    backgroundColor: "rgba(0,0,0,0.52)",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-  },
-
-  durationText: {
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
-    color: "rgba(255,255,255,0.72)",
-  },
-
-  // ── Centre zone ───────────────────────────────────────────────────────
-  centreZone: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  playBtn: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "rgba(0,0,0,0.52)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.3)",
-  },
-
-  // ── Bottom bar ────────────────────────────────────────────────────────
-  bottomBar: {
-    paddingTop: 12,
-    paddingHorizontal: 16,
+    paddingBottom: 6,
     gap: 8,
   },
 
-  timeRow: { flexDirection: "row", alignItems: "baseline" },
+  topBackBtn: {
+    paddingRight: 2,
+  },
 
-  timeElapsed: {
+  topTitleBlock: {
+    flex: 1,
+    justifyContent: "center",
+  },
+
+  topTitle: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
+    lineHeight: 18,
+  },
+
+  topChannel: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.6)",
+    marginTop: 1,
+  },
+
+  topRightIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  topIconBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  // ── Centre transport controls ─────────────────────────────────────────
+  centreZone: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 48,
+  },
+
+  skipBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  playBtnArea: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  // ── Bottom area ────────────────────────────────────────────────────────
+  bottomArea: {
+    gap: 6,
+    paddingTop: 4,
+  },
+
+  timeChapterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  timeText: {
     fontSize: 13,
     fontFamily: "Inter_600SemiBold",
     color: "#FFFFFF",
@@ -433,10 +582,10 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.5)",
   },
 
-  timeTotal: {
-    fontSize: 12,
+  chapterText: {
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.6)",
+    color: "rgba(255,255,255,0.75)",
   },
 
   // Progress bar — YouTube red
@@ -444,7 +593,6 @@ const styles = StyleSheet.create({
     height: 4,
     backgroundColor: "rgba(255,255,255,0.22)",
     borderRadius: 2,
-    marginBottom: 6,
     position: "relative",
     justifyContent: "center",
   },
@@ -460,17 +608,55 @@ const styles = StyleSheet.create({
 
   scrubberDot: {
     position: "absolute",
-    width: 13,
-    height: 13,
+    width: 14,
+    height: 14,
     borderRadius: 7,
     backgroundColor: "#FF0000",
-    top: "50%",
-    marginTop: -6.5,
-    marginLeft: -6.5,
+    top: "50%" as any,
+    marginTop: -7,
+    marginLeft: -7,
     shadowColor: "#FF0000",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.7,
     shadowRadius: 4,
+    elevation: 3,
+  },
+
+  // Action bar
+  actionBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingTop: 2,
+  },
+
+  actionBtn: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+
+  moreVideosBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  moreVideosText: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: "#FFFFFF",
+  },
+
+  moreVideosThumbnail: {
+    width: 52,
+    height: 36,
+    borderRadius: 4,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
 
   // ── Rotate overlay ────────────────────────────────────────────────────
