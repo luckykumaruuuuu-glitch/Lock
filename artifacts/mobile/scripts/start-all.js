@@ -183,9 +183,13 @@ const metroEnv = {
   REACT_NATIVE_PACKAGER_HOSTNAME: process.env.REPLIT_DEV_DOMAIN || "",
 };
 
+// Port 18115 matches artifact.toml's localPort so Replit's artifact router
+// correctly proxies the expo-domain preview. Metro also exposes /status at
+// this port which satisfies the ensurePreviewReachable health-check.
+const METRO_PORT = process.env.EXPO_PORT || "18115";
 const metro = spawn(
   "pnpm",
-  ["exec", "expo", "start", "--localhost", "--port", "8082"],
+  ["exec", "expo", "start", "--localhost", "--port", METRO_PORT],
   { cwd: ROOT, stdio: "inherit", env: metroEnv }
 );
 
