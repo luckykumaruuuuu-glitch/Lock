@@ -1,15 +1,14 @@
 /**
  * mock-reels.tsx — Fake Instagram Reels interface for "Phone Flip Down" unlock challenge.
  *
- * How it works:
- *   • Full-screen vertical FlatList — each "reel" is a solid-colour placeholder (no real video).
- *   • Right-side chrome: avatar, Like, Comment, Share, More — identical layout to real Reels.
- *   • Floating counter badge (top-right) tracks how many reels the user has scrolled through.
- *   • When TARGET_SCROLLS is reached:
- *       1. Haptic burst (Heavy × 3 rapid-fire)
- *       2. White flash overlay + counter scale-punch animation
- *       3. After 600 ms: ReelsLock toggled OFF via native bridge + Instagram opened
- *   • No popup, no dialog, no text message on completion.
+ * Counting rule (mirrors ReelSessionTracker.kt):
+ *   • maxForwardIndex tracks the highest reel index EVER reached this session.
+ *   • A scroll only counts when the new index > maxForwardIndex — i.e. a genuinely
+ *     never-seen-before reel. Going back and re-scrolling forward never increments.
+ *
+ * Visual-only interactions (no backend / no persistence):
+ *   • Like button  — heart fill/pulse animation on tap; local state only.
+ *   • Follow button — toggles "Follow" ↔ "Following" text/style; local state only.
  *
  * To change the target: edit TARGET_SCROLLS below.
  * Native ReelsLockActivity / DuckPal / permissions — all untouched.
@@ -41,28 +40,99 @@ const TARGET_SCROLLS = 10;
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
 // ── Fake reel content ─────────────────────────────────────────────────────────
-// Replace `bg` with real image sources when ready. Keep placeholder colours for now.
 const REELS = [
-  { id: "r1",  bg: "#0e0a1f", accent: "#7C3AED", user: "@cosmic.vibes",   caption: "the universe is vast 🌌",       likes: "48.2k", comments: "1.3k", shares: "892" },
-  { id: "r2",  bg: "#070f1c", accent: "#2563EB", user: "@ocean.waves",    caption: "deep blue feelings 🌊",         likes: "31.7k", comments: "984",  shares: "512" },
-  { id: "r3",  bg: "#071810", accent: "#16A34A", user: "@forest.walks",   caption: "into the wild 🌿",              likes: "22.4k", comments: "730",  shares: "411" },
+  { id: "r1",  bg: "#0e0a1f", accent: "#7C3AED", user: "@cosmic.vibes",   caption: "the universe is vast 🌌",       likes: "48.2k", comments: "1.3k", shares: "892"  },
+  { id: "r2",  bg: "#070f1c", accent: "#2563EB", user: "@ocean.waves",    caption: "deep blue feelings 🌊",         likes: "31.7k", comments: "984",  shares: "512"  },
+  { id: "r3",  bg: "#071810", accent: "#16A34A", user: "@forest.walks",   caption: "into the wild 🌿",              likes: "22.4k", comments: "730",  shares: "411"  },
   { id: "r4",  bg: "#1c1007", accent: "#D97706", user: "@golden.hour",    caption: "chasing sunsets 🌅",            likes: "64.1k", comments: "2.1k", shares: "1.8k" },
-  { id: "r5",  bg: "#1c0710", accent: "#DB2777", user: "@night.city",     caption: "city lights never sleep 🌃",    likes: "18.9k", comments: "#442", shares: "290" },
+  { id: "r5",  bg: "#1c0710", accent: "#DB2777", user: "@night.city",     caption: "city lights never sleep 🌃",    likes: "18.9k", comments: "442",  shares: "290"  },
   { id: "r6",  bg: "#071c1c", accent: "#0891B2", user: "@chill.sounds",   caption: "lofi & relax 🎵",               likes: "55.8k", comments: "1.7k", shares: "3.2k" },
-  { id: "r7",  bg: "#101c07", accent: "#84CC16", user: "@minimal.art",    caption: "less is more ✨",               likes: "41.0k", comments: "1.1k", shares: "720" },
-  { id: "r8",  bg: "#1c1c07", accent: "#CA8A04", user: "@retro.vibes",    caption: "good old days 📼",              likes: "27.3k", comments: "803",  shares: "560" },
-  { id: "r9",  bg: "#1c071c", accent: "#9333EA", user: "@dream.state",    caption: "somewhere in my mind 💭",       likes: "39.5k", comments: "1.4k", shares: "910" },
+  { id: "r7",  bg: "#101c07", accent: "#84CC16", user: "@minimal.art",    caption: "less is more ✨",               likes: "41.0k", comments: "1.1k", shares: "720"  },
+  { id: "r8",  bg: "#1c1c07", accent: "#CA8A04", user: "@retro.vibes",    caption: "good old days 📼",              likes: "27.3k", comments: "803",  shares: "560"  },
+  { id: "r9",  bg: "#1c071c", accent: "#9333EA", user: "@dream.state",    caption: "somewhere in my mind 💭",       likes: "39.5k", comments: "1.4k", shares: "910"  },
   { id: "r10", bg: "#07071c", accent: "#6366F1", user: "@midnight.sky",   caption: "stars above 🌟",                likes: "72.0k", comments: "2.5k", shares: "2.1k" },
-  { id: "r11", bg: "#141414", accent: "#D1D5DB", user: "@shadow.art",     caption: "contrast is key 🖤",            likes: "15.6k", comments: "511",  shares: "338" },
-  { id: "r12", bg: "#0f1a1c", accent: "#34D399", user: "@wave.length",    caption: "feel the frequency 〰️",        likes: "29.8k", comments: "867",  shares: "614" },
+  { id: "r11", bg: "#141414", accent: "#D1D5DB", user: "@shadow.art",     caption: "contrast is key 🖤",            likes: "15.6k", comments: "511",  shares: "338"  },
+  { id: "r12", bg: "#0f1a1c", accent: "#34D399", user: "@wave.length",    caption: "feel the frequency 〰️",        likes: "29.8k", comments: "867",  shares: "614"  },
 ] as const;
 
+type ReelData = (typeof REELS)[number];
+
+// ── Static action button ───────────────────────────────────────────────────────
+function ActionBtn({
+  icon,
+  label,
+}: {
+  icon: React.ComponentProps<typeof Feather>["name"];
+  label: string;
+}) {
+  return (
+    <View style={styles.actionBtn}>
+      <Feather name={icon} size={27} color="#FFFFFF" />
+      {label ? <Text style={styles.actionLabel}>{label}</Text> : null}
+    </View>
+  );
+}
+
+// ── Like button — visual-only, heart fill + pulse on tap ──────────────────────
+function LikeBtn({ likes }: { likes: string }) {
+  const [isLiked, setIsLiked] = useState(false);
+  const scale = useRef(new Animated.Value(1)).current;
+
+  function handlePress() {
+    setIsLiked((v) => !v);
+    // Scale-punch: grow then settle back
+    Animated.sequence([
+      Animated.spring(scale, {
+        toValue: 1.42,
+        useNativeDriver: true,
+        speed: 50,
+        bounciness: 18,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 22,
+        bounciness: 8,
+      }),
+    ]).start();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  }
+
+  return (
+    <Pressable onPress={handlePress} style={styles.actionBtn} hitSlop={8}>
+      <Animated.View style={{ transform: [{ scale }] }}>
+        {/* Feather "heart" is always outline; colour change to red gives the liked look */}
+        <Feather name="heart" size={27} color={isLiked ? "#FF3B30" : "#FFFFFF"} />
+      </Animated.View>
+      <Text style={[styles.actionLabel, isLiked && styles.likedLabel]}>{likes}</Text>
+    </Pressable>
+  );
+}
+
+// ── Follow button — visual-only toggle "Follow" ↔ "Following" ────────────────
+function FollowBtn({ accent }: { accent: string }) {
+  const [isFollowing, setIsFollowing] = useState(false);
+  return (
+    <Pressable
+      onPress={() => setIsFollowing((v) => !v)}
+      style={[styles.followBtn, isFollowing && styles.followBtnActive]}
+      hitSlop={6}
+    >
+      <Text style={[styles.followBtnText, isFollowing && styles.followBtnTextActive]}>
+        {isFollowing ? "Following" : "Follow"}
+      </Text>
+    </Pressable>
+  );
+}
+
 // ── Single reel item ──────────────────────────────────────────────────────────
+// React.memo is kept — it prevents re-renders from the parent FlatList passing
+// new props. Internal useState/useRef hooks work normally inside memo-wrapped components.
 const ReelItem = React.memo(function ReelItem({
   item,
   bottomInset,
 }: {
-  item: (typeof REELS)[number];
+  item: ReelData;
   bottomInset: number;
 }) {
   return (
@@ -72,17 +142,19 @@ const ReelItem = React.memo(function ReelItem({
 
       {/* ── Right-side action column ──────────────────────────────── */}
       <View style={[styles.rightBar, { paddingBottom: bottomInset + 90 }]}>
-        {/* Profile avatar + follow dot */}
-        <View style={styles.avatarWrap}>
+
+        {/* Profile avatar + Follow toggle */}
+        <View style={styles.avatarSection}>
           <View style={[styles.avatarCircle, { borderColor: item.accent }]}>
             <Feather name="user" size={17} color={item.accent} />
           </View>
-          <View style={[styles.followDot, { backgroundColor: item.accent }]}>
-            <Feather name="plus" size={9} color="#FFF" />
-          </View>
+          <FollowBtn accent={item.accent} />
         </View>
 
-        <ActionBtn icon="heart"          label={item.likes}    />
+        {/* Like — animated heart, visual only */}
+        <LikeBtn likes={item.likes} />
+
+        {/* Comment, Share, More — static */}
         <ActionBtn icon="message-circle" label={item.comments} />
         <ActionBtn icon="send"           label={item.shares}   />
         <ActionBtn icon="more-vertical"  label=""              />
@@ -106,35 +178,28 @@ const ReelItem = React.memo(function ReelItem({
   );
 });
 
-// ── Action button (right-side chrome) ─────────────────────────────────────────
-function ActionBtn({ icon, label }: { icon: React.ComponentProps<typeof Feather>["name"]; label: string }) {
-  return (
-    <View style={styles.actionBtn}>
-      <Feather name={icon} size={27} color="#FFFFFF" />
-      {label ? <Text style={styles.actionLabel}>{label}</Text> : null}
-    </View>
-  );
-}
-
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function MockReelsScreen() {
   const insets = useSafeAreaInsets();
 
   const [scrollCount, setScrollCount] = useState(0);
-  const [isDone, setIsDone]           = useState(false);
 
-  const completedRef    = useRef(false);
-  const currentIdxRef   = useRef(0);
-  const scrollCountRef  = useRef(0);
+  const completedRef     = useRef(false);
+  // currentIdxRef  — which reel is currently on screen (updated on every scroll)
+  const currentIdxRef    = useRef(0);
+  // maxForwardIdxRef — highest index ever reached this session (mirrors ReelSessionTracker.kt).
+  // A scroll is counted ONLY when newIdx > maxForwardIdx (never-seen-before reel).
+  // Back-scrolling and then re-scrolling forward does NOT increment the count.
+  const maxForwardIdxRef = useRef(-1);   // -1 = session start, reel-0 not yet counted
+  const scrollCountRef   = useRef(0);
 
-  const flashOpacity  = useRef(new Animated.Value(0)).current;
-  const counterScale  = useRef(new Animated.Value(1)).current;
+  const flashOpacity = useRef(new Animated.Value(0)).current;
+  const counterScale = useRef(new Animated.Value(1)).current;
 
   // ── Completion effect ─────────────────────────────────────────────────────
   function triggerCompletion() {
     if (completedRef.current) return;
     completedRef.current = true;
-    setIsDone(true);
 
     // Haptic burst — three heavy impacts in rapid succession
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
@@ -143,18 +208,8 @@ export default function MockReelsScreen() {
 
     // Counter scale-punch
     Animated.sequence([
-      Animated.spring(counterScale, {
-        toValue: 1.6,
-        useNativeDriver: true,
-        speed: 40,
-        bounciness: 14,
-      }),
-      Animated.spring(counterScale, {
-        toValue: 1,
-        useNativeDriver: true,
-        speed: 16,
-        bounciness: 8,
-      }),
+      Animated.spring(counterScale, { toValue: 1.6,  useNativeDriver: true, speed: 40, bounciness: 14 }),
+      Animated.spring(counterScale, { toValue: 1,    useNativeDriver: true, speed: 16, bounciness: 8  }),
     ]).start();
 
     // White flash
@@ -175,18 +230,30 @@ export default function MockReelsScreen() {
   }
 
   // ── Scroll-end handler ────────────────────────────────────────────────────
-  const handleScrollEnd = useCallback((e: { nativeEvent: { contentOffset: { y: number } } }) => {
-    if (completedRef.current) return;
-    const idx = Math.round(e.nativeEvent.contentOffset.y / SCREEN_H);
-    if (idx !== currentIdxRef.current) {
-      currentIdxRef.current = idx;
-      scrollCountRef.current += 1;
-      setScrollCount(scrollCountRef.current);
-      if (scrollCountRef.current >= TARGET_SCROLLS) {
-        triggerCompletion();
+  // maxForwardIndex pattern (same as ReelSessionTracker.kt):
+  //   • Count a scroll ONLY when newIdx > maxForwardIdx (a brand-new reel, never seen before).
+  //   • Back-scroll (newIdx < currentIdx) → no count.
+  //   • Forward re-scroll to an already-seen reel (newIdx <= maxForwardIdx) → no count.
+  const handleScrollEnd = useCallback(
+    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+      if (completedRef.current) return;
+      const newIdx = Math.round(e.nativeEvent.contentOffset.y / SCREEN_H);
+      if (newIdx === currentIdxRef.current) return; // same reel, no change
+      currentIdxRef.current = newIdx;
+
+      if (newIdx > maxForwardIdxRef.current) {
+        // Genuinely new reel — count it
+        maxForwardIdxRef.current = newIdx;
+        scrollCountRef.current  += 1;
+        setScrollCount(scrollCountRef.current);
+        if (scrollCountRef.current >= TARGET_SCROLLS) {
+          triggerCompletion();
+        }
       }
-    }
-  }, []);
+      // else: back-scroll or forward to an already-seen reel → no-op
+    },
+    [],
+  );
 
   // ── Back handler ──────────────────────────────────────────────────────────
   function handleBack() {
@@ -201,10 +268,10 @@ export default function MockReelsScreen() {
 
       {/* ── Reels FlatList ─────────────────────────────────────────────── */}
       <FlatList
-        data={REELS as unknown as typeof REELS[number][]}
+        data={REELS as unknown as ReelData[]}
         keyExtractor={(r) => r.id}
         renderItem={({ item }) => (
-          <ReelItem item={item as typeof REELS[number]} bottomInset={insets.bottom} />
+          <ReelItem item={item} bottomInset={insets.bottom} />
         )}
         pagingEnabled
         showsVerticalScrollIndicator={false}
@@ -218,6 +285,10 @@ export default function MockReelsScreen() {
         scrollEnabled={!completedRef.current}
         bounces={false}
         overScrollMode="never"
+        // Keep all items in memory — small list (12 reels), prevents state reset on recycle
+        windowSize={REELS.length}
+        maxToRenderPerBatch={REELS.length}
+        initialNumToRender={REELS.length}
       />
 
       {/* ── Top chrome: X button + For You / Following tabs ───────────── */}
@@ -235,7 +306,6 @@ export default function MockReelsScreen() {
           <Text style={[styles.tabText, styles.tabActive]}>For You</Text>
         </View>
 
-        {/* Spacer to balance the X button */}
         <View style={styles.topBtn} />
       </View>
 
@@ -301,7 +371,12 @@ const styles = StyleSheet.create({
     gap: 22,
   },
 
-  avatarWrap: { alignItems: "center", marginBottom: 2 },
+  // Avatar circle + follow button stacked vertically
+  avatarSection: {
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 2,
+  },
 
   avatarCircle: {
     width: 44,
@@ -313,18 +388,33 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  followDot: {
-    position: "absolute",
-    bottom: -7,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "#000000",
+  // Follow / Following pill button
+  followBtn: {
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.75)",
+    backgroundColor: "transparent",
   },
 
+  followBtnActive: {
+    borderColor: "rgba(255,255,255,0.28)",
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+
+  followBtnText: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
+    textAlign: "center",
+  },
+
+  followBtnTextActive: {
+    color: "rgba(255,255,255,0.55)",
+  },
+
+  // Generic action button
   actionBtn: { alignItems: "center", gap: 3 },
 
   actionLabel: {
@@ -335,6 +425,9 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
+
+  // Like label when liked
+  likedLabel: { color: "#FF3B30" },
 
   // ── Bottom info ───────────────────────────────────────────────────────────
   bottomInfo: {
@@ -381,10 +474,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.18)",
   },
 
-  progressFill: {
-    height: 2,
-    borderRadius: 1,
-  },
+  progressFill: { height: 2, borderRadius: 1 },
 
   // ── Top overlay ───────────────────────────────────────────────────────────
   topOverlay: {
