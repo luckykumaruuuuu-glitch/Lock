@@ -1,0 +1,26 @@
+"Doosre card ('Forehead Scan') par CLICK-HANDLER add karo — tap karne par ek NAYI screen khule: 'Watch Video' task.
+1. Video-content (placeholder):
+Koi asli stock-footage NAHI chahiye — bas ek CONTINUOUS RANDOM-MOVEMENT/ANIMATION screen par chalti rahe (jaise koi simple moving-gradient, particle-effect, ya placeholder-visual jo random change hota rahe) — jaisa ki video chal rahi ho.
+2. Duration — CONFIGURABLE:
+Abhi DEFAULT 1 MINUTE rakho, LEKIN ek CONSTANT/VARIABLE ke roop mein (jaise const VIDEO_DURATION_SECONDS = 60), taaki baad mein aasani se badal sakein (2 minute, 5 minute, jo bhi).
+3. ORIENTATION-LOCK — sabse zaroori part:
+Video SIRF HORIZONTAL/LANDSCAPE mode mein chalni chahiye
+Agar phone abhi VERTICAL/PORTRAIT mode mein hai — ek ANIMATION/OVERLAY dikhao jo user ko bataye 'Rotate your phone to landscape' (ya jo bhi visual-indication ho — phone-rotate-icon jaisa kuch) — VIDEO PAUSED rahegi tab tak
+Jaise hi user PHONE HORIZONTAL kare — video AUTOMATICALLY START ho jaaye
+Agar beech mein wapas VERTICAL mode mein jaaye — video PAUSE ho jaaye, wahi 'rotate-to-landscape' animation dobara aa jaaye
+React Native mein orientation-detection ke liye expo-screen-orientation ya similar library use karo
+4. Video-player-controls (YouTube-jaisa):
+Play/Pause button
+Progress-bar (kitna time beet gaya / kitna baaki hai)
+Basic controls jo normally video-player mein hote hain
+5. Completion-logic (SAME jaisa pehle task mein tha):
+Jab poori duration (abhi 60-seconds) complete ho jaaye:
+KOI POPUP/TEXT-DIALOG NAHI — sirf ek VISUAL/HAPTIC completion-effect (jaisa Task-1 mein tha)
+Turant Instagram ki NORMAL home-feed par REDIRECT
+'Reels Lock' TOGGLE ko AUTOMATICALLY OFF karo
+Zaroori:
+Main ek YouTube-reference-screenshot bhi de raha hoon — us controls/layout ke exact-positioning ko us screenshot ke according banao
+Pehle task ('Phone Flip Down' — scroll-counting) ka koi bhi existing logic/code MAT CHHEDNA
+5-card-grid ka overall design mat chhedna, sirf is doosre card par click-handler add karna hai
+Baaki 3 cards (Walk, Jump, Scroll) abhi bhi untouched rahne do
+Fix ke baad confirm karo — 'Forehead Scan' tap karne par video-screen khulti hai, vertical-mode mein rotate-prompt dikhta hai, horizontal karne par video chalti hai, aur 60-seconds baad completion-effect + redirect + toggle-off sahi kaam karta ha

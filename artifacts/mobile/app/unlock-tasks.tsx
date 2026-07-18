@@ -91,11 +91,14 @@ export default function UnlockTasksScreen() {
 
   function handleCardPress(id: string) {
     if (id === "phone_flip") {
-      // Navigate to the mock-reels scroll challenge screen
       router.push("/mock-reels");
       return;
     }
-    // Other challenges — wired up later
+    if (id === "forehead") {
+      router.push("/watch-video");
+      return;
+    }
+    // Walk, Jump, Scroll — wired up later
     console.log(`[UnlockTasks] Card tapped: ${id}`);
   }
 

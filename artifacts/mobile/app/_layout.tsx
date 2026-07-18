@@ -37,7 +37,7 @@ const queryClient = new QueryClient();
 
 // Routes that bypass the onboarding/setup guard — accessible directly in web
 // preview for design/dev iteration without completing the full setup flow.
-const DEV_BYPASS_ROUTES = ["/unlock-tasks", "/mock-reels"];
+const DEV_BYPASS_ROUTES = ["/unlock-tasks", "/mock-reels", "/watch-video"];
 
 function SetupGuard({ children }: { children: React.ReactNode }) {
   const { setupComplete, loading } = usePermissionStatus();
@@ -224,6 +224,15 @@ function RootLayoutNav() {
         />
         <Stack.Screen
           name="mock-reels"
+          options={{
+            headerShown: false,
+            animation: "slide_from_bottom",
+            animationDuration: 320,
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="watch-video"
           options={{
             headerShown: false,
             animation: "slide_from_bottom",
