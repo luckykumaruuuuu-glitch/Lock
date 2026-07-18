@@ -458,6 +458,17 @@ export default function SettingsScreen() {
           />
         </GlassCard>
 
+        {/* UPDATE — shortcut to JS UnlockTasks screen */}
+        <SectionLabel label="Update" />
+        <GlassCard padding={0}>
+          <SettingRow
+            icon="unlock"
+            label="Unlock Tasks Screen"
+            onPress={() => router.push("/unlock-tasks")}
+            last
+          />
+        </GlassCard>
+
         {/* DEVELOPER */}
         {Platform.OS === "android" && (
           <>

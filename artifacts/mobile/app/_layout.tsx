@@ -8,7 +8,7 @@ import {
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router, Stack, useSegments } from "expo-router";
+import { router, Stack, usePathname, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useRef, useState } from "react";
@@ -35,10 +35,15 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
+// Routes that bypass the onboarding/setup guard — accessible directly in web
+// preview for design/dev iteration without completing the full setup flow.
+const DEV_BYPASS_ROUTES = ["/unlock-tasks"];
+
 function SetupGuard({ children }: { children: React.ReactNode }) {
   const { setupComplete, loading } = usePermissionStatus();
   const { startupSyncStatus } = useFirebaseSyncContext();
   const segments = useSegments();
+  const pathname = usePathname();
   const hasRedirected = useRef(false);
   const [routeReady, setRouteReady] = useState(false);
 
@@ -60,19 +65,28 @@ function SetupGuard({ children }: { children: React.ReactNode }) {
     (async () => {
       try {
         if (!hasRedirected.current) {
-          const inSetup = segments[0] === "setup";
+          const inSetup      = segments[0] === "setup";
           const inOnboarding = segments[0] === "onboarding";
-          const onboardingDone = await AsyncStorage.getItem(ONBOARDING_DONE_KEY);
+          // Dev/test screens bypass the guard so they can be previewed
+          // directly in web preview without completing onboarding first.
+          const inDevScreen  = segments[0] === "unlock-tasks";
 
-          if (!onboardingDone && !inOnboarding) {
-            hasRedirected.current = true;
-            router.replace("/onboarding");
-          } else if (onboardingDone && setupComplete === false && !inSetup) {
-            hasRedirected.current = true;
-            router.replace("/setup");
-          } else if (onboardingDone && setupComplete === true && inSetup) {
-            hasRedirected.current = true;
-            router.replace("/(tabs)");
+          // usePathname() resolves on the very first render (unlike useSegments
+          // which can be empty [] initially), so it is reliable for bypass checks.
+          const isDevBypass = DEV_BYPASS_ROUTES.some((r) => pathname.startsWith(r));
+
+          if (!isDevBypass) {
+            const onboardingDone = await AsyncStorage.getItem(ONBOARDING_DONE_KEY);
+            if (!onboardingDone && !inOnboarding) {
+              hasRedirected.current = true;
+              router.replace("/onboarding");
+            } else if (onboardingDone && setupComplete === false && !inSetup) {
+              hasRedirected.current = true;
+              router.replace("/setup");
+            } else if (onboardingDone && setupComplete === true && inSetup) {
+              hasRedirected.current = true;
+              router.replace("/(tabs)");
+            }
           }
         }
       } catch {
@@ -196,6 +210,16 @@ function RootLayoutNav() {
             animationDuration: 300,
             gestureEnabled: true,
             gestureDirection: "horizontal",
+          }}
+        />
+        <Stack.Screen
+          name="unlock-tasks"
+          options={{
+            headerShown: false,
+            animation: "slide_from_bottom",
+            animationDuration: 280,
+            gestureEnabled: true,
+            gestureDirection: "vertical",
           }}
         />
       </Stack>
