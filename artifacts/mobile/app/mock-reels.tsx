@@ -223,14 +223,16 @@ export default function MockReelsScreen() {
       Animated.timing(flashOpacity, { toValue: 0,    duration: 480, useNativeDriver: true }),
     ]).start();
 
-    // After effect: disable ReelsLock + open Instagram
+    // After effect: navigate to Coming Soon screen
+    // (toggle-off + Instagram redirect kept below for future use)
     setTimeout(() => {
-      if (Platform.OS === "android" && NativeModules.ReelsLock) {
-        try { NativeModules.ReelsLock.setEnabled(false); } catch (_) {}
-      }
-      Linking.openURL("instagram://").catch(() => {
-        Linking.openURL("https://www.instagram.com").catch(() => {});
-      });
+      router.replace("/coming-soon");
+      // if (Platform.OS === "android" && NativeModules.ReelsLock) {
+      //   try { NativeModules.ReelsLock.setEnabled(false); } catch (_) {}
+      // }
+      // Linking.openURL("instagram://").catch(() => {
+      //   Linking.openURL("https://www.instagram.com").catch(() => {});
+      // });
     }, 620);
   }
 
