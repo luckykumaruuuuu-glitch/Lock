@@ -376,7 +376,7 @@ export default function WatchVideoScreen() {
     <View style={styles.root}>
 
       {/* ── Smoke color-fade background ───────────────────────────────── */}
-      <SmokeBackground screenW={width} screenH={height} />
+      <SmokeBackground screenW={dims.width} screenH={dims.height} />
 
       {/* ── Tap-to-show-controls area ────────────────────────────────── */}
       <Pressable style={StyleSheet.absoluteFill} onPress={handleTap}>
