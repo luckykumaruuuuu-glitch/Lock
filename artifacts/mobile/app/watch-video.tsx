@@ -415,11 +415,15 @@ export default function WatchVideoScreen() {
   }
 
   // ── Derived values ───────────────────────────────────────────────────────
+  // effectiveLandscape: treat bypass as landscape for ALL layout purposes —
+  // controls, padding, and render logic — so the UI looks like landscape
+  // even when the phone is physically portrait.
+  const effectiveLandscape = isLandscape || bypassOrientation;
   const progress    = Math.min(elapsed / VIDEO_DURATION_SECONDS, 1);
   const remaining   = Math.max(VIDEO_DURATION_SECONDS - elapsed, 0);
   const isDone      = elapsed >= VIDEO_DURATION_SECONDS;
-  const leftPad     = isLandscape ? Math.max(insets.left, 16) : 16;
-  const rightPad    = isLandscape ? Math.max(insets.right, 16) : 16;
+  const leftPad     = effectiveLandscape ? Math.max(insets.left, 16) : 16;
+  const rightPad    = effectiveLandscape ? Math.max(insets.right, 16) : 16;
 
   return (
     <View style={styles.root}>
@@ -552,17 +556,17 @@ export default function WatchVideoScreen() {
       {!isLandscape && !bypassOrientation && (
         <View style={styles.rotateOverlay}>
           <RotateIcon />
-          <Text style={styles.rotateTitle}>Rotate your phone</Text>
-          {/* Tapping this subtitle bypasses orientation — permanent fallback
-              for users whose sensor doesn't fire reliably. Sensor detection
-              keeps running in parallel so auto-rotate still works if it can. */}
+          {/* Tapping this title bypasses orientation — permanent fallback for
+              users whose sensor doesn't fire reliably. Sensor detection keeps
+              running in parallel so auto-rotate still works if it can. */}
           <Pressable onPress={handleBypassOrientation} hitSlop={12}>
             {({ pressed }) => (
-              <Text style={[styles.rotateSubtitle, pressed && styles.rotateSubtitlePressed]}>
-                Video plays in landscape mode only
+              <Text style={[styles.rotateTitle, pressed && styles.rotateTitlePressed]}>
+                Rotate your phone
               </Text>
             )}
           </Pressable>
+          <Text style={styles.rotateSubtitle}>Video plays in landscape mode only</Text>
         </View>
       )}
 
@@ -791,10 +795,9 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     color: "rgba(255,255,255,0.6)",
     textAlign: "center",
-    textDecorationLine: "underline",
   },
 
-  rotateSubtitlePressed: {
+  rotateTitlePressed: {
     opacity: 0.4,
   },
 
