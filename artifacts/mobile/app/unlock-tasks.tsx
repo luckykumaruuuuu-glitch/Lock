@@ -90,7 +90,12 @@ export default function UnlockTasksScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   function handleCardPress(id: string) {
-    // Placeholder — individual challenge logic wired up later
+    if (id === "phone_flip") {
+      // Navigate to the mock-reels scroll challenge screen
+      router.push("/mock-reels");
+      return;
+    }
+    // Other challenges — wired up later
     console.log(`[UnlockTasks] Card tapped: ${id}`);
   }
 

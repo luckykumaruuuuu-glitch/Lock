@@ -1,0 +1,18 @@
+"Pehle 5-card grid (jo already bana hai — 'Choose a challenge to unlock' screen) ka DESIGN bilkul mat chhedna — jaisa hai waisa hi rehne do (drag-handle, back-arrow, gradient-overlay, rounded-corners, sabhi 5 card-labels: Phone Flip Down, Forehead Scan, Walk, Jump, Scroll).
+SIRF 'Phone Flip Down' CARD par CLICK-HANDLER add karo — tap karne par ek NAYI screen khule jisme yeh logic ho:
+Naya screen — Mock-Reels-Scroll-Interface:
+Ek FAKE/MOCK Instagram-Reels-jaisa UI banao — poora visual-CHROME jaisa asli Reels mein hota hai (like-icon, comment-icon, share-icon, profile-icon/follow-button — sab UI-elements), LEKIN koi asli video-content NAHI honi chahiye — bas placeholder-background (solid-color ya simple-image), user vertically UP-DOWN scroll kar sake
+Iske UPAR ek FLOATING-COUNTER-ICON ho jo SCROLL-COUNT track kare — jaise-jaise user scroll kare (ek 'reel' se agle 'reel' par jaaye), count badhta jaaye
+TARGET-NUMBER CONFIGURABLE rakho — abhi default 10 set karo, LEKIN ek CONSTANT/VARIABLE ke roop mein (jaise const TARGET_SCROLLS = 10), taaki baad mein aasani se 100, 200, jo bhi number ho, badal sakein
+Jab TARGET pura ho jaaye (abhi 10 scrolls):
+KOI POPUP/DIALOG/TEXT-MESSAGE NAHI dikhana
+Sirf ek VISUAL/HAPTIC 'COMPLETION-EFFECT' (jaise chhota confetti-animation, glow-flash, ya vibration — jo bhi lightweight-aur-satisfying lage) — turant, bina kisi text ke
+Effect ke turant baad — SEEDHA Instagram ki NORMAL home-feed par REDIRECT (jaisa existing Skip-button karta hai us platform ki home par bhejta hai)
+USI WAQT — 'Reels Lock' TOGGLE (jo Settings mein hai) ko AUTOMATICALLY OFF kar do (SharedPreferences update karke, jaisa pehle discuss hua tha)
+Baaki 4 cards (Forehead Scan, Walk, Jump, Scroll) par ABHI KUCH MAT JODNA — unka click-behavior baad mein banayenge, abhi sirf visual/static rehne do jaisa hai.
+Zaroori:
+Naam SHORT hi rakho jo already hai — mat badalna
+Card-images abhi PLACEHOLDER rehne do — user khud baad mein real-images lagayega
+5-card-grid ka overall-design/layout bilkul mat chhedna
+Baaki koi existing function (ReelsLockActivity, DuckPal, permissions, Debug-Log) bilkul mat chhedna
+Fix ke baad confirm karo — 'Phone Flip Down' tap karne par naya mock-scroll-screen khulta hai, 10-scrolls ke baad completion-effect + Instagram-redirect + toggle-OFF sahi kaam karta hai"
