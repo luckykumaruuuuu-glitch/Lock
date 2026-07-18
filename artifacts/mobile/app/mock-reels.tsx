@@ -28,6 +28,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -180,6 +181,11 @@ const ReelItem = React.memo(function ReelItem({
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function MockReelsScreen() {
   const insets = useSafeAreaInsets();
+  // useWindowDimensions gives live height — avoids stale SCREEN_H at module load.
+  // Stored in a ref so handleScrollEnd (stable useCallback) always reads current value.
+  const { height: windowHeight } = useWindowDimensions();
+  const itemHeightRef = useRef(windowHeight);
+  itemHeightRef.current = windowHeight;
 
   const [scrollCount, setScrollCount] = useState(0);
 
@@ -236,12 +242,15 @@ export default function MockReelsScreen() {
   const handleScrollEnd = useCallback(
     (e: { nativeEvent: { contentOffset: { y: number } } }) => {
       if (completedRef.current) return;
-      const newIdx = Math.round(e.nativeEvent.contentOffset.y / SCREEN_H);
-      if (newIdx === currentIdxRef.current) return; // same reel, no change
+      // Use live itemHeightRef so calculation is correct on web and after resize.
+      const h = itemHeightRef.current || SCREEN_H;
+      const newIdx = Math.round(e.nativeEvent.contentOffset.y / h);
+      if (newIdx === currentIdxRef.current) return; // same reel — no change (also deduplicates
+      // onScrollEndDrag + onMomentumScrollEnd firing for the same reel on native)
       currentIdxRef.current = newIdx;
 
       if (newIdx > maxForwardIdxRef.current) {
-        // Genuinely new reel — count it
+        // Genuinely new reel (maxForwardIndex pattern — mirrors ReelSessionTracker.kt)
         maxForwardIdxRef.current = newIdx;
         scrollCountRef.current  += 1;
         setScrollCount(scrollCountRef.current);
@@ -249,8 +258,10 @@ export default function MockReelsScreen() {
           triggerCompletion();
         }
       }
-      // else: back-scroll or forward to an already-seen reel → no-op
+      // else: back-scroll or re-scroll to already-seen reel → no-op
     },
+    // itemHeightRef is a ref — stable reference, no dep needed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
@@ -275,7 +286,11 @@ export default function MockReelsScreen() {
         pagingEnabled
         showsVerticalScrollIndicator={false}
         decelerationRate="fast"
+        // onMomentumScrollEnd — fires on native Android/iOS after snap completes.
+        // onScrollEndDrag     — fires on web (momentum events don't exist in browsers).
+        // Both share the same handler; currentIdxRef guard prevents double-counting.
         onMomentumScrollEnd={handleScrollEnd}
+        onScrollEndDrag={handleScrollEnd}
         getItemLayout={(_, index) => ({
           length: SCREEN_H,
           offset: SCREEN_H * index,
