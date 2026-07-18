@@ -1,0 +1,12 @@
+"Poore analysis ke baad, ab yeh THREE FIXES implement karo scroll-counting-screen (Phone Flip Down task) mein:
+FIX 1 — SCREEN_H (static) vs itemHeightRef (live) mismatch thik karo:
+getItemLayout abhi module-load-time ka static SCREEN_H use kar raha hai, jabki scroll-handler itemHeightRas.current (live/dynamic height) use karta hai — dono ALAG ho sakte hain, jisse newIdx calculation galat ho jaata hai. Dono jagah SAME, CONSISTENT height-source use karo — best hoga agar useWindowDimensions() hook se live-height liya jaaye (jo screen-rotate/resize par bhi update hota hai), aur getItemLayout bhi usi live-value ko reference kare (ya getItemLayout hata kar onLayout-based dynamic-measurement par switch karo).
+FIX 2 — Web par onMomentumScrollEnd reliably fire nahi hota:
+Web/browser mein native-momentum-scroll-events consistently fire nahi hote jaisa mobile par hote hain. Iske bajaye, scroll-detection ko onScroll event + viewabilityConfig/onViewableItemsChanged (FlatList ka built-in feature jo batata hai kaunsa item abhi screen par 'visible'/'active' hai) se implement karo — yeh web aur mobile DONO par reliably kaam karta hai, momentum-events par depend nahi karta.
+FIX 3 — REELS array ko INFINITE/LOOPING banao:
+Abhi sirf 12 hardcoded reels hain, jinke baad scroll physically ruk jaata hai. Isko INFINITE-LOOP banao — jab bhi user list ke end ke paas pahunche (onEndReached FlatList-prop use karo), automatically REELS-array ko khud-mein-hi REPEAT karke aur data APPEND karo (ya modulo-based index-wrapping use karo: REELS[index % REELS.length]), taaki user chahe kitni bhi baar scroll kare, hamesha 'nayi' reel dikhti rahe jab tak TARGET_SCROLLS (abhi 10) complete na ho jaaye.
+Zaroori:
+maxForwardIdx-based duplicate-prevention-logic (jo already sahi hai) bilkul mat chhedna — sirf INDEX-CALCULATION aur SCROLL-DETECTION-MECHANISM thik karni hai
+triggerCompletion(), haptic-feedback, animation, 'Coming Soon'-redirect — kuch bhi mat chhedna, wo sahi hai
+TARGET_SCROLLS = 10 wahi rahega
+Fix ke baad confirm karo — counter (0/10) ab HAR SCROLL par sahi increment hota hai (web-preview mein bhi), reels kabhi khatam nahi hoti (infinite-loop), aur 10 scrolls complete hone par 'Coming Soon' screen par sahi redirect hota hai"

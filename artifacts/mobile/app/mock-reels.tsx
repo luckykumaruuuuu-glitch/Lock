@@ -58,6 +58,17 @@ const REELS = [
 
 type ReelData = (typeof REELS)[number];
 
+/** Extended list item — uid is unique per instance for infinite-list keyExtractor */
+type ReelListItem = ReelData & { uid: string };
+
+/** Builds one "page" of reels with globally unique uids (pageIndex prevents key collisions) */
+function makeReelPage(pageIndex: number): ReelListItem[] {
+  return (REELS as readonly ReelData[]).map((r) => ({
+    ...r,
+    uid: `${pageIndex}-${r.id}`,
+  }));
+}
+
 // ── Static action button ───────────────────────────────────────────────────────
 function ActionBtn({
   icon,
@@ -187,6 +198,16 @@ export default function MockReelsScreen() {
   const itemHeightRef = useRef(windowHeight);
   itemHeightRef.current = windowHeight;
 
+  // ── FIX 3: Infinite reel list ─────────────────────────────────────────────
+  // Start with 3 pages (36 items) so there is always content ahead.
+  // onEndReached appends another page automatically.
+  const [reelList, setReelList] = useState<ReelListItem[]>(() => [
+    ...makeReelPage(0),
+    ...makeReelPage(1),
+    ...makeReelPage(2),
+  ]);
+  const reelPageRef = useRef(2); // index of last appended page
+
   const [scrollCount, setScrollCount] = useState(0);
 
   const completedRef     = useRef(false);
@@ -202,7 +223,10 @@ export default function MockReelsScreen() {
   const counterScale = useRef(new Animated.Value(1)).current;
 
   // ── Completion effect ─────────────────────────────────────────────────────
-  function triggerCompletion() {
+  // useCallback with [] — all deps (completedRef, counterScale, flashOpacity, router)
+  // are stable refs / module-level singletons. This stable reference lets the
+  // onViewableItemsChanged ref (initialized once) safely close over it.
+  const triggerCompletion = useCallback(() => {
     if (completedRef.current) return;
     completedRef.current = true;
 
@@ -234,21 +258,37 @@ export default function MockReelsScreen() {
       //   Linking.openURL("https://www.instagram.com").catch(() => {});
       // });
     }, 620);
-  }
+  }, []);
 
-  // ── Scroll-end handler ────────────────────────────────────────────────────
-  // maxForwardIndex pattern (same as ReelSessionTracker.kt):
-  //   • Count a scroll ONLY when newIdx > maxForwardIdx (a brand-new reel, never seen before).
-  //   • Back-scroll (newIdx < currentIdx) → no count.
-  //   • Forward re-scroll to an already-seen reel (newIdx <= maxForwardIdx) → no count.
-  const handleScrollEnd = useCallback(
-    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
-      if (completedRef.current) return;
-      // Use live itemHeightRef so calculation is correct on web and after resize.
-      const h = itemHeightRef.current || SCREEN_H;
-      const newIdx = Math.round(e.nativeEvent.contentOffset.y / h);
-      if (newIdx === currentIdxRef.current) return; // same reel — no change (also deduplicates
-      // onScrollEndDrag + onMomentumScrollEnd firing for the same reel on native)
+  // ── FIX 1 + FIX 2: getItemLayout uses live itemHeightRef (same source as the
+  // viewability handler) so FlatList offset calculations are always consistent. ──
+  const getItemLayout = useCallback(
+    (_: unknown, index: number) => ({
+      length: itemHeightRef.current,
+      offset: itemHeightRef.current * index,
+      index,
+    }),
+    [],
+  );
+
+  // ── FIX 2: Viewability-based scroll detection ─────────────────────────────
+  // Replaces onMomentumScrollEnd + onScrollEndDrag.
+  // onViewableItemsChanged fires reliably on BOTH native and web —
+  // momentum events are unreliable (or absent) in browsers.
+  //
+  // Both refs must be initialized once and never reassigned after mount
+  // (FlatList enforces this with a runtime warning).
+  //
+  // maxForwardIdx duplicate-prevention logic is preserved exactly as before.
+  const viewabilityConfig = useRef({
+    itemVisibilityPercentThreshold: 50,
+  }).current;
+
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
+      if (!viewableItems.length || completedRef.current) return;
+      const newIdx = viewableItems[0].index ?? 0;
+      if (newIdx === currentIdxRef.current) return; // same reel — no-op
       currentIdxRef.current = newIdx;
 
       if (newIdx > maxForwardIdxRef.current) {
@@ -262,10 +302,13 @@ export default function MockReelsScreen() {
       }
       // else: back-scroll or re-scroll to already-seen reel → no-op
     },
-    // itemHeightRef is a ref — stable reference, no dep needed
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
+  ).current;
+
+  // ── FIX 3: Append another page when approaching the end ──────────────────
+  const handleEndReached = useCallback(() => {
+    reelPageRef.current += 1;
+    setReelList((prev) => [...prev, ...makeReelPage(reelPageRef.current)]);
+  }, []);
 
   // ── Back handler ──────────────────────────────────────────────────────────
   function handleBack() {
@@ -280,31 +323,30 @@ export default function MockReelsScreen() {
 
       {/* ── Reels FlatList ─────────────────────────────────────────────── */}
       <FlatList
-        data={REELS as unknown as ReelData[]}
-        keyExtractor={(r) => r.id}
+        data={reelList}
+        keyExtractor={(r) => r.uid}
         renderItem={({ item }) => (
           <ReelItem item={item} bottomInset={insets.bottom} />
         )}
         pagingEnabled
         showsVerticalScrollIndicator={false}
         decelerationRate="fast"
-        // onMomentumScrollEnd — fires on native Android/iOS after snap completes.
-        // onScrollEndDrag     — fires on web (momentum events don't exist in browsers).
-        // Both share the same handler; currentIdxRef guard prevents double-counting.
-        onMomentumScrollEnd={handleScrollEnd}
-        onScrollEndDrag={handleScrollEnd}
-        getItemLayout={(_, index) => ({
-          length: SCREEN_H,
-          offset: SCREEN_H * index,
-          index,
-        })}
+        // FIX 2: viewability-based detection — works on web AND native.
+        // FlatList requires these refs to be stable (no post-mount changes).
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        // FIX 1: getItemLayout now reads itemHeightRef.current (same live source
+        // as the viewability handler) so FlatList offsets are always consistent.
+        getItemLayout={getItemLayout}
+        // FIX 3: append another page when user is 50% from the end
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
         scrollEnabled={!completedRef.current}
         bounces={false}
         overScrollMode="never"
-        // Keep all items in memory — small list (12 reels), prevents state reset on recycle
-        windowSize={REELS.length}
-        maxToRenderPerBatch={REELS.length}
-        initialNumToRender={REELS.length}
+        windowSize={7}
+        maxToRenderPerBatch={3}
+        initialNumToRender={3}
       />
 
       {/* ── Top chrome: X button + For You / Following tabs ───────────── */}
