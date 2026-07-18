@@ -1,0 +1,18 @@
+Main ek REFERENCE-PROJECT (ZIP) de raha hoon — ek working Expo/React-Native pose-detection-demo, jisme MediaPipe (Google) + react-native-vision-camera + Skia se real-time 33-body-keypoint pose-detection implement hai. Iska README confirm karta hai: 'Custom modules require development builds (not Expo Go)' — matlab yeh hamesha real-APK/dev-client par hi test hogi, kabhi web-preview/Expo-Go mein nahi.
+Mujhe yeh chahiye — DuckLock project mein ek NAYA task-card ke liye ('Walk' ya 'Jump', jo bhi free ho) is reference ka pattern ADAPT karo:
+Reference-ZIP ko analyze karo — khaskar modules/expo-pose-detection/ folder (poora custom-Expo-module: Android-Kotlin-side PoseLandmarksFrameProcessorPlugin.kt, PoseLandmarkerHolder.kt, ExpoPoseDetectionModule.kt, aur JS-side usePosedetection.ts hook)
+Isi module ko DuckLock project mein COPY/ADAPT karo — same dependencies install karo (react-native-vision-camera, @shopify/react-native-skia, react-native-worklets-core, MediaPipe-native-dependency), aur expo-pose-detection custom-module ko DuckLock ke modules/ folder mein add karo
+Ek naya task-screen banao (jaise 'Jump' card ke liye) jo:
+Camera-permission maange (naya permission, abhi tak DuckLock mein nahi tha)
+Camera khole, pose-detection-active kare
+Reference ke usePoseDetection() hook-pattern se landmarks receive kare
+Skeleton-overlay dikhaye (jaisa reference mein hai)
+NAYA COUNTING-LOGIC add karo: jab bhi ek specific-movement (abhi placeholder — jaise 'ek squat/jump complete hua' — hip-knee-ankle ke Y-coordinate-changes se threshold-cross detect karke) ho, counter badhe
+Target abhi CONFIGURABLE rakho (jaise const TARGET_REPS = 10)
+Target complete hone par — 'Coming Soon' screen par redirect (jaisa baaki tasks mein already pattern hai)
+Zaroori:
+Yeh SIRF real-APK/dev-client par hi kaam karega — WEB-PREVIEW mein is card ka koi bhi click-behavior 'not available on web' jaisa graceful-message dikhaye (crash na ho)
+Baaki 4 existing task-cards (Phone Flip Down, Forehead Scan, Walk, Scroll) aur unka logic bilkul mat chhedna
+DuckLock ka existing Config-Plugin-pattern (withFocusLockAndroid.js) follow karo native-additions ke liye jahan applicable ho
+Pehle confirm karo ki dependencies-install/module-copy safely ho gaya, phir hi UI-integration karo
+Fix ke baad confirm karo — kya-kya install/copy hua, aur real-build par kya test karna hoga"
