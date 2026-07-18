@@ -2,3 +2,4 @@
 - [expo-file-system v19 legacy import](expo-file-system-legacy.md) — expo-file-system v19 dropped legacy API from main module; use `expo-file-system/legacy` for documentDirectory, writeAsStringAsync, EncodingType etc.
 - [Android permission auto-return watchability](android-permission-auto-return.md) — which permissions support ContentObserver/AppOpsManager live-watching vs need manual fallback, plus a JS-template-literal backtick pitfall.
 - [Android app-block debounce/overlay bypass](android-block-debounce-bypass.md) — global debounce vars + missing onNewIntent on singleTask overlay Activities can silently let a blocked app through.
+- [expo-pose-detection custom module](expo-pose-detection-module.md) — MediaPipe+VisionCamera custom Expo module copied to artifacts/mobile/modules/expo-pose-detection; Skia peer warnings on RN 0.81 are safe to ignore for native builds.

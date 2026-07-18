@@ -16,7 +16,10 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.focuslock.app"
+      "bundleIdentifier": "com.focuslock.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "DuckLock needs camera access to detect your body movement for the Jump challenge."
+      }
     },
     "android": {
       "package": "com.focuslock.app",
@@ -38,7 +41,8 @@
         "android.permission.USE_EXACT_ALARM",
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.SYSTEM_ALERT_WINDOW",
-        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+        "android.permission.CAMERA"
       ],
       "googleServicesFile": "./google-services.json"
     },
@@ -63,6 +67,12 @@
         }
       ],
       "./plugins/withFocusLockAndroid",
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "DuckLock needs camera access to detect your body movement for the Jump challenge."
+        }
+      ],
       "expo-video",
       "expo-localization"
     ],
