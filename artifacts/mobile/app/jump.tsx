@@ -215,7 +215,23 @@ function JumpCamera({ insets, Native }: { insets: any; Native: any }) {
   } = Native;
 
   const { hasPermission, requestPermission } = useCameraPermission();
-  const device = useCameraDevice("front");
+
+  // ── Auto-request permission on mount so the native system dialog fires
+  //    immediately when the screen opens — no manual tap required.
+  useEffect(() => {
+    if (!hasPermission) {
+      requestPermission();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally run only once on mount
+
+  // ── Camera facing toggle: front ↔ back ────────────────────────────────────
+  const [cameraFacing, setCameraFacing] = useState<"front" | "back">("front");
+  const device = useCameraDevice(cameraFacing);
+
+  const toggleCamera = useCallback(() => {
+    setCameraFacing((prev) => (prev === "front" ? "back" : "front"));
+  }, []);
 
   const [landmarks, setLandmarks] = useState<Array<{
     x: number; y: number; z: number; visibility: number;
@@ -266,18 +282,29 @@ function JumpCamera({ insets, Native }: { insets: any; Native: any }) {
     [plugin]
   );
 
+  // ── Permission denied (user explicitly denied in the system dialog) ────────
+  // hasPermission stays false only after the system dialog is dismissed with
+  // "Deny". Show a minimal prompt so the user can open Settings manually.
   if (!hasPermission) {
     return (
       <View style={[styles.root, styles.centerContent, { paddingTop: insets.top }]}>
-        <Text style={styles.permTitle}>Camera Access Needed</Text>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Feather name="chevron-left" size={26} color="#FFFFFF" />
+        </Pressable>
+        <Text style={styles.permTitle}>Camera Permission Denied</Text>
         <Text style={styles.permBody}>
-          The Jump challenge requires your camera to detect body movement.
+          Please enable Camera access for DuckLock in{"\n"}
+          Android Settings → Apps → DuckLock → Permissions.
         </Text>
         <Pressable
           onPress={requestPermission}
           style={({ pressed }) => [styles.permBtn, { opacity: pressed ? 0.8 : 1 }]}
         >
-          <Text style={styles.permBtnText}>Allow Camera</Text>
+          <Text style={styles.permBtnText}>Try Again</Text>
         </Pressable>
       </View>
     );
@@ -360,7 +387,7 @@ function JumpCamera({ insets, Native }: { insets: any; Native: any }) {
         </View>
       </View>
 
-      {/* Status bar at bottom */}
+      {/* Status bar at bottom — hint text + camera-switch button */}
       <View style={[styles.statusBar, { paddingBottom: insets.bottom + 12 }]}>
         <Text style={styles.statusText}>{modelStatus}</Text>
         <Text style={styles.hintText}>
@@ -370,6 +397,19 @@ function JumpCamera({ insets, Native }: { insets: any; Native: any }) {
             ? `Keep going! ${TARGET_REPS - reps} more to go`
             : "Done! 🎉"}
         </Text>
+
+        {/* Camera-switch button — bottom-right corner */}
+        <Pressable
+          onPress={toggleCamera}
+          style={({ pressed }) => [
+            styles.cameraSwitchBtn,
+            { bottom: insets.bottom + 16, opacity: pressed ? 0.7 : 1 },
+          ]}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityLabel="Switch camera"
+        >
+          <Feather name="refresh-cw" size={22} color="#FFFFFF" />
+        </Pressable>
       </View>
     </View>
   );
@@ -502,6 +542,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     backgroundColor: "rgba(0,0,0,0.55)",
     zIndex: 10,
+  },
+
+  // ── Camera switch button (bottom-right) ──
+  cameraSwitchBtn: {
+    position: "absolute",
+    right: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 20,
   },
   statusText: {
     fontSize: 12,

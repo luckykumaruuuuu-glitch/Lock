@@ -1,4 +1,6 @@
-import { EventSubscription } from "expo-modules-core";
+// EventSubscription shape — mirrors expo-modules-core without a direct import
+// so this module's types resolve cleanly from any tsconfig context.
+type EventSubscription = { remove(): void };
 import { ExpoPoseDetectionModule } from "./src/ExpoPoseDetectionModule";
 import type {
   PoseLandmark,
