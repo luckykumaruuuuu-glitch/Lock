@@ -28,6 +28,7 @@ import { PermissionGuardPopup } from "@/components/ui/PermissionGuardPopup";
 import { useAppMode } from "@/context/AppModeContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLock } from "@/context/LockContext";
+import { setPendingReelsLockDisable } from "@/lib/reelsLockPending";
 import {
   ActiveLockDisplayItem,
   formatExpiryDate,
@@ -569,6 +570,19 @@ function DuckLockHomeContent() {
         .catch(() => {/* ignore — defaults to false */});
     }
   }, []);
+
+  // Re-sync toggle on every focus so the state reflects what coming-soon.tsx
+  // may have disabled after the user completed an unlock task.
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === "android" && NativeModules.ReelsLock) {
+        NativeModules.ReelsLock.getEnabled()
+          .then((enabled: boolean) => setReelsLockEnabled(enabled))
+          .catch(() => {/* ignore */});
+      }
+    }, [])
+  );
+
   const { missingPerms, recheck } = usePermissionGuard();
   const { toggleAppMode } = useAppMode();
 
@@ -638,8 +652,17 @@ function DuckLockHomeContent() {
             <ToggleSwitch
               value={reelsLockEnabled}
               onValueChange={(v: boolean) => {
+                if (!v && reelsLockEnabled) {
+                  // User is trying to turn OFF — don't disable yet.
+                  // Set the pending flag and open the unlock-task flow.
+                  // The toggle will genuinely turn OFF only after a task
+                  // is completed (coming-soon.tsx consumes the flag).
+                  setPendingReelsLockDisable();
+                  router.push("/unlock-tasks");
+                  return;
+                }
+                // Turning ON — apply immediately as before.
                 setReelsLockEnabled(v);
-                // Persist to SharedPreferences so AccessibilityService reads it live
                 if (Platform.OS === "android" && NativeModules.ReelsLock) {
                   NativeModules.ReelsLock.setEnabled(v);
                 }
