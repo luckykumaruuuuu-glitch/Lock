@@ -26,8 +26,8 @@ import * as Haptics from "expo-haptics";
 import { Audio } from "expo-av";
 
 // ─── Target loudness — configurable ──────────────────────────────────────────
-// Scale is 0-100 (normalized from dBFS). 90 = loud shout.
-const TARGET_DB = 90;
+// Scale is 0-100 (normalized from dBFS). 96 = near-impossible scream (~-2.4 dBFS).
+const TARGET_DB = 96;
 
 // Ruler scale markings shown alongside the bar
 const SCALE_MARKS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
@@ -261,6 +261,11 @@ function WalkMeter() {
         Reach <Text style={styles.hintTarget}>{TARGET_DB}</Text> to unlock
       </Text>
 
+      {/* World-record context */}
+      <Text style={styles.worldRecord}>
+        🏆 Guinness World Record — Loudest Human Scream: 129 dB (by Jill Drake)
+      </Text>
+
       {/* ── Meter row: scale | bar ─────────────────────────────────────────── */}
       <View style={styles.meterRow}>
 
@@ -412,6 +417,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#8A8A8E",
     textAlign: "center",
+  },
+  worldRecord: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "rgba(255,215,0,0.55)", // muted gold — subtle, matches dark theme
+    textAlign: "center",
+    marginHorizontal: 24,
+    marginBottom: 16,
+    lineHeight: 17,
   },
 
   // ── Meter row ──
