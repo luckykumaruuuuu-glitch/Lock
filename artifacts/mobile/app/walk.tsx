@@ -26,22 +26,28 @@ import * as Haptics from "expo-haptics";
 import { Audio } from "expo-av";
 
 // ─── Target loudness — configurable ──────────────────────────────────────────
-// Scale is 0-100 (normalized from dBFS). 96 = near-impossible scream (~-2.4 dBFS).
+// Display scale is 0-130 (so the 129 WR sits near the top as a real position).
+// TARGET_DB = 96 on this scale requires ~-5 dBFS: a genuinely extreme scream.
 const TARGET_DB = 96;
 
-// Ruler scale markings shown alongside the bar
-const SCALE_MARKS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+// Display scale ceiling — matches Guinness WR context (129 dB)
+const DISPLAY_MAX = 130;
 
-// expo-av metering is in dBFS (−160..0). Map the useful range to 0-100.
+// Ruler scale markings shown alongside the bar
+const SCALE_MARKS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130];
+
+// expo-av metering is in dBFS (−160..0). Map the useful range to 0-DISPLAY_MAX.
 // Values below DBFS_FLOOR are treated as silence (0).
+// Non-linear (power 3.5) curve: normal-loud voice stays ~35-45,
+// only a genuine extreme scream breaks ~90+.
+//   -20 dBFS → ~35   -15 dBFS → ~45   -10 dBFS → ~63
+//    -5 dBFS → ~96   (TARGET)           0 dBFS  → 130
 const DBFS_FLOOR = -60;
 
 function dbfsToDisplay(dbfs: number): number {
   if (dbfs == null || isNaN(dbfs)) return 0;
-  return Math.max(
-    0,
-    Math.min(100, ((dbfs - DBFS_FLOOR) / Math.abs(DBFS_FLOOR)) * 100)
-  );
+  const normalized = Math.max(0, Math.min(1, (dbfs - DBFS_FLOOR) / Math.abs(DBFS_FLOOR)));
+  return Math.pow(normalized, 3.5) * DISPLAY_MAX;
 }
 
 // ─── Web fallback ─────────────────────────────────────────────────────────────
@@ -195,14 +201,15 @@ function WalkMeter() {
 
   // ── Animated bar height (grows upward from bottom of track) ───────────────
   const barHeight = animLevel.interpolate({
-    inputRange: [0, 100],
+    inputRange: [0, DISPLAY_MAX],
     outputRange: [0, meterHeight],
     extrapolate: "clamp",
   });
 
   // ── Animated bar color: green → orange → red as level rises ───────────────
+  // Thresholds scaled proportionally to 0-130 range
   const barColor = animLevel.interpolate({
-    inputRange: [0, 50, 80, 100],
+    inputRange: [0, 65, 104, 130],
     outputRange: ["#30D158", "#34C759", "#FF9500", "#FF3B30"],
     extrapolate: "clamp",
   });
@@ -240,7 +247,7 @@ function WalkMeter() {
   // ── Main meter UI ──────────────────────────────────────────────────────────
   // Target line Y position from top of bar track
   const targetLineTop = meterHeight > 0
-    ? (1 - TARGET_DB / 100) * meterHeight
+    ? (1 - TARGET_DB / DISPLAY_MAX) * meterHeight
     : 0;
 
   return (
@@ -261,18 +268,13 @@ function WalkMeter() {
         Reach <Text style={styles.hintTarget}>{TARGET_DB}</Text> to unlock
       </Text>
 
-      {/* World-record context */}
-      <Text style={styles.worldRecord}>
-        🏆 Guinness World Record — Loudest Human Scream: 129 dB (by Jill Drake)
-      </Text>
-
       {/* ── Meter row: scale | bar ─────────────────────────────────────────── */}
       <View style={styles.meterRow}>
 
         {/* Left: ruler scale */}
         <View style={styles.scaleColumn}>
           {meterHeight > 0 && SCALE_MARKS.slice().reverse().map((mark) => {
-            const topFraction = (100 - mark) / 100;
+            const topFraction = (DISPLAY_MAX - mark) / DISPLAY_MAX;
             const top = topFraction * meterHeight - 9; // -9 centers the 18px text
             const isTarget = mark === TARGET_DB;
             return (
@@ -287,6 +289,20 @@ function WalkMeter() {
               </View>
             );
           })}
+
+          {/* 129 WR marker — subtle gold reference point */}
+          {meterHeight > 0 && (
+            <View
+              style={[
+                styles.scaleMarkRow,
+                { top: ((DISPLAY_MAX - 129) / DISPLAY_MAX) * meterHeight - 9 },
+              ]}
+            >
+              <Text style={styles.scaleLabelWR}>129</Text>
+              <View style={styles.scaleTickWR} />
+              <Text style={styles.scaleLabelWRBadge}>WR</Text>
+            </View>
+          )}
         </View>
 
         {/* Right: bar track */}
@@ -318,7 +334,7 @@ function WalkMeter() {
       {/* Current level badge */}
       <Animated.View style={[styles.levelBadge, { transform: [{ scale: levelScale }] }]}>
         <Text style={styles.levelNumber}>{displayLevel}</Text>
-        <Text style={styles.levelUnit}>/ 100</Text>
+        <Text style={styles.levelUnit}>/ {DISPLAY_MAX}</Text>
       </Animated.View>
 
       {/* White flash overlay (completion effect) */}
@@ -418,14 +434,24 @@ const styles = StyleSheet.create({
     color: "#8A8A8E",
     textAlign: "center",
   },
-  worldRecord: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: "rgba(255,215,0,0.55)", // muted gold — subtle, matches dark theme
-    textAlign: "center",
-    marginHorizontal: 24,
-    marginBottom: 16,
-    lineHeight: 17,
+  // ── WR marker on scale ──
+  scaleLabelWR: {
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+    color: "rgba(255,215,0,0.7)",  // muted gold
+    textAlign: "right",
+    width: 28,
+  },
+  scaleTickWR: {
+    width: 6,
+    height: 1,
+    backgroundColor: "rgba(255,215,0,0.5)",
+  },
+  scaleLabelWRBadge: {
+    fontSize: 9,
+    fontFamily: "Inter_700Bold",
+    color: "rgba(255,215,0,0.6)",
+    marginLeft: 2,
   },
 
   // ── Meter row ──
