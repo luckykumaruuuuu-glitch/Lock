@@ -155,18 +155,17 @@ function WebFallback() {
 function NativeJumpScreen() {
   const insets = useSafeAreaInsets();
 
-  // Lazy-import all native-only dependencies so the module never loads on web
+  // Lazy-import NON-HOOK exports only.
+  // Hooks (useCameraPermission, useCameraDevice, useFrameProcessor) must NOT be
+  // stored in state — they must be called via require() directly in JumpCamera
+  // so React's dispatcher sees them as normal top-level hook calls.
   const [Native, setNative] = useState<{
     Camera: any;
-    useCameraDevice: any;
-    useCameraPermission: any;
-    useFrameProcessor: any;
     VisionCameraProxy: any;
     Canvas: any;
     Line: any;
     Circle: any;
     vec: any;
-    useWindowDimensions: any;
     addPoseLandmarksListener: any;
     removePoseLandmarksListeners: any;
   } | null>(null);
@@ -180,15 +179,11 @@ function NativeJumpScreen() {
       ]);
       setNative({
         Camera: vc.Camera,
-        useCameraDevice: vc.useCameraDevice,
-        useCameraPermission: vc.useCameraPermission,
-        useFrameProcessor: vc.useFrameProcessor,
         VisionCameraProxy: vc.VisionCameraProxy,
         Canvas: skia.Canvas,
         Line: skia.Line,
         Circle: skia.Circle,
         vec: skia.vec,
-        useWindowDimensions: () => require("react-native").useWindowDimensions(),
         addPoseLandmarksListener: pose.addPoseLandmarksListener,
         removePoseLandmarksListeners: pose.removePoseLandmarksListeners,
       });
@@ -209,10 +204,16 @@ function NativeJumpScreen() {
 // ─── Camera + skeleton component (native only) ────────────────────────────────
 function JumpCamera({ insets, Native }: { insets: any; Native: any }) {
   const {
-    Camera, useCameraDevice, useCameraPermission, useFrameProcessor,
-    VisionCameraProxy, Canvas, Line, Circle, vec,
+    Camera, VisionCameraProxy, Canvas, Line, Circle, vec,
     addPoseLandmarksListener, removePoseLandmarksListeners,
   } = Native;
+
+  // ── Call hooks via require() — Metro's require() is synchronous and the
+  //    module is already in the bundle cache after the async import() above.
+  //    This guarantees React's dispatcher receives real hook calls at the top
+  //    level of this component, NOT stored function references from state.
+  const { useCameraPermission, useCameraDevice, useFrameProcessor } =
+    require("react-native-vision-camera");
 
   const { hasPermission, requestPermission } = useCameraPermission();
 
