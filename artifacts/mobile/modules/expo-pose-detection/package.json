@@ -1,0 +1,11 @@
+{
+  "name": "expo-pose-detection",
+  "version": "1.0.0",
+  "description": "MediaPipe pose detection Expo module for DuckLock",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {},
+  "peerDependencies": {
+    "expo": "*"
+  }
+}
