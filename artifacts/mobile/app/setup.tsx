@@ -250,8 +250,11 @@ export default function SetupScreen() {
 
   // true in Expo Go (appOwnership === 'expo') AND browser-preview — false in real APK / dev-client build
   const isExpoGoOrWeb = Platform.OS === "web" || Constants.appOwnership === "expo";
-  const grantedCount  = isExpoGoOrWeb ? PERMS.length : PERMS.filter(p => permissions[p.id]?.granted).length;
-  const allGranted    = isExpoGoOrWeb || grantedCount === PERMS.length;
+  // allGranted is always based on REAL permission status — no automatic force-true on web/Expo Go.
+  // On web/Expo Go native permissions are never grantable, so allGranted will be false there;
+  // the user must use the "Skip" button to proceed in those environments.
+  const grantedCount = PERMS.filter(p => permissions[p.id]?.granted).length;
+  const allGranted   = grantedCount === PERMS.length;
 
   useEffect(() => {
     Animated.spring(continueAnim, {
@@ -348,15 +351,7 @@ export default function SetupScreen() {
     await markOpened(perm.id);
 
     if (Platform.OS !== "android") {
-      // Web/iOS simulator: no real Settings to open, offer a manual toggle for testing
-      Alert.alert(
-        "Android Permission",
-        perm.whyNeeded,
-        [
-          { text: "Mark as Granted", onPress: () => markGranted(perm.id, true) },
-          { text: "Cancel", style: "cancel" },
-        ]
-      );
+      // Web/Expo Go: native Settings cannot be opened — nothing to do.
       setOpening(null);
       return;
     }
@@ -442,7 +437,7 @@ export default function SetupScreen() {
         {/* ── Permissions list ── */}
         <View style={styles.listCard}>
           {PERMS.map((perm, i) => {
-            const granted   = isExpoGoOrWeb || (permissions[perm.id]?.granted ?? false);
+            const granted   = permissions[perm.id]?.granted ?? false;
             const isOpening = opening === perm.id;
             const isLast    = i === PERMS.length - 1;
 
