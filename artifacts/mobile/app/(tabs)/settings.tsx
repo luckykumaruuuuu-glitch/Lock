@@ -15,7 +15,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassCard } from "@/components/ui/GlassCard";
-import { setUnlockFlowState } from "@/lib/unlockFlowState";
 import { GradientBackground } from "@/components/ui/GradientBackground";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { useDebugLog } from "@/context/DebugLogContext";
@@ -465,26 +464,17 @@ export default function SettingsScreen() {
           <SettingRow
             icon="unlock"
             label="Unlock One"
-            onPress={() => {
-              setUnlockFlowState("reel-count-schedule", null);
-              router.push("/unlock-tasks");
-            }}
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "instagram" } })}
           />
           <SettingRow
             icon="unlock"
             label="Unlock Two"
-            onPress={() => {
-              setUnlockFlowState("reel-count-schedule", null);
-              router.push("/unlock-tasks");
-            }}
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "youtube" } })}
           />
           <SettingRow
             icon="unlock"
             label="Unlock Three"
-            onPress={() => {
-              setUnlockFlowState("reel-count-schedule", null);
-              router.push("/unlock-tasks");
-            }}
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "facebook" } })}
             last
           />
         </GlassCard>
