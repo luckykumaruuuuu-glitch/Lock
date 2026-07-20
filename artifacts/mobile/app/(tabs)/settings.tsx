@@ -464,7 +464,23 @@ export default function SettingsScreen() {
         <GlassCard padding={0}>
           <SettingRow
             icon="unlock"
-            label="Unlock Tasks Screen"
+            label="Unlock One"
+            onPress={() => {
+              setUnlockFlowState("reel-count-schedule", null);
+              router.push("/unlock-tasks");
+            }}
+          />
+          <SettingRow
+            icon="unlock"
+            label="Unlock Two"
+            onPress={() => {
+              setUnlockFlowState("reel-count-schedule", null);
+              router.push("/unlock-tasks");
+            }}
+          />
+          <SettingRow
+            icon="unlock"
+            label="Unlock Three"
             onPress={() => {
               setUnlockFlowState("reel-count-schedule", null);
               router.push("/unlock-tasks");
