@@ -172,41 +172,131 @@ buildProc.on("exit", (code) => {
   }
 });
 
-// ─── Phase 3: Metro dev server (Expo Go) ─────────────────────────────────────
-log("Phase 3 — Starting Metro dev server for Expo Go…");
+// ─── Phase 3: Metro dev server (Expo Go) via cloudflared tunnel ──────────────
+log("Phase 3 — Starting Metro + cloudflared tunnel for Expo Go…");
 log("  📱  Expo Go : scan the QR code that appears below with the Expo Go app");
 
-// Use Replit's built-in Expo proxy domain instead of ngrok.
-// REPLIT_EXPO_DEV_DOMAIN  → the *.expo.*.replit.dev URL Expo Go can reach
-// REACT_NATIVE_PACKAGER_HOSTNAME → overrides the hostname Metro puts in the QR code
-const replitDevDomain  = process.env.REPLIT_DEV_DOMAIN  || "";
-const replitExpoDomain = process.env.REPLIT_EXPO_DEV_DOMAIN || replitDevDomain;
+const METRO_PORT = parseInt(process.env.EXPO_PORT || "18116", 10);
 
-const metroEnv = {
-  ...process.env,
-  EXPO_PUBLIC_DOMAIN:             replitDevDomain,
-  EXPO_PUBLIC_REPL_ID:            process.env.REPL_ID || "",
-  REACT_NATIVE_PACKAGER_HOSTNAME: replitDevDomain,
-  EXPO_PACKAGER_PROXY_URL:        replitExpoDomain ? `https://${replitExpoDomain}` : "",
-};
+// cloudflared binary path — download once if missing
+const CLOUDFLARED_BIN = path.join(ROOT, ".cloudflared-bin");
+const CLOUDFLARED_URL =
+  "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64";
 
-// Use --lan so Metro picks up REACT_NATIVE_PACKAGER_HOSTNAME for the QR code.
-// Port 18116 avoids conflict with the artifacts/mobile:expo workflow (18115).
-const METRO_PORT = process.env.EXPO_PORT || "18116";
-const metro = spawn(
-  "pnpm",
-  ["exec", "expo", "start", "--lan", "--port", METRO_PORT],
-  { cwd: ROOT, stdio: "inherit", env: metroEnv }
-);
+let metroProc = null;
+let cloudflaredProc = null;
 
-metro.on("error", (err) => log(`Metro error: ${err.message}`));
-metro.on("exit",  (code) => log(`Metro exited (code ${code})`));
+function downloadCloudflared() {
+  return new Promise((resolve, reject) => {
+    if (fs.existsSync(CLOUDFLARED_BIN)) return resolve();
+    log("Downloading cloudflared binary…");
+    const { https } = require("https");
+    const file = fs.createWriteStream(CLOUDFLARED_BIN);
+    nodeHttp.get(CLOUDFLARED_URL, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        // follow one redirect (http→https redirect)
+        file.close();
+        return reject(new Error(`Redirect not followed: ${res.headers.location}`));
+      }
+      res.pipe(file);
+      file.on("finish", () => {
+        file.close();
+        fs.chmodSync(CLOUDFLARED_BIN, 0o755);
+        log("cloudflared downloaded ✓");
+        resolve();
+      });
+    }).on("error", (e) => { fs.unlinkSync(CLOUDFLARED_BIN); reject(e); });
+  });
+}
+
+function startCloudflaredTunnel() {
+  return new Promise((resolve) => {
+    cloudflaredProc = spawn(
+      CLOUDFLARED_BIN,
+      ["tunnel", "--url", `http://localhost:${METRO_PORT}`, "--no-autoupdate"],
+      { cwd: ROOT, stdio: ["ignore", "pipe", "pipe"] }
+    );
+
+    const tryParse = (data) => {
+      const text = data.toString();
+      // cloudflared prints the public URL to stderr
+      const m = text.match(/https:\/\/[\w-]+\.trycloudflare\.com/);
+      if (m) resolve(m[0]);
+    };
+
+    cloudflaredProc.stdout.on("data", tryParse);
+    cloudflaredProc.stderr.on("data", tryParse);
+    cloudflaredProc.on("error", (err) => {
+      log(`cloudflared error: ${err.message}`);
+      resolve(null);
+    });
+
+    // Timeout — give up waiting for URL after 20 s
+    setTimeout(() => resolve(null), 20_000);
+  });
+}
+
+function startMetro(tunnelUrl) {
+  const host = tunnelUrl ? tunnelUrl.replace(/^https?:\/\//, "") : "";
+
+  const metroEnv = {
+    ...process.env,
+    EXPO_PUBLIC_DOMAIN:             process.env.REPLIT_DEV_DOMAIN || "",
+    EXPO_PUBLIC_REPL_ID:            process.env.REPL_ID || "",
+    ...(host ? {
+      REACT_NATIVE_PACKAGER_HOSTNAME: host,
+      EXPO_PACKAGER_PROXY_URL:        tunnelUrl,
+    } : {}),
+  };
+
+  metroProc = spawn(
+    "pnpm",
+    ["exec", "expo", "start", "--lan", "--port", String(METRO_PORT)],
+    { cwd: ROOT, stdio: "inherit", env: metroEnv }
+  );
+  metroProc.on("error", (err) => log(`Metro error: ${err.message}`));
+  metroProc.on("exit",  (code) => log(`Metro exited (code ${code})`));
+}
+
+// Kick off Phase 3 asynchronously so the static server stays alive
+(async () => {
+  try {
+    // Ensure binary exists
+    if (!fs.existsSync(CLOUDFLARED_BIN)) {
+      // Try the pre-downloaded copy in /tmp first (fast path)
+      if (fs.existsSync("/tmp/cloudflared")) {
+        fs.copyFileSync("/tmp/cloudflared", CLOUDFLARED_BIN);
+        fs.chmodSync(CLOUDFLARED_BIN, 0o755);
+        log("cloudflared binary copied from /tmp ✓");
+      } else {
+        await downloadCloudflared();
+      }
+    }
+
+    log("Starting cloudflared quick tunnel…");
+    const tunnelUrl = await startCloudflaredTunnel();
+
+    if (tunnelUrl) {
+      log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      log(`  🌐  Expo Go tunnel : ${tunnelUrl}`);
+      log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    } else {
+      log("WARNING: cloudflared tunnel URL not received — Metro will run without public tunnel.");
+    }
+
+    startMetro(tunnelUrl);
+  } catch (err) {
+    log(`Phase 3 error: ${err.message} — starting Metro without tunnel`);
+    startMetro(null);
+  }
+})();
 
 // ─── Graceful shutdown ────────────────────────────────────────────────────────
 function shutdown(sig) {
   log(`${sig} received — shutting down…`);
   buildProc.kill("SIGTERM");
-  metro.kill("SIGTERM");
+  if (metroProc)        metroProc.kill("SIGTERM");
+  if (cloudflaredProc)  cloudflaredProc.kill("SIGTERM");
   staticServer.close();
   process.exit(0);
 }
