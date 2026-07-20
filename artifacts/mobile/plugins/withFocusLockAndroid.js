@@ -1605,11 +1605,17 @@ class AppBlockerAccessibilityService : AccessibilityService() {
                 putExtra(LockOverlayActivity.EXTRA_PKG_NAME,  pkg)
                 putExtra(LockOverlayActivity.EXTRA_END_TIME,  endTime)
             })
+            // App is fully locked — return immediately so the reel detector below
+            // does NOT fire for this event.  Without this return, ReelsLockActivity
+            // was being launched on top of LockOverlayActivity for Instagram, YouTube,
+            // and Facebook (the three platforms tracked by both systems), making it
+            // appear as though LockOverlayActivity was showing the wrong character image.
+            return
         }
 
         // ════════════════════════════════════════════════════════════════════════
         // REEL DETECTION (Phase 3A) — runs for ALL event types, fully independent.
-        // Locking logic above is completely unaffected by this call.
+        // Only reached when the foreground app is NOT fully locked.
         // ════════════════════════════════════════════════════════════════════════
         reelDetector?.onEvent(event, this)
     }
