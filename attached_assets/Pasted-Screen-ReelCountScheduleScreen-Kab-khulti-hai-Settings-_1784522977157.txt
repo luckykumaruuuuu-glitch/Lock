@@ -1,0 +1,22 @@
+Screen: ReelCountScheduleScreen
+Kab khulti hai: Settings ke "Unlock" option se, jab user 5 tasks mein se koi 1 fully complete kare. (Toggle-process wali alag DurationSelectorScreen se ye bilkul independent screen hai — dono ko gadbad na milaya jaye.)
+Top Section:
+Top-left corner mein ek round back-arrow button — dark circle background, low-opacity, fixed position
+Uske niche, horizontally center mein: character illustration (brain-head mascot, red cap + red t-shirt) jo source-platform ke logo (Instagram/YouTube/Facebook — jahan se user aaya) ke bagal mein khada hai, ek hath logo par tika hua pose mein — ye poora block abhi placeholder hai, real images baad mein aayengi. Ye area khaali/minimal hi rakhna hai abhi
+Middle Section:
+Heading, 2 lines, center-aligned, bada bold white font
+Heading ke niche kaafi vertical gap — background poora deep solid black (#000000)
+Grid Section (6 options):
+6 pill-shaped (fully rounded) buttons — chote size ke, zyada area nahi ghernge, sirf compact display ke liye
+Dark-grey/charcoal background har button ka, white bold center-aligned text
+Do-do karke rows mein arranged, equal horizontal/vertical gap
+Values: 5, 10, 20, 30, 40, 50 reels (confirm karna)
+Bottom Section:
+Full-width, bright orange/peach gradient, pill-shaped CTA button — baaki sab se contrast mein alag dikhna chahiye
+Uske bilkul niche, thin white horizontal gesture-indicator bar (screen ke bottom mein)
+Function:
+User in 6 options mein se 1 select kare (single-select) — CTA button tab tak disabled/dim rahe jab tak selection na ho
+CTA ("Confirm") dabane par: selected count save ho (duckLockReelsRemaining), Reels-Lock toggle turant OFF ho, user apni source-platform ki feed par redirect ho
+Jitne reels count select kiye the utne dekhne ke baad toggle auto wapas ON ho jaye
+Toggle ke status-strip text mein — platform-aware wording: Instagram/Facebook se aaya ho to "X Reels left", YouTube se aaya ho to "X Shorts left" — chota font-size mein (jaisa pehle discuss hua tha)
+Reliability: screen har baar fresh-state se khule, koi purani selection carry na ho, chahe user kitni bhi baar isse dobara reach kare

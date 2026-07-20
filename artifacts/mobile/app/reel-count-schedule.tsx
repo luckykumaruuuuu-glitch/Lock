@@ -1,20 +1,21 @@
 /**
- * reel-count-schedule.tsx — "How many reels to allow?" screen.
+ * reel-count-schedule.tsx — "How many reels?" screen.
  *
- * Opened from Settings → "Unlock" → after the user completes one of the 5 tasks.
- * The user picks a reel count (5 / 10 / 20 / 30 / 40 / 50). After watching
- * that many reels, the Reels-Lock auto re-enables.
+ * Opened from Settings → "Unlock Tasks Screen" → after the user completes one
+ * of the 5 tasks.  INDEPENDENT from duration-selector.tsx (toggle-off flow).
  *
- * This is INDEPENDENT from duration-selector.tsx (toggle-off flow):
- *   Toggle-off flow → duration-selector  (time-based unlock)
- *   Settings flow   → reel-count-schedule (count-based unlock)
+ * Layout (top → bottom):
+ *  · Fixed back-arrow button (top-left)
+ *  · Illustration placeholder (character + platform logo — placeholder only)
+ *  · 2-line heading + vertical gap
+ *  · 3×2 grid of pill buttons (5, 10, 20, 30, 40, 50)
+ *  · Full-width orange CTA (disabled until selected)
+ *  · Thin gesture indicator bar
  *
- * Platform (instagram / youtube / facebook) is read from unlockFlowState,
- * which Settings sets before pushing to /unlock-tasks.
+ * Always opens fresh — no carry-over selection from previous visits.
  */
 
 import { Feather } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useState } from "react";
@@ -29,35 +30,26 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { getUnlockPlatform, SourcePlatform } from "@/lib/unlockFlowState";
 import { saveReelsRemaining } from "@/lib/reelsLockReels";
 import { clearReelsLockOff } from "@/lib/reelsLockOff";
 
-// ── Count options (single-select) ────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
 const COUNT_OPTIONS = [5, 10, 20, 30, 40, 50] as const;
 
-// Card geometry — 3 per row, capped so it looks right on any screen width
-const SCREEN_W      = Dimensions.get("window").width;
-const H_PADDING     = 40;
-const CARD_GAP      = 12;
-const CARD_SIZE     = Math.min(
-  Math.floor((SCREEN_W - H_PADDING * 2 - CARD_GAP * 2) / 3),
-  88, // cap for tablets / web preview
-);
+const SCREEN_W = Dimensions.get("window").width;
+// Pill width: 2 per row with equal gaps + side padding
+const PILL_H_PAD = 24;
+const PILL_GAP   = 12;
+const PILL_W     = Math.floor((SCREEN_W - PILL_H_PAD * 2 - PILL_GAP) / 2);
+const PILL_H     = 52;
 
-// ── Platform helpers ──────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function platformLabel(p: SourcePlatform): string {
-  if (p === "youtube") return "Shorts";
-  return "Reels"; // instagram, facebook, null
-}
-
-function platformDisplayName(p: SourcePlatform): string {
-  if (p === "youtube")   return "YouTube";
-  if (p === "facebook")  return "Facebook";
-  if (p === "instagram") return "Instagram";
-  return "";
+  return p === "youtube" ? "Shorts" : "Reels";
 }
 
 const PLATFORM_DEEP_LINKS: Partial<Record<NonNullable<SourcePlatform>, string>> = {
@@ -66,37 +58,34 @@ const PLATFORM_DEEP_LINKS: Partial<Record<NonNullable<SourcePlatform>, string>> 
   facebook:  "fb://",
 };
 
-// ── Main screen ───────────────────────────────────────────────────────────────
+// ── Screen ────────────────────────────────────────────────────────────────────
 export default function ReelCountScheduleScreen() {
-  const insets     = useSafeAreaInsets();
-  const platform   = getUnlockPlatform();
+  const insets  = useSafeAreaInsets();
+  const platform = getUnlockPlatform();
+
+  // Always starts with no selection — fresh state every mount
   const [selected, setSelected] = useState<number | null>(null);
-  const [loading, setLoading]   = useState(false);
+  const [loading,  setLoading]  = useState(false);
 
-  const topPad    = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+  const topPad    = Platform.OS === "web" ? 54 : insets.top;
+  const bottomPad = Platform.OS === "web" ? 20 : Math.max(insets.bottom, 8);
 
-  const unit        = platformLabel(platform);
-  const platformName = platformDisplayName(platform);
+  const unit = platformLabel(platform);
 
   async function handleConfirm() {
     if (!selected || loading) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
-
     try {
-      // 1. Save the reel-count schedule
+      // 1. Save reel-count schedule
       await saveReelsRemaining({ count: selected, platform });
-
-      // 2. Clear any existing duration-based unlock (the two modes are exclusive)
+      // 2. Clear any duration-based unlock (modes are exclusive)
       await clearReelsLockOff();
-
-      // 3. Disable native ReelsLock so the user can actually watch reels
+      // 3. Disable native lock
       if (Platform.OS === "android" && NativeModules.ReelsLock) {
         try { await NativeModules.ReelsLock.setEnabled(false); } catch (_) {}
       }
-
-      // 4. Redirect: try to open the platform app, then fall through to home
+      // 4. Redirect to platform feed, then home
       if (platform && PLATFORM_DEEP_LINKS[platform]) {
         Linking.openURL(PLATFORM_DEEP_LINKS[platform]!).catch(() => {});
       }
@@ -107,73 +96,97 @@ export default function ReelCountScheduleScreen() {
     }
   }
 
+  // Pair the options for 2-per-row rendering
+  const rows: (typeof COUNT_OPTIONS[number])[][] = [];
+  for (let i = 0; i < COUNT_OPTIONS.length; i += 2) {
+    rows.push([COUNT_OPTIONS[i], COUNT_OPTIONS[i + 1]]);
+  }
+
   return (
-    <LinearGradient
-      colors={["#2b1a12", "#0d0806"]}
-      style={[styles.root, { paddingTop: topPad, paddingBottom: bottomPad }]}
-    >
-      {/* ── Top: platform-logo placeholder ──────────────────────────── */}
-      <View style={styles.topArea}>
-        <View style={styles.logoPlaceholder}>
-          {/* Logo asset goes here once added — empty dashed circle for now */}
-          <View style={styles.logoEmptyBox} />
-        </View>
-        {platformName ? (
-          <Text style={styles.platformName}>{platformName}</Text>
-        ) : null}
+    <View style={[styles.root, { paddingTop: topPad, paddingBottom: bottomPad }]}>
+
+      {/* ── Fixed back button (top-left) ────────────────────────────── */}
+      <Pressable
+        onPress={() => router.back()}
+        style={[styles.backBtn, { top: topPad + 8 }]}
+        hitSlop={12}
+      >
+        <Feather name="arrow-left" size={20} color="#FFFFFF" />
+      </Pressable>
+
+      {/* ── Illustration placeholder ────────────────────────────────── */}
+      {/* Real assets (mascot + platform logo) will be added later.
+          For now: a minimal empty area so the layout spacing is set. */}
+      <View style={styles.illustrationArea}>
+        {/* intentionally empty — placeholder */}
       </View>
 
-      {/* ── Center: heading + grid ───────────────────────────────────── */}
-      <View style={styles.center}>
-        <Text style={styles.title}>How many {unit.toLowerCase()}?</Text>
-        <Text style={styles.subtitle}>
-          Pick how many before it locks again
+      {/* ── Heading ─────────────────────────────────────────────────── */}
+      <View style={styles.headingBlock}>
+        <Text style={styles.heading}>
+          {"Kitne\n"}
+          <Text>{unit.toLowerCase() === "shorts" ? "Shorts" : "Reels"} dekhne hain?</Text>
         </Text>
-
-        {/* 6-box grid — 3 per row */}
-        <View style={styles.grid}>
-          {COUNT_OPTIONS.map((num) => {
-            const isSelected = selected === num;
-            return (
-              <TouchableOpacity
-                key={num}
-                style={[styles.option, isSelected && styles.optionSelected]}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setSelected(num);
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
-                  {num}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
       </View>
 
-      {/* ── Bottom: confirm button ───────────────────────────────────── */}
-      <View style={[styles.bottomArea]}>
+      {/* ── Vertical gap ────────────────────────────────────────────── */}
+      <View style={styles.gap} />
+
+      {/* ── 6-pill grid (2 per row) ──────────────────────────────────── */}
+      <View style={styles.grid}>
+        {rows.map((pair, ri) => (
+          <View key={ri} style={styles.gridRow}>
+            {pair.map((num) => {
+              const isSel = selected === num;
+              return (
+                <TouchableOpacity
+                  key={num}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setSelected(num);
+                  }}
+                  activeOpacity={0.75}
+                  style={[styles.pill, isSel && styles.pillSelected]}
+                >
+                  <Text style={[styles.pillText, isSel && styles.pillTextSelected]}>
+                    {num}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+
+      {/* ── Spacer to push CTA to bottom ─────────────────────────────── */}
+      <View style={{ flex: 1 }} />
+
+      {/* ── CTA button ────────────────────────────────────────────────── */}
+      <View style={styles.ctaWrapper}>
         <Pressable
           onPress={handleConfirm}
           disabled={!selected || loading}
-          style={({ pressed }) => [{ opacity: pressed || !selected ? 0.45 : 1 }]}
+          style={({ pressed }) => [
+            styles.ctaPressable,
+            { opacity: pressed || !selected ? 0.42 : 1 },
+          ]}
         >
           <LinearGradient
-            colors={["#FFBF80", "#FFA660"]}
+            colors={["#FFB347", "#FF8C42"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={styles.confirmBtn}
+            style={styles.ctaGradient}
           >
-            <Feather name="check-circle" size={18} color="#000000" style={{ marginRight: 8 }} />
-            <Text style={styles.confirmText}>
+            <Text style={styles.ctaText}>
               {loading ? "Saving…" : "Confirm"}
             </Text>
           </LinearGradient>
         </Pressable>
       </View>
-    </LinearGradient>
+
+      {/* ── Gesture indicator bar ─────────────────────────────────────── */}
+      <View style={styles.gestureBar} />
+    </View>
   );
 }
 
@@ -181,110 +194,113 @@ export default function ReelCountScheduleScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    backgroundColor: "#000000",
     alignItems: "center",
-    justifyContent: "space-between",
   },
 
-  // ── Top area ──
-  topArea: {
-    alignItems: "center",
-    paddingTop: 16,
-  },
-  logoPlaceholder: {
-    width: 72,
-    height: 72,
+  // ── Back button ──
+  backBtn: {
+    position: "absolute",
+    left: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.10)",
     alignItems: "center",
     justifyContent: "center",
-  },
-  logoEmptyBox: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 1.5,
-    borderColor: "#5a4634",
-    borderStyle: "dashed",
-  },
-  platformName: {
-    marginTop: 8,
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    color: "#9a7a5a",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
+    zIndex: 10,
   },
 
-  // ── Center ──
-  center: {
-    flex: 1,
+  // ── Illustration area ──
+  illustrationArea: {
+    width: "100%",
+    height: 120, // reserved for mascot + logo asset
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: H_PADDING,
+    marginTop: 16,
+    marginBottom: 4,
   },
-  title: {
+
+  // ── Heading ──
+  headingBlock: {
+    paddingHorizontal: 24,
+    alignItems: "center",
+  },
+  heading: {
     color: "#FFFFFF",
-    fontSize: 22,
+    fontSize: 26,
     fontFamily: "Inter_700Bold",
-    marginBottom: 6,
     textAlign: "center",
+    lineHeight: 34,
   },
-  subtitle: {
-    color: "#c9b8a8",
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    marginBottom: 32,
-    textAlign: "center",
-    lineHeight: 18,
+
+  // ── Gap between heading and grid ──
+  gap: {
+    height: 36,
   },
 
   // ── Grid ──
   grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: CARD_GAP,
-    width: CARD_SIZE * 3 + CARD_GAP * 2,
+    width: "100%",
+    paddingHorizontal: PILL_H_PAD,
+    gap: PILL_GAP,
   },
-  option: {
-    width: CARD_SIZE,
-    height: CARD_SIZE,
-    borderRadius: CARD_SIZE / 2,
-    borderWidth: 1.5,
-    borderColor: "#5a4634",
+  gridRow: {
+    flexDirection: "row",
+    gap: PILL_GAP,
+  },
+  pill: {
+    width: PILL_W,
+    height: PILL_H,
+    borderRadius: PILL_H / 2,        // fully pill-shaped
+    backgroundColor: "#1C1C1E",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.03)",
   },
-  optionSelected: {
-    borderColor: "#FFBF80",
-    backgroundColor: "rgba(255,191,128,0.12)",
+  pillSelected: {
+    backgroundColor: "#2C2C2E",
+    borderWidth: 1.5,
+    borderColor: "#FFB347",
   },
-  optionText: {
-    color: "#c9b8a8",
-    fontSize: 18,
-    fontFamily: "Inter_600SemiBold",
+  pillText: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontFamily: "Inter_700Bold",
   },
-  optionTextSelected: {
-    color: "#FFBF80",
+  pillTextSelected: {
+    color: "#FFB347",
   },
 
-  // ── Bottom ──
-  bottomArea: {
+  // ── CTA ──
+  ctaWrapper: {
     width: "100%",
     paddingHorizontal: 24,
-    paddingBottom: 16,
-    paddingTop: 12,
+    paddingBottom: 12,
   },
-  confirmBtn: {
-    flexDirection: "row",
+  ctaPressable: {
+    width: "100%",
+    borderRadius: 50,
+    overflow: "hidden",
+  },
+  ctaGradient: {
+    paddingVertical: 17,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 14,
-    paddingVertical: 16,
   },
-  confirmText: {
-    color: "#000000",
+  ctaText: {
+    color: "#FFFFFF",
     fontSize: 17,
     fontFamily: "Inter_700Bold",
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
+  },
+
+  // ── Gesture bar ──
+  gestureBar: {
+    width: 134,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: "rgba(255,255,255,0.30)",
+    marginBottom: 4,
+    marginTop: 4,
   },
 });
