@@ -158,8 +158,8 @@ export default function ReelCountScheduleScreen() {
         ))}
       </View>
 
-      {/* ── Spacer to push CTA to bottom ─────────────────────────────── */}
-      <View style={{ flex: 1 }} />
+      {/* ── Spacer between grid and CTA — matches row gap ──────────────── */}
+      <View style={{ height: PILL_GAP }} />
 
       {/* ── CTA button ────────────────────────────────────────────────── */}
       <View style={styles.ctaWrapper}>
