@@ -18,6 +18,7 @@
  *   Ticks every second; hidden if no active lock found for this platform.
  */
 
+import { Canvas, Circle, RadialGradient, vec } from "@shopify/react-native-skia";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -26,6 +27,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -154,6 +156,12 @@ function formatLiveTimer(endTime: number): string {
   return `${minutes}m ${secs}s remaining`;
 }
 
+// ── Hex colour + alpha helper (produces "#RRGGBBAA") ─────────────────────────
+function hexWithAlpha(hex: string, alpha: number): string {
+  const a = Math.round(alpha * 255).toString(16).padStart(2, "0");
+  return `${hex}${a}`;
+}
+
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function ReelsLockScreen() {
   const insets = useSafeAreaInsets();
@@ -167,6 +175,12 @@ export default function ReelsLockScreen() {
 
   const config        = PLATFORM_CONFIG[platform];
   const glowBaseColor = GLOW_BASE_COLOR[platform];
+
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  // Glow centre — nudged up 40 px to match original marginBottom:80 on glowWrap
+  const glowCx = screenWidth  / 2;
+  const glowCy = screenHeight / 2 - 40;
+  const glowR  = 140;
 
   const topPad    = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -232,18 +246,32 @@ export default function ReelsLockScreen() {
   return (
     <View style={[styles.root, { paddingTop: topPad, paddingBottom: bottomPad }]}>
 
-      {/* ── Ambient / Vignette Glow behind character ─────────────────── */}
-      {/* Multi-layer soft radial — concentrated on head+upper-body only  */}
-      <View style={styles.glowWrap} pointerEvents="none">
-        {/* Outer halo — widest, most transparent */}
-        <View style={[styles.glowRing, { width: 280, height: 280, borderRadius: 140, backgroundColor: glowBaseColor, opacity: 0.07 }]} />
-        {/* Mid layer */}
-        <View style={[styles.glowRing, { width: 200, height: 200, borderRadius: 100, backgroundColor: glowBaseColor, opacity: 0.11 }]} />
-        {/* Inner glow — tighter, slightly stronger */}
-        <View style={[styles.glowRing, { width: 140, height: 140, borderRadius: 70,  backgroundColor: glowBaseColor, opacity: 0.16 }]} />
-        {/* Warm golden centre highlight — mimics ambient light source */}
-        <View style={[styles.glowRing, { width: 90,  height: 90,  borderRadius: 45,  backgroundColor: "#FFE9B0",     opacity: 0.12 }]} />
-      </View>
+      {/* ── Skia RadialGradient glow behind character ────────────────── */}
+      {/* True GPU radial — zero rings, zero banding, premium soft glow   */}
+      <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
+        {/* Platform-colour glow — smooth radial from centre to transparent */}
+        <Circle cx={glowCx} cy={glowCy} r={glowR}>
+          <RadialGradient
+            c={vec(glowCx, glowCy)}
+            r={glowR}
+            colors={[
+              hexWithAlpha(glowBaseColor, 0.24),
+              hexWithAlpha(glowBaseColor, 0.14),
+              hexWithAlpha(glowBaseColor, 0.06),
+              hexWithAlpha(glowBaseColor, 0.00),
+            ]}
+            positions={[0, 0.38, 0.70, 1]}
+          />
+        </Circle>
+        {/* Warm golden centre highlight — ambient light source */}
+        <Circle cx={glowCx} cy={glowCy} r={50}>
+          <RadialGradient
+            c={vec(glowCx, glowCy)}
+            r={50}
+            colors={["#FFE9B030", "#FFE9B000"]}
+          />
+        </Circle>
+      </Canvas>
 
       {/* ── Character image ─────────────────────────────────────────── */}
       <View style={styles.imageWrap}>
@@ -297,19 +325,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 28,
-  },
-
-  // Ambient glow — absolute full-screen container, centred
-  glowWrap: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-    // nudge glow upward so it sits behind head/upper-body, not dead centre of screen
-    marginBottom: 80,
-  },
-  // Each ring is absolutely stacked inside glowWrap; size/color set inline
-  glowRing: {
-    position: "absolute",
   },
 
   // Character image
