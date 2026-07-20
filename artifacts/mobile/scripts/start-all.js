@@ -173,23 +173,29 @@ buildProc.on("exit", (code) => {
 });
 
 // ─── Phase 3: Metro dev server (Expo Go) ─────────────────────────────────────
-log("Phase 3 — Starting Metro dev server for Expo Go (ngrok tunnel)…");
+log("Phase 3 — Starting Metro dev server for Expo Go…");
 log("  📱  Expo Go : scan the QR code that appears below with the Expo Go app");
+
+// Use Replit's built-in Expo proxy domain instead of ngrok.
+// REPLIT_EXPO_DEV_DOMAIN  → the *.expo.*.replit.dev URL Expo Go can reach
+// REACT_NATIVE_PACKAGER_HOSTNAME → overrides the hostname Metro puts in the QR code
+const replitDevDomain  = process.env.REPLIT_DEV_DOMAIN  || "";
+const replitExpoDomain = process.env.REPLIT_EXPO_DEV_DOMAIN || replitDevDomain;
 
 const metroEnv = {
   ...process.env,
-  EXPO_PUBLIC_DOMAIN:             process.env.REPLIT_DEV_DOMAIN || "",
+  EXPO_PUBLIC_DOMAIN:             replitDevDomain,
   EXPO_PUBLIC_REPL_ID:            process.env.REPL_ID || "",
+  REACT_NATIVE_PACKAGER_HOSTNAME: replitDevDomain,
+  EXPO_PACKAGER_PROXY_URL:        replitExpoDomain ? `https://${replitExpoDomain}` : "",
 };
 
-// --tunnel uses ngrok to create a publicly-accessible URL so Expo Go on any
-// phone can connect (the default --localhost mode only works inside Replit's
-// proxy, which is not reachable via a phone browser or Expo Go externally).
+// Use --lan so Metro picks up REACT_NATIVE_PACKAGER_HOSTNAME for the QR code.
 // Port 18116 avoids conflict with the artifacts/mobile:expo workflow (18115).
 const METRO_PORT = process.env.EXPO_PORT || "18116";
 const metro = spawn(
   "pnpm",
-  ["exec", "expo", "start", "--tunnel", "--port", METRO_PORT],
+  ["exec", "expo", "start", "--lan", "--port", METRO_PORT],
   { cwd: ROOT, stdio: "inherit", env: metroEnv }
 );
 
