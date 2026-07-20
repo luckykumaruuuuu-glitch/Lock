@@ -158,8 +158,8 @@ export default function ReelCountScheduleScreen() {
         ))}
       </View>
 
-      {/* ── Spacer between grid and CTA — matches row gap ──────────────── */}
-      <View style={{ height: PILL_GAP }} />
+      {/* ── Spacer — pushes CTA to bottom ───────────────────────────────── */}
+      <View style={{ flex: 1 }} />
 
       {/* ── CTA button ────────────────────────────────────────────────── */}
       <View style={styles.ctaWrapper}>
@@ -183,9 +183,6 @@ export default function ReelCountScheduleScreen() {
           </LinearGradient>
         </Pressable>
       </View>
-
-      {/* ── Gesture indicator bar ─────────────────────────────────────── */}
-      <View style={styles.gestureBar} />
     </View>
   );
 }
@@ -217,7 +214,7 @@ const styles = StyleSheet.create({
     height: 120, // reserved for mascot + logo asset
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 16,
+    marginTop: 52,  // increased to shift entire content group slightly downward
     marginBottom: 4,
   },
 
