@@ -479,6 +479,72 @@ export default function SettingsScreen() {
           />
         </GlassCard>
 
+        {/* LOGS — per-platform lock screen shortcuts */}
+        <SectionLabel label="Logs" />
+        <GlassCard padding={0}>
+          <SettingRow
+            icon="lock"
+            label="Instalog"
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "instagram" } })}
+          />
+          <SettingRow
+            icon="lock"
+            label="TikToklog"
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "tiktok" } })}
+          />
+          <SettingRow
+            icon="lock"
+            label="Twitterlog"
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "twitter" } })}
+          />
+          <SettingRow
+            icon="lock"
+            label="Facebooklog"
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "facebook" } })}
+          />
+          <SettingRow
+            icon="lock"
+            label="YouTubelog"
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "youtube" } })}
+          />
+          <SettingRow
+            icon="lock"
+            label="Snaplog"
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "snapchat" } })}
+          />
+          <SettingRow
+            icon="lock"
+            label="Redditlog"
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "reddit" } })}
+          />
+          <SettingRow
+            icon="lock"
+            label="Pinterestlog"
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "pinterest" } })}
+          />
+          <SettingRow
+            icon="lock"
+            label="WhatsApplog"
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "whatsapp" } })}
+          />
+          <SettingRow
+            icon="lock"
+            label="Telegramlog"
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "telegram" } })}
+          />
+          <SettingRow
+            icon="lock"
+            label="Discordlog"
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "discord" } })}
+          />
+          <SettingRow
+            icon="lock"
+            label="LinkedInlog"
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "linkedin" } })}
+            last
+          />
+        </GlassCard>
+
         {/* DEVELOPER */}
         {Platform.OS === "android" && (
           <>

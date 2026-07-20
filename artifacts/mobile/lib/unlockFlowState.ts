@@ -12,7 +12,20 @@
  */
 
 export type UnlockDestination = "duration-selector" | "reel-count-schedule";
-export type SourcePlatform = "instagram" | "youtube" | "facebook" | null;
+export type SourcePlatform =
+  | "instagram"
+  | "youtube"
+  | "facebook"
+  | "tiktok"
+  | "twitter"
+  | "snapchat"
+  | "reddit"
+  | "pinterest"
+  | "whatsapp"
+  | "telegram"
+  | "discord"
+  | "linkedin"
+  | null;
 
 let _destination: UnlockDestination = "duration-selector";
 let _platform: SourcePlatform = null;
