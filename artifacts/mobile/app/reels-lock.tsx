@@ -18,7 +18,6 @@
  *   Ticks every second; hidden if no active lock found for this platform.
  */
 
-import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -103,20 +102,20 @@ const PLATFORM_CONFIG: Record<
   },
 };
 
-// Glow accent colour per platform
-const GLOW_COLOR: Record<PlatformKey, string> = {
-  instagram: "rgba(193, 53, 132, 0.35)",   // Instagram pink/purple
-  youtube:   "rgba(255, 0, 0, 0.30)",       // YouTube red
-  facebook:  "rgba(24, 119, 242, 0.30)",    // Facebook blue
-  tiktok:    "rgba(105, 201, 208, 0.30)",   // TikTok teal
-  twitter:   "rgba(29, 161, 242, 0.28)",    // Twitter blue
-  snapchat:  "rgba(255, 252, 0, 0.22)",     // Snapchat yellow
-  reddit:    "rgba(255, 69, 0, 0.30)",      // Reddit orange-red
-  pinterest: "rgba(230, 0, 35, 0.28)",      // Pinterest red
-  whatsapp:  "rgba(37, 211, 102, 0.28)",    // WhatsApp green
-  telegram:  "rgba(0, 136, 204, 0.28)",     // Telegram blue
-  discord:   "rgba(88, 101, 242, 0.30)",    // Discord purple
-  linkedin:  "rgba(10, 102, 194, 0.28)",    // LinkedIn blue
+// Solid base colour per platform — opacity applied per-layer in the glow stack
+const GLOW_BASE_COLOR: Record<PlatformKey, string> = {
+  instagram: "#C13584",  // Instagram pink/purple
+  youtube:   "#FF0000",  // YouTube red
+  facebook:  "#1877F2",  // Facebook blue
+  tiktok:    "#69C9D0",  // TikTok teal
+  twitter:   "#1DA1F2",  // Twitter blue
+  snapchat:  "#FFFC00",  // Snapchat yellow
+  reddit:    "#FF4500",  // Reddit orange-red
+  pinterest: "#E60023",  // Pinterest red
+  whatsapp:  "#25D366",  // WhatsApp green
+  telegram:  "#0088CC",  // Telegram blue
+  discord:   "#5865F2",  // Discord purple
+  linkedin:  "#0A66C2",  // LinkedIn blue
 };
 
 // Android package name per platform — used to look up the active lock endTime
@@ -166,8 +165,8 @@ export default function ReelsLockScreen() {
       : "instagram"
   ) as PlatformKey;
 
-  const config    = PLATFORM_CONFIG[platform];
-  const glowColor = GLOW_COLOR[platform];
+  const config        = PLATFORM_CONFIG[platform];
+  const glowBaseColor = GLOW_BASE_COLOR[platform];
 
   const topPad    = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -233,12 +232,17 @@ export default function ReelsLockScreen() {
   return (
     <View style={[styles.root, { paddingTop: topPad, paddingBottom: bottomPad }]}>
 
-      {/* ── Radial glow behind character ─────────────────────────────── */}
+      {/* ── Ambient / Vignette Glow behind character ─────────────────── */}
+      {/* Multi-layer soft radial — concentrated on head+upper-body only  */}
       <View style={styles.glowWrap} pointerEvents="none">
-        <LinearGradient
-          colors={[glowColor, "transparent"]}
-          style={styles.glow}
-        />
+        {/* Outer halo — widest, most transparent */}
+        <View style={[styles.glowRing, { width: 280, height: 280, borderRadius: 140, backgroundColor: glowBaseColor, opacity: 0.07 }]} />
+        {/* Mid layer */}
+        <View style={[styles.glowRing, { width: 200, height: 200, borderRadius: 100, backgroundColor: glowBaseColor, opacity: 0.11 }]} />
+        {/* Inner glow — tighter, slightly stronger */}
+        <View style={[styles.glowRing, { width: 140, height: 140, borderRadius: 70,  backgroundColor: glowBaseColor, opacity: 0.16 }]} />
+        {/* Warm golden centre highlight — mimics ambient light source */}
+        <View style={[styles.glowRing, { width: 90,  height: 90,  borderRadius: 45,  backgroundColor: "#FFE9B0",     opacity: 0.12 }]} />
       </View>
 
       {/* ── Character image ─────────────────────────────────────────── */}
@@ -295,16 +299,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
   },
 
-  // Glow — large soft circle centred behind the character
+  // Ambient glow — absolute full-screen container, centred
   glowWrap: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
+    // nudge glow upward so it sits behind head/upper-body, not dead centre of screen
+    marginBottom: 80,
   },
-  glow: {
-    width: 380,
-    height: 380,
-    borderRadius: 190,
+  // Each ring is absolutely stacked inside glowWrap; size/color set inline
+  glowRing: {
+    position: "absolute",
   },
 
   // Character image
