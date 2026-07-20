@@ -674,21 +674,29 @@ function DuckLockHomeContent() {
             <Image source={lockIconImg} style={styles.reelsLockEmoji} />
             <View style={styles.reelsLockCenter}>
               <Text style={styles.reelsLockTitle}>Lock Reels</Text>
-              <View style={[
-                styles.reelsLockPill,
-                { backgroundColor: reelsLockEnabled ? "rgba(48,209,88,0.13)" : "rgba(255,59,48,0.13)" },
-              ]}>
-                <View style={[styles.reelsLockDot, { backgroundColor: reelsLockEnabled ? "#30D158" : "#FF3B30" }]} />
-                <Text style={[styles.reelsLockPillText, { color: reelsLockEnabled ? "#30D158" : "#FF3B30" }]}>
-                  {reelsLockEnabled
-                    ? "Locked"
-                    : reelsLockOffState?.type === "forever"
-                      ? "Unlocked — Permanent"
-                      : reelsLockOffState?.type === "timed"
-                        ? `Unlocked — ${formatOffTimeRemaining(reelsLockOffState) ?? "expired"}`
-                        : "Unlocked"}
-                </Text>
-              </View>
+              {(() => {
+                // Three distinct visual states for the status strip
+                const isTimed = !reelsLockEnabled && reelsLockOffState?.type === "timed";
+                const isForeverOrOff = !reelsLockEnabled && reelsLockOffState?.type !== "timed";
+                const pillBg   = reelsLockEnabled
+                  ? "rgba(48,209,88,0.13)"
+                  : isTimed
+                    ? "rgba(120,120,128,0.15)"
+                    : "rgba(255,59,48,0.13)";
+                const dotColor = reelsLockEnabled ? "#30D158" : isTimed ? "#8E8E93" : "#FF3B30";
+                const textColor = reelsLockEnabled ? "#30D158" : isTimed ? "#AEAEB2" : "#FF3B30";
+                const label = reelsLockEnabled
+                  ? "Locked"
+                  : isTimed
+                    ? `Unlocks in ${formatOffTimeRemaining(reelsLockOffState!) ?? "soon"}`
+                    : "Unlocked";
+                return (
+                  <View style={[styles.reelsLockPill, { backgroundColor: pillBg }]}>
+                    <View style={[styles.reelsLockDot, { backgroundColor: dotColor }]} />
+                    <Text style={[styles.reelsLockPillText, { color: textColor }]}>{label}</Text>
+                  </View>
+                );
+              })()}
             </View>
             <ToggleSwitch
               value={reelsLockEnabled}
@@ -855,7 +863,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   reelsLockDot: { width: 9, height: 9, borderRadius: 5 },
-  reelsLockPillText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  reelsLockPillText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   duckPalHeroPlaceholder: {
     alignSelf: "stretch",
     height: 280,

@@ -37,8 +37,9 @@ export async function clearReelsLockOff(): Promise<void> {
 }
 
 /**
- * Returns a human-readable "time remaining" string for a timed off-state,
- * or null if the duration has already expired.
+ * Returns the time remaining for a timed off-state as a compact string
+ * (e.g. "5h 32m", "2d 3h", "45m"), or null if expired / not timed.
+ * Caller should prefix with "Unlocks in " for display.
  */
 export function formatOffTimeRemaining(state: ReelsLockOffState): string | null {
   if (state.type !== "timed") return null;
@@ -48,7 +49,7 @@ export function formatOffTimeRemaining(state: ReelsLockOffState): string | null 
   const days  = Math.floor(totalSec / 86400);
   const hours = Math.floor((totalSec % 86400) / 3600);
   const mins  = Math.floor((totalSec % 3600) / 60);
-  if (days > 0)  return `${days}d ${hours}h left`;
-  if (hours > 0) return `${hours}h ${mins}m left`;
-  return `${mins}m left`;
+  if (days > 0)  return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
 }
