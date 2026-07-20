@@ -35,6 +35,12 @@ import {
   formatOffTimeRemaining,
   ReelsLockOffState,
 } from "@/lib/reelsLockOff";
+import { setUnlockFlowState } from "@/lib/unlockFlowState";
+import {
+  getReelsRemaining,
+  clearReelsRemaining,
+  ReelsRemainingState,
+} from "@/lib/reelsLockReels";
 import {
   ActiveLockDisplayItem,
   formatExpiryDate,
@@ -567,6 +573,7 @@ function DuckLockHomeContent() {
   const [toast, setToast] = React.useState(false);
   const [reelsLockEnabled, setReelsLockEnabled] = useState(false);
   const [reelsLockOffState, setReelsLockOffState] = useState<ReelsLockOffState | null>(null);
+  const [reelsRemaining, setReelsRemaining] = useState<ReelsRemainingState | null>(null);
   const [popupBypassed, setPopupBypassed] = useState(false); // dev-only; Expo Go + web
 
   // Load persisted Reels Lock toggle state on mount (Android only)
@@ -586,23 +593,30 @@ function DuckLockHomeContent() {
       let cancelled = false;
 
       async function syncReelsLock() {
-        // 1. Check stored off-state
-        const offState = await getReelsLockOff();
+        // 1. Read both unlock states in parallel
+        const [offState, reelState] = await Promise.all([
+          getReelsLockOff(),
+          getReelsRemaining(),
+        ]);
 
         // 2. If a timed duration has expired, auto-re-enable and clear storage
         if (offState?.type === "timed" && offState.until <= Date.now()) {
-          await clearReelsLockOff();
+          await Promise.all([clearReelsLockOff(), clearReelsRemaining()]);
           if (Platform.OS === "android" && NativeModules.ReelsLock) {
             try { await NativeModules.ReelsLock.setEnabled(true); } catch (_) {}
           }
           if (!cancelled) {
             setReelsLockOffState(null);
+            setReelsRemaining(null);
             setReelsLockEnabled(true);
           }
           return;
         }
 
-        if (!cancelled) setReelsLockOffState(offState);
+        if (!cancelled) {
+          setReelsLockOffState(offState);
+          setReelsRemaining(reelState);
+        }
 
         // 3. Sync toggle state from native
         if (Platform.OS === "android" && NativeModules.ReelsLock) {
@@ -675,21 +689,29 @@ function DuckLockHomeContent() {
             <View style={styles.reelsLockCenter}>
               <Text style={styles.reelsLockTitle}>Lock Reels</Text>
               {(() => {
-                // Three distinct visual states for the status strip
-                const isTimed = !reelsLockEnabled && reelsLockOffState?.type === "timed";
-                const isForeverOrOff = !reelsLockEnabled && reelsLockOffState?.type !== "timed";
+                // Four visual states for the status strip:
+                //  1. ON              → green  "Locked"
+                //  2. OFF + reel-count → neutral "X Reels/Shorts left"
+                //  3. OFF + timed      → neutral "Unlocks in Xh Ym"
+                //  4. OFF + forever/bare → red "Unlocked"
+                const isTimed    = !reelsLockEnabled && reelsLockOffState?.type === "timed";
+                const isReelMode = !reelsLockEnabled && reelsRemaining !== null;
+                const isNeutral  = isTimed || isReelMode;
                 const pillBg   = reelsLockEnabled
                   ? "rgba(48,209,88,0.13)"
-                  : isTimed
+                  : isNeutral
                     ? "rgba(120,120,128,0.15)"
                     : "rgba(255,59,48,0.13)";
-                const dotColor = reelsLockEnabled ? "#30D158" : isTimed ? "#8E8E93" : "#FF3B30";
-                const textColor = reelsLockEnabled ? "#30D158" : isTimed ? "#AEAEB2" : "#FF3B30";
+                const dotColor  = reelsLockEnabled ? "#30D158" : isNeutral ? "#8E8E93" : "#FF3B30";
+                const textColor = reelsLockEnabled ? "#30D158" : isNeutral ? "#AEAEB2" : "#FF3B30";
+                const unit = reelsRemaining?.platform === "youtube" ? "Shorts" : "Reels";
                 const label = reelsLockEnabled
                   ? "Locked"
-                  : isTimed
-                    ? `Unlocks in ${formatOffTimeRemaining(reelsLockOffState!) ?? "soon"}`
-                    : "Unlocked";
+                  : isReelMode
+                    ? `${reelsRemaining!.count} ${unit} left`
+                    : isTimed
+                      ? `Unlocks in ${formatOffTimeRemaining(reelsLockOffState!) ?? "soon"}`
+                      : "Unlocked";
                 return (
                   <View style={[styles.reelsLockPill, { backgroundColor: pillBg }]}>
                     <View style={[styles.reelsLockDot, { backgroundColor: dotColor }]} />
@@ -703,15 +725,19 @@ function DuckLockHomeContent() {
               onValueChange={(v: boolean) => {
                 if (!v && reelsLockEnabled) {
                   // User is trying to turn OFF — don't disable yet.
-                  // Set the pending flag and open the unlock-task flow.
-                  // The toggle will genuinely turn OFF only after a task
-                  // is completed (coming-soon.tsx consumes the flag).
+                  // Set the pending flag, fix destination to duration-selector,
+                  // and open the unlock-task flow.
                   setPendingReelsLockDisable();
+                  setUnlockFlowState("duration-selector");
                   router.push("/unlock-tasks");
                   return;
                 }
-                // Turning ON — apply immediately as before.
+                // Turning ON — apply immediately and clear any unlock state.
                 setReelsLockEnabled(v);
+                setReelsLockOffState(null);
+                setReelsRemaining(null);
+                clearReelsLockOff();
+                clearReelsRemaining();
                 if (Platform.OS === "android" && NativeModules.ReelsLock) {
                   NativeModules.ReelsLock.setEnabled(v);
                 }

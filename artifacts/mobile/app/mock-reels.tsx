@@ -17,6 +17,7 @@
 import * as Haptics from "expo-haptics";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { getUnlockDestination } from "@/lib/unlockFlowState";
 import React, { useCallback, useRef, useState } from "react";
 import {
   Animated,
@@ -270,7 +271,7 @@ export default function MockReelsScreen() {
     // After effect: navigate to Coming Soon screen
     // (toggle-off + Instagram redirect kept below for future use)
     setTimeout(() => {
-      router.replace("/duration-selector");
+      router.replace(getUnlockDestination());
       // if (Platform.OS === "android" && NativeModules.ReelsLock) {
       //   try { NativeModules.ReelsLock.setEnabled(false); } catch (_) {}
       // }

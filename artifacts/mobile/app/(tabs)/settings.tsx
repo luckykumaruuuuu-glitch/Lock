@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassCard } from "@/components/ui/GlassCard";
+import { setUnlockFlowState } from "@/lib/unlockFlowState";
 import { GradientBackground } from "@/components/ui/GradientBackground";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { useDebugLog } from "@/context/DebugLogContext";
@@ -464,7 +465,10 @@ export default function SettingsScreen() {
           <SettingRow
             icon="unlock"
             label="Unlock Tasks Screen"
-            onPress={() => router.push("/unlock-tasks")}
+            onPress={() => {
+              setUnlockFlowState("reel-count-schedule", null);
+              router.push("/unlock-tasks");
+            }}
             last
           />
         </GlassCard>

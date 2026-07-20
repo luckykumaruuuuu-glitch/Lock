@@ -19,6 +19,7 @@ import * as Haptics from "expo-haptics";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { getUnlockDestination } from "@/lib/unlockFlowState";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -310,7 +311,7 @@ export default function WatchVideoScreen() {
     // After effect: navigate to Coming Soon screen
     // (toggle-off + Instagram redirect kept below for future use)
     setTimeout(() => {
-      router.replace("/duration-selector");
+      router.replace(getUnlockDestination());
       // if (Platform.OS === "android" && NativeModules.ReelsLock) {
       //   try { NativeModules.ReelsLock.setEnabled(false); } catch (_) {}
       // }

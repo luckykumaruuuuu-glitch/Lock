@@ -15,6 +15,7 @@
  */
 
 import { router } from "expo-router";
+import { getUnlockDestination } from "@/lib/unlockFlowState";
 import React, {
   useCallback,
   useEffect,
@@ -241,7 +242,7 @@ function JumpCamera({ insets, Native }: { insets: any; Native: any }) {
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
 
   const handleComplete = useCallback(() => {
-    setTimeout(() => router.replace("/duration-selector"), 500);
+    setTimeout(() => router.replace(getUnlockDestination()), 500);
   }, []);
 
   const { reps, processLandmarks } = useSquatCounter(handleComplete);
