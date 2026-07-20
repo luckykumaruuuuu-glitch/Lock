@@ -30,6 +30,12 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useLock } from "@/context/LockContext";
 import { setPendingReelsLockDisable } from "@/lib/reelsLockPending";
 import {
+  getReelsLockOff,
+  clearReelsLockOff,
+  formatOffTimeRemaining,
+  ReelsLockOffState,
+} from "@/lib/reelsLockOff";
+import {
   ActiveLockDisplayItem,
   formatExpiryDate,
   formatTimeRemaining,
@@ -560,6 +566,7 @@ function DuckLockHomeContent() {
   const { t } = useLanguage();
   const [toast, setToast] = React.useState(false);
   const [reelsLockEnabled, setReelsLockEnabled] = useState(false);
+  const [reelsLockOffState, setReelsLockOffState] = useState<ReelsLockOffState | null>(null);
   const [popupBypassed, setPopupBypassed] = useState(false); // dev-only; Expo Go + web
 
   // Load persisted Reels Lock toggle state on mount (Android only)
@@ -571,15 +578,43 @@ function DuckLockHomeContent() {
     }
   }, []);
 
-  // Re-sync toggle on every focus so the state reflects what coming-soon.tsx
-  // may have disabled after the user completed an unlock task.
+  // Re-sync toggle + off-state on every focus so the strip always reflects
+  // the real state (duration-selector may have disabled the lock, or a timed
+  // duration may have expired while the user was elsewhere).
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS === "android" && NativeModules.ReelsLock) {
-        NativeModules.ReelsLock.getEnabled()
-          .then((enabled: boolean) => setReelsLockEnabled(enabled))
-          .catch(() => {/* ignore */});
+      let cancelled = false;
+
+      async function syncReelsLock() {
+        // 1. Check stored off-state
+        const offState = await getReelsLockOff();
+
+        // 2. If a timed duration has expired, auto-re-enable and clear storage
+        if (offState?.type === "timed" && offState.until <= Date.now()) {
+          await clearReelsLockOff();
+          if (Platform.OS === "android" && NativeModules.ReelsLock) {
+            try { await NativeModules.ReelsLock.setEnabled(true); } catch (_) {}
+          }
+          if (!cancelled) {
+            setReelsLockOffState(null);
+            setReelsLockEnabled(true);
+          }
+          return;
+        }
+
+        if (!cancelled) setReelsLockOffState(offState);
+
+        // 3. Sync toggle state from native
+        if (Platform.OS === "android" && NativeModules.ReelsLock) {
+          try {
+            const enabled: boolean = await NativeModules.ReelsLock.getEnabled();
+            if (!cancelled) setReelsLockEnabled(enabled);
+          } catch (_) { /* ignore */ }
+        }
       }
+
+      syncReelsLock();
+      return () => { cancelled = true; };
     }, [])
   );
 
@@ -645,7 +680,13 @@ function DuckLockHomeContent() {
               ]}>
                 <View style={[styles.reelsLockDot, { backgroundColor: reelsLockEnabled ? "#30D158" : "#FF3B30" }]} />
                 <Text style={[styles.reelsLockPillText, { color: reelsLockEnabled ? "#30D158" : "#FF3B30" }]}>
-                  {reelsLockEnabled ? "Unlock" : "Lock"}
+                  {reelsLockEnabled
+                    ? "Locked"
+                    : reelsLockOffState?.type === "forever"
+                      ? "Unlocked — Permanent"
+                      : reelsLockOffState?.type === "timed"
+                        ? `Unlocked — ${formatOffTimeRemaining(reelsLockOffState) ?? "expired"}`
+                        : "Unlocked"}
                 </Text>
               </View>
             </View>

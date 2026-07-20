@@ -270,7 +270,7 @@ export default function MockReelsScreen() {
     // After effect: navigate to Coming Soon screen
     // (toggle-off + Instagram redirect kept below for future use)
     setTimeout(() => {
-      router.replace("/coming-soon");
+      router.replace("/duration-selector");
       // if (Platform.OS === "android" && NativeModules.ReelsLock) {
       //   try { NativeModules.ReelsLock.setEnabled(false); } catch (_) {}
       // }

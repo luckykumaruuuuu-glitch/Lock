@@ -241,7 +241,7 @@ function JumpCamera({ insets, Native }: { insets: any; Native: any }) {
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
 
   const handleComplete = useCallback(() => {
-    setTimeout(() => router.replace("/coming-soon"), 500);
+    setTimeout(() => router.replace("/duration-selector"), 500);
   }, []);
 
   const { reps, processLandmarks } = useSquatCounter(handleComplete);
