@@ -114,6 +114,9 @@ export default function ReelCountScheduleScreen() {
         <Feather name="arrow-left" size={20} color="#FFFFFF" />
       </Pressable>
 
+      {/* ── Spacer — pushes content block down toward CTA ───────────────── */}
+      <View style={{ flex: 1 }} />
+
       {/* ── Illustration placeholder ────────────────────────────────── */}
       {/* Real assets (mascot + platform logo) will be added later.
           For now: a minimal empty area so the layout spacing is set. */}
@@ -158,8 +161,8 @@ export default function ReelCountScheduleScreen() {
         ))}
       </View>
 
-      {/* ── Spacer — pushes CTA to bottom ───────────────────────────────── */}
-      <View style={{ flex: 1 }} />
+      {/* ── Gap between grid and CTA — matches row-to-row spacing ───────── */}
+      <View style={{ height: PILL_GAP }} />
 
       {/* ── CTA button ────────────────────────────────────────────────── */}
       <View style={styles.ctaWrapper}>
@@ -214,7 +217,7 @@ const styles = StyleSheet.create({
     height: 120, // reserved for mascot + logo asset
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 52,  // increased to shift entire content group slightly downward
+    marginTop: 8,
     marginBottom: 4,
   },
 
