@@ -173,23 +173,23 @@ buildProc.on("exit", (code) => {
 });
 
 // ─── Phase 3: Metro dev server (Expo Go) ─────────────────────────────────────
-log("Phase 3 — Starting Metro dev server for Expo Go…");
+log("Phase 3 — Starting Metro dev server for Expo Go (ngrok tunnel)…");
+log("  📱  Expo Go : scan the QR code that appears below with the Expo Go app");
 
 const metroEnv = {
   ...process.env,
-  EXPO_PACKAGER_PROXY_URL:        `https://${process.env.REPLIT_EXPO_DEV_DOMAIN || ""}`,
   EXPO_PUBLIC_DOMAIN:             process.env.REPLIT_DEV_DOMAIN || "",
   EXPO_PUBLIC_REPL_ID:            process.env.REPL_ID || "",
-  REACT_NATIVE_PACKAGER_HOSTNAME: process.env.REPLIT_DEV_DOMAIN || "",
 };
 
-// Port 18115 matches artifact.toml's localPort so Replit's artifact router
-// correctly proxies the expo-domain preview. Metro also exposes /status at
-// this port which satisfies the ensurePreviewReachable health-check.
-const METRO_PORT = process.env.EXPO_PORT || "18115";
+// --tunnel uses ngrok to create a publicly-accessible URL so Expo Go on any
+// phone can connect (the default --localhost mode only works inside Replit's
+// proxy, which is not reachable via a phone browser or Expo Go externally).
+// Port 18116 avoids conflict with the artifacts/mobile:expo workflow (18115).
+const METRO_PORT = process.env.EXPO_PORT || "18116";
 const metro = spawn(
   "pnpm",
-  ["exec", "expo", "start", "--localhost", "--port", METRO_PORT],
+  ["exec", "expo", "start", "--tunnel", "--port", METRO_PORT],
   { cwd: ROOT, stdio: "inherit", env: metroEnv }
 );
 
