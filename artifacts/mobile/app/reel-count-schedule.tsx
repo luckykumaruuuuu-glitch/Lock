@@ -5,17 +5,13 @@
  * of the 5 tasks.  INDEPENDENT from duration-selector.tsx (toggle-off flow).
  *
  * Layout (top → bottom):
- *  · Fixed back-arrow button (top-left)
- *  · Illustration placeholder (character + platform logo — placeholder only)
- *  · 2-line heading + vertical gap
- *  · 3×2 grid of pill buttons (5, 10, 20, 30, 40, 50)
- *  · Full-width orange CTA (disabled until selected)
- *  · Thin gesture indicator bar
+ *  · Absolute back-arrow button (top-left)
+ *  · Top section (flex: 1): character image + heading, vertically centred
+ *  · Bottom section (fixed): 3×2 pill grid + orange CTA
  *
  * Always opens fresh — no carry-over selection from previous visits.
  */
 
-import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image as ExpoImage } from "expo-image";
 import { router } from "expo-router";
@@ -26,6 +22,7 @@ import {
   NativeModules,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -39,9 +36,6 @@ import { saveReelsRemaining } from "@/lib/reelsLockReels";
 import { clearReelsLockOff } from "@/lib/reelsLockOff";
 
 // ── Per-platform background images ───────────────────────────────────────────
-// These are pre-decoded at app startup (_layout.tsx) so they render instantly
-// with zero fade-in when the screen opens. transition={0} on ExpoImage below
-// disables any remaining expo-image-level cross-fade.
 const PLATFORM_BG: Partial<Record<NonNullable<ReturnType<typeof getUnlockPlatform>>, ReturnType<typeof require>>> = {
   instagram: require("@/assets/reel_count_bg_instagram.webp"),
   youtube:   require("@/assets/reel_count_bg_youtube.webp"),
@@ -52,13 +46,12 @@ const PLATFORM_BG: Partial<Record<NonNullable<ReturnType<typeof getUnlockPlatfor
 const COUNT_OPTIONS = [5, 10, 20, 30, 40, 50] as const;
 
 const SCREEN_W = Dimensions.get("window").width;
-const SCREEN_H = Dimensions.get("window").height;
 
-// Character image dimensions — 70% wide, 42% tall, centered (15% gap each side)
-const CHAR_W = Math.round(SCREEN_W * 0.70);
-const CHAR_H = Math.round(SCREEN_H * 0.42);
+// Character: 60% wide, square container — big enough to read, small enough
+// that the grid + CTA always stay on screen without scrolling.
+const CHAR_SIZE = Math.round(SCREEN_W * 0.60);
 
-// Pill width: 2 per row with equal gaps + side padding
+// Pill sizing
 const PILL_H_PAD = 24;
 const PILL_GAP   = 12;
 const PILL_W     = Math.floor((SCREEN_W - PILL_H_PAD * 2 - PILL_GAP) / 2);
@@ -77,10 +70,9 @@ const PLATFORM_DEEP_LINKS: Partial<Record<NonNullable<SourcePlatform>, string>> 
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function ReelCountScheduleScreen() {
-  const insets  = useSafeAreaInsets();
+  const insets   = useSafeAreaInsets();
   const platform = getUnlockPlatform();
 
-  // Always starts with no selection — fresh state every mount
   const [selected, setSelected] = useState<number | null>(null);
   const [loading,  setLoading]  = useState(false);
 
@@ -94,15 +86,11 @@ export default function ReelCountScheduleScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
     try {
-      // 1. Save reel-count schedule
       await saveReelsRemaining({ count: selected, platform });
-      // 2. Clear any duration-based unlock (modes are exclusive)
       await clearReelsLockOff();
-      // 3. Disable native lock
       if (Platform.OS === "android" && NativeModules.ReelsLock) {
         try { await NativeModules.ReelsLock.setEnabled(false); } catch (_) {}
       }
-      // 4. Redirect to platform feed, then home
       if (platform && PLATFORM_DEEP_LINKS[platform]) {
         Linking.openURL(PLATFORM_DEEP_LINKS[platform]!).catch(() => {});
       }
@@ -113,105 +101,101 @@ export default function ReelCountScheduleScreen() {
     }
   }
 
-  // Pair the options for 2-per-row rendering
+  // Pair options for 2-per-row rendering
   const rows: (typeof COUNT_OPTIONS[number])[][] = [];
   for (let i = 0; i < COUNT_OPTIONS.length; i += 2) {
     rows.push([COUNT_OPTIONS[i], COUNT_OPTIONS[i + 1]]);
   }
 
   return (
-    <View style={[styles.root, { paddingTop: topPad, paddingBottom: bottomPad }]}>
+    <View style={[styles.root, { paddingBottom: bottomPad }]}>
 
-      {/* ── Fixed back button (top-left) ────────────────────────────── */}
+      {/* ── Absolute back button (top-left) ─────────────────────────── */}
+      {/* Uses a plain Unicode arrow — guaranteed to render on web/native
+          without depending on an icon-font being loaded first.           */}
       <Pressable
         onPress={() => router.back()}
         style={[styles.backBtn, { top: topPad + 8 }]}
         hitSlop={12}
       >
-        <Feather name="arrow-left" size={20} color="#FFFFFF" />
+        <Text style={styles.backArrow}>←</Text>
       </Pressable>
 
-      {/* ── Top spacer: back-button height (48) + 11% screen height ───── */}
-      <View style={{ height: 48 + Math.round(SCREEN_H * 0.11) }} />
+      {/* ── Top section: image + heading ────────────────────────────── */}
+      {/* flex: 1 so it expands to fill whatever space is left after the
+          fixed-height bottom section. justifyContent: 'center' keeps
+          the image+heading vertically centred in that space.            */}
+      <View style={[styles.topSection, { paddingTop: topPad + 56 }]}>
+        <View style={styles.illustrationArea}>
+          {PLATFORM_BG[platform as keyof typeof PLATFORM_BG] && (
+            <ExpoImage
+              source={PLATFORM_BG[platform as keyof typeof PLATFORM_BG]}
+              style={styles.illustrationImage}
+              contentFit="contain"
+              transition={0}
+            />
+          )}
+        </View>
 
-      {/* ── Platform background image ────────────────────────────────── */}
-      {/* Pre-decoded at app startup — renders instantly with no fade-in.
-          transition={0} disables expo-image's built-in cross-fade.
-          Falls back to an empty view for unsupported platforms.        */}
-      <View style={styles.illustrationArea}>
-        {PLATFORM_BG[platform as keyof typeof PLATFORM_BG] && (
-          <ExpoImage
-            source={PLATFORM_BG[platform as keyof typeof PLATFORM_BG]}
-            style={styles.illustrationImage}
-            contentFit="contain"
-            transition={0}
-          />
-        )}
+        <View style={styles.headingBlock}>
+          <Text style={styles.heading}>
+            {`How many ${unit}\ndo you want to watch?`}
+          </Text>
+        </View>
       </View>
 
-      {/* ── Gap below image: 7% screen height ───────────────────────── */}
-      <View style={{ height: Math.round(SCREEN_H * 0.07) }} />
+      {/* ── Bottom section: grid + CTA ───────────────────────────────── */}
+      {/* Fixed at the bottom — always fully visible regardless of how
+          large the character image is.                                   */}
+      <View style={styles.bottomSection}>
+        <View style={styles.grid}>
+          {rows.map((pair, ri) => (
+            <View key={ri} style={styles.gridRow}>
+              {pair.map((num) => {
+                const isSel = selected === num;
+                return (
+                  <TouchableOpacity
+                    key={num}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setSelected(num);
+                    }}
+                    activeOpacity={0.75}
+                    style={[styles.pill, isSel && styles.pillSelected]}
+                  >
+                    <Text style={[styles.pillText, isSel && styles.pillTextSelected]}>
+                      {num}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ))}
+        </View>
 
-      {/* ── Heading ─────────────────────────────────────────────────── */}
-      <View style={styles.headingBlock}>
-        <Text style={styles.heading}>
-          {`How many ${unit}\ndo you want to watch?`}
-        </Text>
-      </View>
+        <View style={{ height: PILL_GAP }} />
 
-      {/* ── Flex spacer — pushes grid + CTA to bottom ───────────────── */}
-      <View style={{ flex: 1 }} />
-
-      {/* ── 6-pill grid (2 per row) ──────────────────────────────────── */}
-      <View style={styles.grid}>
-        {rows.map((pair, ri) => (
-          <View key={ri} style={styles.gridRow}>
-            {pair.map((num) => {
-              const isSel = selected === num;
-              return (
-                <TouchableOpacity
-                  key={num}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setSelected(num);
-                  }}
-                  activeOpacity={0.75}
-                  style={[styles.pill, isSel && styles.pillSelected]}
-                >
-                  <Text style={[styles.pillText, isSel && styles.pillTextSelected]}>
-                    {num}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        ))}
-      </View>
-
-      {/* ── Gap between grid and CTA — matches row-to-row spacing ───────── */}
-      <View style={{ height: PILL_GAP }} />
-
-      {/* ── CTA button ────────────────────────────────────────────────── */}
-      <View style={styles.ctaWrapper}>
-        <Pressable
-          onPress={handleConfirm}
-          disabled={!selected || loading}
-          style={({ pressed }) => [
-            styles.ctaPressable,
-            { opacity: pressed || !selected ? 0.42 : 1 },
-          ]}
-        >
-          <LinearGradient
-            colors={["#FFB347", "#FF8C42"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.ctaGradient}
+        <View style={styles.ctaWrapper}>
+          <Pressable
+            onPress={handleConfirm}
+            disabled={!selected || loading}
+            style={({ pressed }) => [
+              styles.ctaPressable,
+              { opacity: pressed || !selected ? 0.42 : 1 },
+            ]}
           >
-            <Text style={styles.ctaText}>
-              {loading ? "Saving…" : "Confirm"}
-            </Text>
-          </LinearGradient>
-        </Pressable>
+            <LinearGradient
+              colors={["#FFB347", "#FF8C42"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.ctaGradient}
+            >
+              <Text style={styles.ctaText}>
+                {loading ? "Saving…" : "Confirm"}
+              </Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -219,10 +203,13 @@ export default function ReelCountScheduleScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  // Root fills the screen; top section + bottom section share the height
+  // via flex (top) vs intrinsic size (bottom).
   root: {
     flex: 1,
     backgroundColor: "#000000",
     alignItems: "center",
+    justifyContent: "space-between",
   },
 
   // ── Back button ──
@@ -237,14 +224,27 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 10,
   },
+  // Unicode left arrow — renders on every platform without icon-font dependency
+  backArrow: {
+    color: "#FFFFFF",
+    fontSize: 22,
+    lineHeight: 26,
+    includeFontPadding: false,
+  },
 
-  // ── Illustration area ──
-  // Width = 70% of screen (15% breathing room each side).
-  // Height = 30% of screen height. resizeMode "contain" is handled by
-  // expo-image's contentFit="contain" on the image itself.
+  // ── Top section (image + heading) ──
+  topSection: {
+    flex: 1,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: 16,
+  },
+
+  // Square container sized to 60% of screen width
   illustrationArea: {
-    width: CHAR_W,
-    height: CHAR_H,
+    width: CHAR_SIZE,
+    height: CHAR_SIZE,
     alignSelf: "center",
     alignItems: "center",
     justifyContent: "center",
@@ -256,20 +256,22 @@ const styles = StyleSheet.create({
 
   // ── Heading ──
   headingBlock: {
+    marginTop: 20,
     paddingHorizontal: 24,
     alignItems: "center",
   },
   heading: {
     color: "#FFFFFF",
-    fontSize: 26,
+    fontSize: 24,
     fontFamily: "Inter_700Bold",
     textAlign: "center",
-    lineHeight: 34,
+    lineHeight: 32,
   },
 
-  // ── Gap between heading and grid ──
-  gap: {
-    height: 36,
+  // ── Bottom section ──
+  bottomSection: {
+    width: "100%",
+    paddingBottom: 4,
   },
 
   // ── Grid ──
@@ -285,7 +287,7 @@ const styles = StyleSheet.create({
   pill: {
     width: PILL_W,
     height: PILL_H,
-    borderRadius: PILL_H / 2,        // fully pill-shaped
+    borderRadius: PILL_H / 2,
     backgroundColor: "#1C1C1E",
     alignItems: "center",
     justifyContent: "center",
@@ -325,15 +327,5 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontFamily: "Inter_700Bold",
     letterSpacing: 0.3,
-  },
-
-  // ── Gesture bar ──
-  gestureBar: {
-    width: 134,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: "rgba(255,255,255,0.30)",
-    marginBottom: 4,
-    marginTop: 4,
   },
 });
