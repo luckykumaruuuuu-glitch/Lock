@@ -467,14 +467,14 @@ function DuckPalScreen() {
               onPress={() => setWeekOffset((w) => w - 1)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Feather name="chevron-left" size={20} color="#FFBF80" />
+              <Feather name="chevron-left" size={20} color="#FFFFFF" />
             </TouchableOpacity>
             <Text style={styles.duckPalWeekLabel}>{weekLabel}</Text>
             <TouchableOpacity
               onPress={() => setWeekOffset((w) => w + 1)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Feather name="chevron-right" size={20} color="#FFBF80" />
+              <Feather name="chevron-right" size={20} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
           <WeeklyBarChart data={DUMMY_WEEKLY} />
@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
     borderTopColor: "rgba(255,255,255,0.08)",
   },
   duckPalTotalItem: { flex: 1, alignItems: "center", gap: 4 },
-  duckPalTotalValue: { fontSize: 24, fontFamily: "Inter_700Bold", color: "#FFBF80" },
+  duckPalTotalValue: { fontSize: 24, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
   duckPalTotalLabel: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   duckPalTotalsDivider: { width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.1)" },
   duckPalTopAppCount: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFBF80" },
