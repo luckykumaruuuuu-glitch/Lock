@@ -168,7 +168,8 @@ function formatLiveTimer(endTime: number): string {
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function ReelsLockScreen() {
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ platform?: string }>();
+  const params = useLocalSearchParams<{ platform?: string; mode?: string }>();
+  const isLogMode = params.mode === "log";
 
   const platform: PlatformKey = (
     params.platform && params.platform in PLATFORM_CONFIG
@@ -282,22 +283,24 @@ export default function ReelsLockScreen() {
           </View>
         )}
 
-        {/* Buttons */}
-        <View style={styles.buttonRow}>
-          <Pressable
-            onPress={handleBack}
-            style={({ pressed }) => [styles.btnBack, pressed && { opacity: 0.7 }]}
-          >
-            <Text style={styles.btnBackText}>Back</Text>
-          </Pressable>
+        {/* Buttons — hidden on log screens, shown on unlock screens */}
+        {!isLogMode && (
+          <View style={styles.buttonRow}>
+            <Pressable
+              onPress={handleBack}
+              style={({ pressed }) => [styles.btnBack, pressed && { opacity: 0.7 }]}
+            >
+              <Text style={styles.btnBackText}>Back</Text>
+            </Pressable>
 
-          <Pressable
-            onPress={handleUnlock}
-            style={({ pressed }) => [styles.btnUnlock, pressed && { opacity: 0.85 }]}
-          >
-            <Text style={styles.btnUnlockText}>Unlock</Text>
-          </Pressable>
-        </View>
+            <Pressable
+              onPress={handleUnlock}
+              style={({ pressed }) => [styles.btnUnlock, pressed && { opacity: 0.85 }]}
+            >
+              <Text style={styles.btnUnlockText}>Unlock</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     </View>
   );

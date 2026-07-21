@@ -485,62 +485,62 @@ export default function SettingsScreen() {
           <SettingRow
             icon="lock"
             label="Instalog"
-            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "instagram" } })}
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "instagram", mode: "log" } })}
           />
           <SettingRow
             icon="lock"
             label="TikToklog"
-            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "tiktok" } })}
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "tiktok", mode: "log" } })}
           />
           <SettingRow
             icon="lock"
             label="Twitterlog"
-            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "twitter" } })}
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "twitter", mode: "log" } })}
           />
           <SettingRow
             icon="lock"
             label="Facebooklog"
-            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "facebook" } })}
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "facebook", mode: "log" } })}
           />
           <SettingRow
             icon="lock"
             label="YouTubelog"
-            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "youtube" } })}
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "youtube", mode: "log" } })}
           />
           <SettingRow
             icon="lock"
             label="Snaplog"
-            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "snapchat" } })}
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "snapchat", mode: "log" } })}
           />
           <SettingRow
             icon="lock"
             label="Redditlog"
-            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "reddit" } })}
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "reddit", mode: "log" } })}
           />
           <SettingRow
             icon="lock"
             label="Pinterestlog"
-            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "pinterest" } })}
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "pinterest", mode: "log" } })}
           />
           <SettingRow
             icon="lock"
             label="WhatsApplog"
-            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "whatsapp" } })}
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "whatsapp", mode: "log" } })}
           />
           <SettingRow
             icon="lock"
             label="Telegramlog"
-            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "telegram" } })}
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "telegram", mode: "log" } })}
           />
           <SettingRow
             icon="lock"
             label="Discordlog"
-            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "discord" } })}
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "discord", mode: "log" } })}
           />
           <SettingRow
             icon="lock"
             label="LinkedInlog"
-            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "linkedin" } })}
+            onPress={() => router.push({ pathname: "/reels-lock", params: { platform: "linkedin", mode: "log" } })}
             last
           />
         </GlassCard>
