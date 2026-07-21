@@ -42,9 +42,21 @@ Firebase credentials are already set as shared environment variables in `.replit
 - `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `EXPO_PUBLIC_FIREBASE_APP_ID`
 
+## Setup verification
+
+After importing or cloning on Replit, confirm:
+
+1. **Dependencies** — the Start application workflow runs `pnpm install --frozen-lockfile` automatically.
+2. **Firebase env vars** — all seven `EXPO_PUBLIC_FIREBASE_*` variables must be set. They are pre-configured as shared env vars in `.replit` (`userenv.shared`) and mirrored into `artifacts/mobile/.env`.
+3. **Web build** — the workflow builds the Expo web export and serves it on port 5000. Wait ~60 s for "Build complete" in the logs, then the preview pane loads the app.
+4. **API server** — the Express API server (`artifacts/api-server/`) is **not** started by the default workflow. Features that hit the backend will fail until it is wired in (see proposed follow-up tasks).
+
+To validate the web app is running correctly, check that the Replit preview shows the FocusLock onboarding screen and the workflow logs end with `Phase 2 done ✓ — Build complete`.
+
 ## Notes
 
 - `package.json` has a `pnpm.overrides` entry pinning `tar` to `7.5.20` — Replit's package firewall blocks the default `tar@7.5.17` that `@expo/cli` pulls in. Do not remove this override.
+- `artifacts/mobile/.env` is generated from the shared Replit env vars and should not be committed to git (add to `.gitignore` if pushing to a public repo).
 
 ## User preferences
 
