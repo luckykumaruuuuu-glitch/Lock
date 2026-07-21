@@ -47,9 +47,9 @@ const COUNT_OPTIONS = [5, 10, 20, 30, 40, 50] as const;
 
 const SCREEN_W = Dimensions.get("window").width;
 
-// Character: 60% wide, square container — big enough to read, small enough
-// that the grid + CTA always stay on screen without scrolling.
-const CHAR_SIZE = Math.round(SCREEN_W * 0.60);
+// Character: 70% wide, square container — proportional to heading visual weight,
+// big enough to read while grid + CTA still stay on screen.
+const CHAR_SIZE = Math.round(SCREEN_W * 0.70);
 
 // Pill sizing
 const PILL_H_PAD = 24;
