@@ -42,6 +42,10 @@ Firebase credentials are already set as shared environment variables in `.replit
 - `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `EXPO_PUBLIC_FIREBASE_APP_ID`
 
+## Notes
+
+- `package.json` has a `pnpm.overrides` entry pinning `tar` to `7.5.20` — Replit's package firewall blocks the default `tar@7.5.17` that `@expo/cli` pulls in. Do not remove this override.
+
 ## User preferences
 
 _None recorded yet._
