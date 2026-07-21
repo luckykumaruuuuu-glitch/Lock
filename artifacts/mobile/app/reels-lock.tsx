@@ -61,19 +61,22 @@ type PlatformKey =
 // regression — the native plugin uses those names, not this component.
 const PLATFORM_CONFIG: Record<
   PlatformKey,
-  { title: string; image: ReturnType<typeof require> }
+  { title: string; image: ReturnType<typeof require>; unlockImage?: ReturnType<typeof require> }
 > = {
   instagram: {
     title: "Instagram is locked",
-    image: require("@/assets/lock_char_instagram.png"),   // ← lock_char, NOT reels_lock_char
+    image: require("@/assets/lock_char_instagram.png"),           // ← lock_char, NOT reels_lock_char
+    unlockImage: require("@/assets/reels_lock_char_instagram.png"),
   },
   youtube: {
     title: "YouTube is locked",
-    image: require("@/assets/lock_char_youtube.png"),     // ← lock_char, NOT reels_lock_char
+    image: require("@/assets/lock_char_youtube.png"),             // ← lock_char, NOT reels_lock_char
+    unlockImage: require("@/assets/reels_lock_char_youtube.png"),
   },
   facebook: {
     title: "Facebook is locked",
-    image: require("@/assets/lock_char_facebook.png"),    // ← lock_char, NOT reels_lock_char
+    image: require("@/assets/lock_char_facebook.png"),            // ← lock_char, NOT reels_lock_char
+    unlockImage: require("@/assets/reels_lock_char_facebook.png"),
   },
   tiktok: {
     title: "TikTok is locked",
@@ -179,6 +182,8 @@ export default function ReelsLockScreen() {
 
   const config        = PLATFORM_CONFIG[platform];
   const glowBaseColor = GLOW_BASE_COLOR[platform];
+  const resolvedImage =
+    !isLogMode && config.unlockImage ? config.unlockImage : config.image;
 
   const topPad    = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -263,7 +268,7 @@ export default function ReelsLockScreen() {
        * ─────────────────────────────────────────────────────────── */}
       <View style={styles.characterAnchor}>
         <Image
-          source={config.image}
+          source={resolvedImage}
           style={styles.character}
           resizeMode="contain"
         />

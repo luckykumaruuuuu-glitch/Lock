@@ -1,0 +1,14 @@
+Context: DuckLock app — Unlock vs Log mode image-fix
+System: Sabhi 15 character-lock-screens ek hi file reels-lock.tsx se serve hoti hain — ek PLATFORM_CONFIG object hai jisme har platform (Instagram, YouTube, Facebook, TikTok, Twitter/X, Snapchat, Reddit, Pinterest, WhatsApp, Telegram, Discord, LinkedIn) ki entry hai. Screen do "mode" mein khulti hai: mode=unlock (3 screens: Unlock One=Instagram, Unlock Two=YouTube, Unlock Three=Facebook) aur mode=log (12 screens: Instalog, Telegramlog, Twitterlog, etc.).
+Abhi ki (kharab) condition: Instagram/YouTube/Facebook ke liye, mode=unlock aur mode=log dono EXACT SAME image dikha rahe hain (lock_char_*.png se). Koi visual difference nahi hai in-mode-ke-beech in teeno platforms ke liye — jo ki galat hai.
+Hume kya chahiye (target condition):
+mode=log jaisa abhi hai (lock_char_*.png) — waisa hi sahi hai, isse mat chhedo
+mode=unlock — Instagram/YouTube/Facebook ke liye alag/distinct image chahiye — assets folder mein pehle se maujood reels_lock_char_instagram.png / reels_lock_char_youtube.png / reels_lock_char_facebook.png files use karni hain
+Kya karna hai (exact function):
+PLATFORM_CONFIG mein ek naya field add karo: unlockImage
+Instagram/YouTube/Facebook ki entries mein unlockImage ko respective reels_lock_char_*.png par point karo
+Jahan bhi screen render hoti hai, image-resolve-logic update karo: agar mode === "unlock" aur unlockImage defined hai, to unlockImage use karo; agar mode === "log", to existing logImage use karo (isse mat chhedo); dono na ho to fallback image use karo
+Important — sirf yahi karo, aur kuch mat chhedna:
+Baaki 9 platforms (TikTok, Twitter, Snapchat, etc.) ko touch mat karo — unke paas reels_lock_char_*.png hai hi nahi, unka unlockImage empty/undefined rahega, wo fallback image/logImage hi use karenge jaisa abhi hai
+Timer/countdown logic, buttons, background-glow, ya koi aur cheez mat badalna
+Native-Kotlin files (agar koi dikhe) ko bilkul touch mat karna — sab kaam sirf JS/TSX side (reels-lock.tsx) mein hoga
