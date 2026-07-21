@@ -232,13 +232,26 @@ export default function ReelsLockScreen() {
   }
 
   return (
-    <View style={[styles.root, { paddingTop: topPad, paddingBottom: bottomPad }]}>
+    <View style={styles.root}>
 
-      {/* ── Glow behind character (Skia on native, View-rings on web) ── */}
+      {/* ── Glow behind character (Skia on native, SVG on web) ── */}
       <ReelsGlow glowBaseColor={glowBaseColor} />
 
-      {/* ── Character image ─────────────────────────────────────────── */}
-      <View style={styles.imageWrap}>
+      {/* ── Character — absolutely centred on the glow ──────────────
+       *
+       *  SHARED ALIGNMENT STANDARD (all 15 screens use this):
+       *  Both ReelsGlow implementations place the glow centre at
+       *    cx = screenWidth  / 2
+       *    cy = screenHeight / 2 − 40
+       *  The characterAnchor style pins the 220×220 character image to
+       *  that exact point via:
+       *    left: "50%"  + marginLeft: −110   →  horizontal centre
+       *    top:  "50%"  + marginTop:  −150   →  vertical centre on glow
+       *                                          (−110 half-height − 40 glow offset)
+       *  Changing CHARACTER_SIZE or GLOW_Y_OFFSET here propagates to
+       *  every platform variant automatically — no per-screen edits needed.
+       * ─────────────────────────────────────────────────────────── */}
+      <View style={styles.characterAnchor}>
         <Image
           source={config.image}
           style={styles.character}
@@ -246,63 +259,79 @@ export default function ReelsLockScreen() {
         />
       </View>
 
-      {/* ── Title ────────────────────────────────────────────────────── */}
-      <Text style={styles.title}>{config.title}</Text>
-      <Text style={styles.subtitle}>
-        Complete a quick challenge to unlock your session.
-      </Text>
+      {/* ── Bottom content: title · subtitle · timer · buttons ────── */}
+      <View style={[styles.bottomContent, { paddingBottom: bottomPad + 28 }]}>
+        <Text style={styles.title}>{config.title}</Text>
+        <Text style={styles.subtitle}>
+          Complete a quick challenge to unlock your session.
+        </Text>
 
-      {/* ── Live timer ───────────────────────────────────────────────── */}
-      {lockEndTime !== null && (
-        <View style={styles.timerWrap}>
-          <Text style={styles.timerText}>{timerText}</Text>
+        {/* Live timer */}
+        {lockEndTime !== null && (
+          <View style={styles.timerWrap}>
+            <Text style={styles.timerText}>{timerText}</Text>
+          </View>
+        )}
+
+        {/* Buttons */}
+        <View style={styles.buttonRow}>
+          <Pressable
+            onPress={handleBack}
+            style={({ pressed }) => [styles.btnBack, pressed && { opacity: 0.7 }]}
+          >
+            <Text style={styles.btnBackText}>Back</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={handleUnlock}
+            style={({ pressed }) => [styles.btnUnlock, pressed && { opacity: 0.85 }]}
+          >
+            <Text style={styles.btnUnlockText}>Unlock</Text>
+          </Pressable>
         </View>
-      )}
-
-      {/* ── Buttons ──────────────────────────────────────────────────── */}
-      <View style={styles.buttonRow}>
-        {/* Back */}
-        <Pressable
-          onPress={handleBack}
-          style={({ pressed }) => [styles.btnBack, pressed && { opacity: 0.7 }]}
-        >
-          <Text style={styles.btnBackText}>Back</Text>
-        </Pressable>
-
-        {/* Unlock */}
-        <Pressable
-          onPress={handleUnlock}
-          style={({ pressed }) => [styles.btnUnlock, pressed && { opacity: 0.85 }]}
-        >
-          <Text style={styles.btnUnlockText}>Unlock</Text>
-        </Pressable>
       </View>
     </View>
   );
 }
+
+// ── Shared character alignment constants ──────────────────────────────────────
+// Glow centre: cx = screenWidth/2, cy = screenHeight/2 − GLOW_Y_OFFSET
+// Character is 220×220 and pinned to that exact point via absolute positioning.
+// Changing these two constants re-aligns the character on all 15 platform screens.
+const CHARACTER_SIZE  = 220;
+const GLOW_Y_OFFSET   = 40;   // matches the −40 offset in ReelsGlow.tsx / ReelsGlow.native.tsx
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: "#050505",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 28,
   },
 
-  // Character image
-  imageWrap: {
-    width: 220,
-    height: 220,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 15,
-    marginBottom: 32,
+  // ── Character: absolutely centred on the glow ──────────────────────────────
+  // left:"50%" + marginLeft:−half-width  → horizontal centre on glow cx
+  // top:"50%"  + marginTop:−(half-height + GLOW_Y_OFFSET) → vertical centre on glow cy
+  characterAnchor: {
+    position: "absolute",
+    width: CHARACTER_SIZE,
+    height: CHARACTER_SIZE,
+    left: "50%" as any,
+    marginLeft: -(CHARACTER_SIZE / 2),
+    top: "50%" as any,
+    marginTop: -(CHARACTER_SIZE / 2 + GLOW_Y_OFFSET),
   },
   character: {
-    width: 220,
-    height: 220,
+    width: CHARACTER_SIZE,
+    height: CHARACTER_SIZE,
+  },
+
+  // ── Bottom content block: title · subtitle · timer · buttons ──────────────
+  bottomContent: {
+    position: "absolute",
+    bottom: 0,
+    left: 28,
+    right: 28,
+    alignItems: "center",
   },
 
   // Title
