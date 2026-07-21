@@ -64,15 +64,15 @@ const PLATFORM_CONFIG: Record<
   { title: string; image: ReturnType<typeof require> }
 > = {
   instagram: {
-    title: "Reels are locked",
+    title: "Instagram is locked",
     image: require("@/assets/lock_char_instagram.png"),   // ← lock_char, NOT reels_lock_char
   },
   youtube: {
-    title: "Shorts are locked",
+    title: "YouTube is locked",
     image: require("@/assets/lock_char_youtube.png"),     // ← lock_char, NOT reels_lock_char
   },
   facebook: {
-    title: "Reels are locked",
+    title: "Facebook is locked",
     image: require("@/assets/lock_char_facebook.png"),    // ← lock_char, NOT reels_lock_char
   },
   tiktok: {
