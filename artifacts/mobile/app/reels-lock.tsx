@@ -297,6 +297,7 @@ const styles = StyleSheet.create({
     height: 220,
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 15,
     marginBottom: 32,
   },
   character: {
