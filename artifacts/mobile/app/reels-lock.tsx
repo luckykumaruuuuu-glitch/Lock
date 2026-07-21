@@ -50,21 +50,30 @@ type PlatformKey =
   | "discord"
   | "linkedin";
 
+// ⚠️  ASSET-PREFIX RULE — do NOT change without reading this comment:
+//
+//   lock_char_<platform>.png        ← JS/RN lock-screen character (this file)
+//   reels_lock_char_<platform>.png  ← native Android ReelsLockActivity only
+//                                     (used in withFocusLockAndroid.js Kotlin codegen)
+//
+// Instagram, YouTube and Facebook have BOTH sets of files. The JS screen MUST
+// use the lock_char_* variants. Using reels_lock_char_* here is the recurring
+// regression — the native plugin uses those names, not this component.
 const PLATFORM_CONFIG: Record<
   PlatformKey,
   { title: string; image: ReturnType<typeof require> }
 > = {
   instagram: {
     title: "Reels are locked",
-    image: require("@/assets/reels_lock_char_instagram.png"),
+    image: require("@/assets/lock_char_instagram.png"),   // ← lock_char, NOT reels_lock_char
   },
   youtube: {
     title: "Shorts are locked",
-    image: require("@/assets/reels_lock_char_youtube.png"),
+    image: require("@/assets/lock_char_youtube.png"),     // ← lock_char, NOT reels_lock_char
   },
   facebook: {
     title: "Reels are locked",
-    image: require("@/assets/reels_lock_char_facebook.png"),
+    image: require("@/assets/lock_char_facebook.png"),    // ← lock_char, NOT reels_lock_char
   },
   tiktok: {
     title: "TikTok is locked",
