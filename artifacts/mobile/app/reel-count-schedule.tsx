@@ -52,6 +52,12 @@ const PLATFORM_BG: Partial<Record<NonNullable<ReturnType<typeof getUnlockPlatfor
 const COUNT_OPTIONS = [5, 10, 20, 30, 40, 50] as const;
 
 const SCREEN_W = Dimensions.get("window").width;
+const SCREEN_H = Dimensions.get("window").height;
+
+// Character image dimensions — 70% wide, 30% tall, centered (15% gap each side)
+const CHAR_W = Math.round(SCREEN_W * 0.70);
+const CHAR_H = Math.round(SCREEN_H * 0.30);
+
 // Pill width: 2 per row with equal gaps + side padding
 const PILL_H_PAD = 24;
 const PILL_GAP   = 12;
@@ -125,8 +131,8 @@ export default function ReelCountScheduleScreen() {
         <Feather name="arrow-left" size={20} color="#FFFFFF" />
       </Pressable>
 
-      {/* ── Spacer — pushes content block down toward CTA ───────────────── */}
-      <View style={{ flex: 1 }} />
+      {/* ── Top spacer: back-button height (48) + 11% screen height ───── */}
+      <View style={{ height: 48 + Math.round(SCREEN_H * 0.11) }} />
 
       {/* ── Platform background image ────────────────────────────────── */}
       {/* Pre-decoded at app startup — renders instantly with no fade-in.
@@ -143,6 +149,9 @@ export default function ReelCountScheduleScreen() {
         )}
       </View>
 
+      {/* ── Gap below image: 7% screen height ───────────────────────── */}
+      <View style={{ height: Math.round(SCREEN_H * 0.07) }} />
+
       {/* ── Heading ─────────────────────────────────────────────────── */}
       <View style={styles.headingBlock}>
         <Text style={styles.heading}>
@@ -151,8 +160,8 @@ export default function ReelCountScheduleScreen() {
         </Text>
       </View>
 
-      {/* ── Vertical gap ────────────────────────────────────────────── */}
-      <View style={styles.gap} />
+      {/* ── Flex spacer — pushes grid + CTA to bottom ───────────────── */}
+      <View style={{ flex: 1 }} />
 
       {/* ── 6-pill grid (2 per row) ──────────────────────────────────── */}
       <View style={styles.grid}>
@@ -231,13 +240,15 @@ const styles = StyleSheet.create({
   },
 
   // ── Illustration area ──
+  // Width = 70% of screen (15% breathing room each side).
+  // Height = 30% of screen height. resizeMode "contain" is handled by
+  // expo-image's contentFit="contain" on the image itself.
   illustrationArea: {
-    width: "100%",
-    height: 120,
+    width: CHAR_W,
+    height: CHAR_H,
+    alignSelf: "center",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 8,
-    marginBottom: 4,
   },
   illustrationImage: {
     width: "100%",
