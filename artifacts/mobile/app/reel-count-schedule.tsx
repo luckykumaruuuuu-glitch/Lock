@@ -17,6 +17,7 @@
 
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Image as ExpoImage } from "expo-image";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -36,6 +37,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getUnlockPlatform, SourcePlatform } from "@/lib/unlockFlowState";
 import { saveReelsRemaining } from "@/lib/reelsLockReels";
 import { clearReelsLockOff } from "@/lib/reelsLockOff";
+
+// ── Per-platform background images ───────────────────────────────────────────
+// These are pre-decoded at app startup (_layout.tsx) so they render instantly
+// with zero fade-in when the screen opens. transition={0} on ExpoImage below
+// disables any remaining expo-image-level cross-fade.
+const PLATFORM_BG: Partial<Record<NonNullable<ReturnType<typeof getUnlockPlatform>>, ReturnType<typeof require>>> = {
+  instagram: require("@/assets/reel_count_bg_instagram.webp"),
+  youtube:   require("@/assets/reel_count_bg_youtube.webp"),
+  facebook:  require("@/assets/reel_count_bg_facebook.webp"),
+};
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const COUNT_OPTIONS = [5, 10, 20, 30, 40, 50] as const;
@@ -117,11 +128,19 @@ export default function ReelCountScheduleScreen() {
       {/* ── Spacer — pushes content block down toward CTA ───────────────── */}
       <View style={{ flex: 1 }} />
 
-      {/* ── Illustration placeholder ────────────────────────────────── */}
-      {/* Real assets (mascot + platform logo) will be added later.
-          For now: a minimal empty area so the layout spacing is set. */}
+      {/* ── Platform background image ────────────────────────────────── */}
+      {/* Pre-decoded at app startup — renders instantly with no fade-in.
+          transition={0} disables expo-image's built-in cross-fade.
+          Falls back to an empty view for unsupported platforms.        */}
       <View style={styles.illustrationArea}>
-        {/* intentionally empty — placeholder */}
+        {PLATFORM_BG[platform as keyof typeof PLATFORM_BG] && (
+          <ExpoImage
+            source={PLATFORM_BG[platform as keyof typeof PLATFORM_BG]}
+            style={styles.illustrationImage}
+            contentFit="contain"
+            transition={0}
+          />
+        )}
       </View>
 
       {/* ── Heading ─────────────────────────────────────────────────── */}
@@ -214,11 +233,15 @@ const styles = StyleSheet.create({
   // ── Illustration area ──
   illustrationArea: {
     width: "100%",
-    height: 120, // reserved for mascot + logo asset
+    height: 120,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 8,
     marginBottom: 4,
+  },
+  illustrationImage: {
+    width: "100%",
+    height: "100%",
   },
 
   // ── Heading ──

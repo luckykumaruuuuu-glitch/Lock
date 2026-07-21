@@ -6,6 +6,16 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
+import { Image as ExpoImage } from "expo-image";
+
+// ── Reel-count-schedule background images (preloaded at startup) ─────────────
+// Rendered as 0×0 hidden views so the native WebP decoder runs before the user
+// ever navigates to that screen — guaranteeing instant, zero-fade display.
+const REEL_COUNT_BG_IMAGES = [
+  require("@/assets/reel_count_bg_instagram.webp"),
+  require("@/assets/reel_count_bg_youtube.webp"),
+  require("@/assets/reel_count_bg_facebook.webp"),
+] as const;
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, Stack, usePathname, useSegments } from "expo-router";
@@ -301,6 +311,19 @@ export default function RootLayout() {
                         <RootLayoutNav />
                         {/* Floating debug icon — only renders when toggled ON in Settings */}
                         <DebugLogViewer />
+                        {/* ── Startup preload: reel-count-schedule background images ──────
+                         *  0×0 hidden views force the native WebP decoder to run at app
+                         *  boot, so the images are already in memory when the user
+                         *  navigates to ReelCountScheduleScreen. transition={0} ensures
+                         *  expo-image skips its own fade-in on first render there too.  */}
+                        {REEL_COUNT_BG_IMAGES.map((src, i) => (
+                          <ExpoImage
+                            key={i}
+                            source={src}
+                            style={{ width: 0, height: 0, position: "absolute" }}
+                            transition={0}
+                          />
+                        ))}
                       </SafeKeyboardProvider>
                     </GestureHandlerRootView>
                   </DebugLogProvider>
