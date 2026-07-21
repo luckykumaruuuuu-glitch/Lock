@@ -934,5 +934,5 @@ const styles = StyleSheet.create({
   duckPalTotalValue: { fontSize: 24, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
   duckPalTotalLabel: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   duckPalTotalsDivider: { width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.1)" },
-  duckPalTopAppCount: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFBF80" },
+  duckPalTopAppCount: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
 });
