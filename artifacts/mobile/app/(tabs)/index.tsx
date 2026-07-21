@@ -65,7 +65,8 @@ const DUCKPAL_HERO = require("../../assets/duckpal-hero.mp4");
 // DuckPal's icons look consistent with DuckLock. Not derived from images.
 const DUCKPAL_APP_ICONS = {
   Instagram: { iconName: "instagram" as const, iconColor: "#E1306C" },
-  YouTube: { iconName: "youtube" as const, iconColor: "#FF0000" },
+  YouTube:   { iconName: "youtube"    as const, iconColor: "#FF0000" },
+  Facebook:  { iconName: "facebook"   as const, iconColor: "#1877F2" },
 };
 
 function DuckCharacter() {
@@ -343,7 +344,8 @@ const DUMMY_TOTAL_REELS = 0;
 const DUMMY_DAILY_AVG = 0;
 const DUMMY_TOP_APPS = [
   { name: "Instagram", icon: "instagram" as const, count: 0 },
-  { name: "YouTube", icon: "youtube" as const, count: 0 },
+  { name: "YouTube",   icon: "youtube"   as const, count: 0 },
+  { name: "Facebook",  icon: "facebook"  as const, count: 0 },
 ];
 
 const MONTH_SHORT = [
@@ -403,9 +405,7 @@ function DuckPalScreen() {
   const { toggleAppMode } = useAppMode();
   const [weekOffset, setWeekOffset] = useState(0);
   const { count: instagramCount } = useReelCount();
-  // Split bar only has something worth showing once Instagram has at least
-  // one tracked reel. YouTube has no real tracking yet (Coming Soon), so it
-  // doesn't independently gate visibility — see split bar render below.
+  // Split bar only has something worth showing once Instagram has at least one tracked reel.
   const hasInstagramActivity = (instagramCount ?? 0) >= 1;
 
   const weekStart = getWeekStart(new Date());
@@ -438,15 +438,11 @@ function DuckPalScreen() {
           <Text style={styles.duckPalReelsCountLabel}>Reels Scrolled Today</Text>
         </View>
 
-        {/* Split bar — only shown once there's something real to report.
-            Instagram appears once its count reaches 1; YouTube has no real
-            tracking yet so its "Coming Soon" placeholder rides along with
-            Instagram's visibility for now. Once YouTube tracking ships, gate
-            it behind `youtubeCount >= 1` the same way Instagram is gated. */}
+        {/* Split bar — shown once Instagram has at least one tracked reel. */}
         {hasInstagramActivity && (
           <GlassCard style={styles.duckPalSplitCard} padding={14}>
             <View style={styles.duckPalSplitRow}>
-              {/* Instagram — live tracking (Phase 3A/3B) */}
+              {/* Instagram — live tracking */}
               <View style={styles.duckPalSplitItem}>
                 <View style={[styles.duckPalSplitIconBg, { backgroundColor: DUCKPAL_APP_ICONS.Instagram.iconColor }]}>
                   <FontAwesome5 name={DUCKPAL_APP_ICONS.Instagram.iconName} size={16} color="#FFFFFF" />
@@ -454,12 +450,12 @@ function DuckPalScreen() {
                 <Text style={styles.duckPalSplitCount}>{instagramCount ?? 0}</Text>
               </View>
               <View style={styles.duckPalSplitDivider} />
-              {/* YouTube — detection not yet implemented */}
+              {/* YouTube — detection ready */}
               <View style={styles.duckPalSplitItem}>
                 <View style={[styles.duckPalSplitIconBg, { backgroundColor: DUCKPAL_APP_ICONS.YouTube.iconColor }]}>
                   <FontAwesome5 name={DUCKPAL_APP_ICONS.YouTube.iconName} size={16} color="#FFFFFF" />
                 </View>
-                <Text style={styles.duckPalComingSoon}>Coming Soon</Text>
+                <Text style={styles.duckPalSplitCount}>0</Text>
               </View>
             </View>
           </GlassCard>
@@ -502,34 +498,23 @@ function DuckPalScreen() {
         </View>
 
         <View style={styles.lockList}>
-          {DUMMY_TOP_APPS.map((app) => (
-            <GlassCard key={app.name} style={styles.lockCard}>
-              <View style={styles.lockCardInner}>
-                <View
-                  style={[
-                    styles.lockIconBg,
-                    { backgroundColor: app.name === "YouTube" ? DUCKPAL_APP_ICONS.YouTube.iconColor : DUCKPAL_APP_ICONS.Instagram.iconColor },
-                  ]}
-                >
-                  <FontAwesome5
-                    name={app.name === "YouTube" ? DUCKPAL_APP_ICONS.YouTube.iconName : DUCKPAL_APP_ICONS.Instagram.iconName}
-                    size={24}
-                    color="#FFFFFF"
-                  />
+          {DUMMY_TOP_APPS.map((app) => {
+            const iconCfg = DUCKPAL_APP_ICONS[app.name as keyof typeof DUCKPAL_APP_ICONS];
+            const count = app.name === "Instagram" ? (instagramCount ?? 0) : app.count;
+            return (
+              <GlassCard key={app.name} style={styles.lockCard}>
+                <View style={styles.lockCardInner}>
+                  <View style={[styles.lockIconBg, { backgroundColor: iconCfg?.iconColor ?? "#3A3A3C" }]}>
+                    <FontAwesome5 name={(iconCfg?.iconName ?? "mobile") as any} size={24} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.lockInfo}>
+                    <Text style={styles.lockAppName}>{app.name}</Text>
+                  </View>
+                  <Text style={styles.duckPalTopAppCount}>{count}</Text>
                 </View>
-                <View style={styles.lockInfo}>
-                  <Text style={styles.lockAppName}>{app.name}</Text>
-                </View>
-                {app.name === "YouTube" ? (
-                  <Text style={styles.duckPalComingSoon}>Coming Soon</Text>
-                ) : (
-                  <Text style={styles.duckPalTopAppCount}>
-                    {app.name === "Instagram" ? instagramCount : app.count}
-                  </Text>
-                )}
-              </View>
-            </GlassCard>
-          ))}
+              </GlassCard>
+            );
+          })}
         </View>
       </ScrollView>
     </GradientBackground>
@@ -950,6 +935,4 @@ const styles = StyleSheet.create({
   duckPalTotalLabel: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   duckPalTotalsDivider: { width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.1)" },
   duckPalTopAppCount: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFBF80" },
-  // YouTube "Coming Soon" label — smaller, muted grey so it reads as inactive
-  duckPalComingSoon: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#636366", letterSpacing: 0.2 },
 });
