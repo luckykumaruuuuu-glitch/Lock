@@ -54,9 +54,9 @@ const COUNT_OPTIONS = [5, 10, 20, 30, 40, 50] as const;
 const SCREEN_W = Dimensions.get("window").width;
 const SCREEN_H = Dimensions.get("window").height;
 
-// Character image dimensions — 70% wide, 30% tall, centered (15% gap each side)
+// Character image dimensions — 70% wide, 42% tall, centered (15% gap each side)
 const CHAR_W = Math.round(SCREEN_W * 0.70);
-const CHAR_H = Math.round(SCREEN_H * 0.30);
+const CHAR_H = Math.round(SCREEN_H * 0.42);
 
 // Pill width: 2 per row with equal gaps + side padding
 const PILL_H_PAD = 24;
@@ -155,8 +155,7 @@ export default function ReelCountScheduleScreen() {
       {/* ── Heading ─────────────────────────────────────────────────── */}
       <View style={styles.headingBlock}>
         <Text style={styles.heading}>
-          {"Kitne\n"}
-          <Text>{unit.toLowerCase() === "shorts" ? "Shorts" : "Reels"} dekhne hain?</Text>
+          {`How many ${unit}\ndo you want to watch?`}
         </Text>
       </View>
 
