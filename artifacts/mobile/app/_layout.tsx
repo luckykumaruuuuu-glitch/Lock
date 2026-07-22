@@ -41,6 +41,7 @@ import { usePermissionStatus } from "@/hooks/usePermissionStatus";
 import "@/lib/i18n";
 import { ONBOARDING_DONE_KEY } from "./onboarding";
 import { GOOGLE_SIGNIN_DONE_KEY } from "./google-signin";
+import { INTRO_DONE_KEY } from "./intro";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -48,7 +49,7 @@ const queryClient = new QueryClient();
 
 // Routes that bypass the onboarding/setup guard — accessible directly in web
 // preview for design/dev iteration without completing the full setup flow.
-const DEV_BYPASS_ROUTES = ["/unlock-tasks", "/mock-reels", "/watch-video", "/coming-soon", "/duration-selector", "/reel-count-schedule", "/google-signin"];
+const DEV_BYPASS_ROUTES = ["/unlock-tasks", "/mock-reels", "/watch-video", "/coming-soon", "/duration-selector", "/reel-count-schedule", "/google-signin", "/intro"];
 
 function SetupGuard({ children }: { children: React.ReactNode }) {
   const { setupComplete, loading } = usePermissionStatus();
@@ -87,11 +88,13 @@ function SetupGuard({ children }: { children: React.ReactNode }) {
           const isDevBypass = DEV_BYPASS_ROUTES.some((r) => pathname.startsWith(r));
 
           if (!isDevBypass) {
-            const [onboardingDone, googleSignInDone] = await Promise.all([
+            const [onboardingDone, googleSignInDone, introDone] = await Promise.all([
               AsyncStorage.getItem(ONBOARDING_DONE_KEY),
               AsyncStorage.getItem(GOOGLE_SIGNIN_DONE_KEY),
+              AsyncStorage.getItem(INTRO_DONE_KEY),
             ]);
             const inGoogleSignIn = (segments[0] as string) === "google-signin";
+            const inIntro        = (segments[0] as string) === "intro";
 
             if (!onboardingDone && !inOnboarding) {
               hasRedirected.current = true;
@@ -101,10 +104,15 @@ function SetupGuard({ children }: { children: React.ReactNode }) {
               hasRedirected.current = true;
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               router.replace("/google-signin" as any);
-            } else if (onboardingDone && googleSignInDone && setupComplete === false && !inSetup) {
+            } else if (onboardingDone && googleSignInDone && !introDone && !inIntro) {
+              // Signed in but hasn't seen the 4-slide intro yet
+              hasRedirected.current = true;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              router.replace("/intro" as any);
+            } else if (onboardingDone && googleSignInDone && introDone && setupComplete === false && !inSetup) {
               hasRedirected.current = true;
               router.replace("/setup");
-            } else if (onboardingDone && googleSignInDone && setupComplete === true && inSetup) {
+            } else if (onboardingDone && googleSignInDone && introDone && setupComplete === true && inSetup) {
               hasRedirected.current = true;
               router.replace("/(tabs)");
             }
@@ -171,6 +179,15 @@ function RootLayoutNav() {
         />
         <Stack.Screen
           name="google-signin"
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+            animation: "slide_from_right",
+            animationDuration: 300,
+          }}
+        />
+        <Stack.Screen
+          name="intro"
           options={{
             headerShown: false,
             gestureEnabled: false,
