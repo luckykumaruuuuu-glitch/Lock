@@ -178,28 +178,20 @@ export default function IntroScreen() {
         {/* Top spacer — absorbs ~60% of free space, pushing duck down from top */}
         <View style={styles.spacerTop} />
 
-        {/* Duck video — large, NO box/container, floats on black background */}
+        {/* Duck video — large, NO box/container, floats on black background.
+            Only the active slide's VideoView is mounted at a time.
+            key={index} forces a full unmount+remount on slide change so the
+            old native video layer is fully destroyed before the new one
+            appears. The index swap happens at opacity=0 (mid-fade) so there
+            is never a visible flash or overlap between videos. */}
         <View style={styles.duckWrap}>
-          {players.map((player, i) => (
-            <View
-              key={i}
-              style={[
-                styles.duckSlot,
-                {
-                  opacity: i === index ? 1 : 0,
-                  position: i === 0 ? "relative" : "absolute",
-                },
-              ]}
-              pointerEvents={i === index ? "auto" : "none"}
-            >
-              <VideoView
-                player={player}
-                style={styles.duckVideo}
-                contentFit="contain"
-                nativeControls={false}
-              />
-            </View>
-          ))}
+          <VideoView
+            key={index}
+            player={players[index]}
+            style={styles.duckVideo}
+            contentFit="contain"
+            nativeControls={false}
+          />
         </View>
 
         {/* Gap: duck → card */}
@@ -306,10 +298,6 @@ const styles = StyleSheet.create({
     height: DUCK_HEIGHT,
     alignItems: "center",
     justifyContent: "center",
-  },
-  duckSlot: {
-    width: DUCK_SIZE,
-    height: DUCK_HEIGHT,
   },
   duckVideo: {
     width: DUCK_SIZE,
