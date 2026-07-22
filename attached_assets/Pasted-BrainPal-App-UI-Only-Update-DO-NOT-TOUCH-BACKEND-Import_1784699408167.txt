@@ -1,0 +1,213 @@
+BrainPal App – UI Only Update (DO NOT TOUCH BACKEND)
+Important
+This task is ONLY for UI/UX implementation.
+❌ Do NOT modify:
+Backend
+Authentication logic
+Firebase
+Google Sign In logic
+API
+Navigation flow
+State management
+Existing business logic
+Database
+Any functionality
+Only redesign the UI to exactly match the attached reference screenshots.
+The backend is already complete and working.
+Goal
+When the app launches, the user should see these screens in this exact order:
+Screen 1
+Landing / Welcome Screen
+↓
+Tap Get Started
+↓
+Screen 2
+Bottom Sheet (half screen)
+↓
+Tap Continue with Google
+↓
+Screen 3
+Signing In Loading Screen
+↓
+After sign-in finishes
+↓
+Continue to the existing app flow exactly as it already works.
+No backend changes.
+Reference
+I have attached three screenshots.
+Recreate them as close as possible.
+Do not redesign.
+Do not make your own version.
+Pixel-perfect UI.
+SCREEN 1
+The first screen should look almost identical.
+Background
+Pure black (#000000)
+Clean
+Premium
+No gradients in background
+Top Left
+BrainPal logo
+Same position as screenshot.
+Padding around 24px.
+Top Right
+Language selector pill.
+Rounded.
+Dark gray background.
+Language icon on left.
+"English" text.
+Exactly like screenshot.
+Center Area
+Keep lots of empty breathing space.
+Nothing crowded.
+Bottom Section
+Large title
+See your reels count
+White
+Bold
+Large typography.
+Centered.
+Below title
+Social icons
+Instagram
+YouTube Shorts
+Snapchat
+Facebook
+Gray icons.
+Same spacing.
+Same opacity.
+Bottom button
+Large rounded button.
+Almost full width.
+Height around 60–64.
+Large corner radius.
+Gradient
+Light cream
+↓
+Soft orange
+Text
+Get Started
+Bold
+Dark brown text.
+Exactly centered.
+Bottom padding same as screenshot.
+Button Animation
+On press
+Small scale animation (0.96)
+Opacity animation
+Very smooth
+No lag.
+Action
+Tapping Get Started should NOT navigate.
+Instead
+Open a bottom sheet.
+SCREEN 2
+Bottom Sheet
+Exactly like screenshot.
+Background overlay
+Entire screen becomes dark.
+Opacity around 60%.
+Bottom Sheet
+Rounded top corners.
+Large radius.
+Height about 45–50% of screen.
+Slides from bottom.
+Spring animation.
+Very smooth.
+Top drag indicator
+Small rounded line.
+Centered.
+Right top
+Need help?
+Gray.
+Underlined.
+Large title
+Welcome to BrainPal
+White.
+Bold.
+Large.
+Google Button
+Large.
+Rounded.
+Same cream→orange gradient.
+Centered.
+Text
+Continue With Google
+Google icon on right.
+Exactly like screenshot.
+Below
+Privacy text
+Gray
+Centered
+Privacy Policy
+Underlined.
+Clickable.
+Google Button
+IMPORTANT
+Do NOT rewrite authentication.
+Simply connect this button to the existing Google Sign In function already present in the project.
+Reuse existing logic.
+No backend edits.
+After clicking
+Close nothing manually.
+Immediately start existing sign-in process.
+Show loading screen.
+SCREEN 3
+Signing In
+Background
+Dark overlay remains.
+Bottom sheet remains.
+Replace content.
+Top
+Drag indicator remains.
+Center
+Circular loader.
+Cream color.
+Smooth rotating animation.
+Looks premium.
+Below
+Large title
+Signing In...
+White.
+Bold.
+Below
+Gray subtitle
+Hang tight, this will be quick
+Centered.
+When existing authentication completes
+Dismiss loading sheet.
+Continue into the existing application exactly as current backend already does.
+Animations
+Use smooth animations everywhere.
+Bottom sheet:
+Slide from bottom.
+Spring effect.
+Button press.
+Loader rotation.
+Fade transitions.
+Everything should feel premium.
+60 FPS.
+Responsive
+Must look correct on:
+Android
+Small phones
+Medium phones
+Large phones
+Safe area respected.
+Code Quality
+Reuse existing components where possible.
+Don't duplicate logic.
+Create reusable UI components if needed.
+Clean code.
+Readable code.
+DO NOT CHANGE
+Do NOT touch:
+Authentication logic
+Backend
+Firebase
+Google Sign-In implementation
+Existing hooks
+Existing APIs
+Existing navigation after login
+Existing state management
+Only replace the UI.
