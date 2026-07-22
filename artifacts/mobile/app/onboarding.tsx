@@ -237,7 +237,7 @@ export default function OnboardingScreen() {
 
         {/* Top bar */}
         <View style={styles.topBar}>
-          <Text style={styles.logo}>BRAINPAL</Text>
+          <Text style={styles.logo}>DUCKPAL</Text>
           <View style={styles.langPill}>
             <Ionicons name="language" size={15} color={theme.primaryText} />
             <Text style={styles.langText}>English</Text>
@@ -339,7 +339,7 @@ export default function OnboardingScreen() {
                   <Text style={styles.helpText}>Need help?</Text>
                 </TouchableOpacity>
 
-                <Text style={styles.welcomeTitle}>Welcome to BrainPal</Text>
+                <Text style={styles.welcomeTitle}>Welcome to DuckPal</Text>
 
                 {/* Continue With Google */}
                 <Pressable
