@@ -1,0 +1,155 @@
+I have attached two reference screenshots.
+
+- Screenshot A = Current broken UI (DO NOT USE AS DESIGN REFERENCE, only use it to identify what is wrong).
+- Screenshot B = Correct UI (THIS IS THE PIXEL-PERFECT REFERENCE). Copy its layout exactly.
+
+IMPORTANT:
+Do NOT redesign anything.
+Do NOT use your own spacing, sizing, alignment, or proportions.
+Every measurement must match the reference screenshot as closely as possible.
+
+Apply these fixes to ALL FOUR onboarding screens. Do not modify any other screens in the app.
+
+=========================
+CHARACTER
+=========================
+
+The character is currently cropped.
+
+Fix it so the entire character is visible exactly like the reference.
+
+- Head must not be cut.
+- Feet must not be cut.
+- Keep enough space above and below the character.
+- Character must be vertically centered exactly like the reference.
+- Character size should match the reference.
+- Character position should match the reference.
+
+=========================
+VERTICAL SPACING
+=========================
+
+The current screen has incorrect vertical spacing.
+
+Match the reference exactly.
+
+Adjust:
+
+- Top padding
+- Character → Card spacing
+- Card → Pagination dots spacing
+- Pagination dots → Bottom button spacing
+- Bottom button → Skip Intro spacing
+- Bottom safe area spacing
+
+Do not estimate.
+Measure visually from the reference and reproduce it.
+
+=========================
+TEXT CARD
+=========================
+
+The information card is currently too tall.
+
+Reduce its height to match the reference.
+
+Do NOT increase the height.
+
+The card should look wider and shorter exactly like the reference.
+
+Keep:
+
+- Same corner radius
+- Same padding
+- Same alignment
+- Same background color
+
+=========================
+TEXT LAYOUT
+=========================
+
+The paragraph currently wraps too much.
+
+Increase the usable text width so the paragraph wraps exactly like the reference.
+
+Do NOT change font.
+
+Keep:
+
+- Same font size
+- Same font weight
+- Same line height
+- Same color
+
+Only adjust the text container width so the number of lines matches the reference.
+
+The title should also wrap exactly like the reference.
+
+=========================
+PAGINATION DOTS
+=========================
+
+The dots are vertically misplaced.
+
+Move them to exactly match the reference.
+
+Keep:
+
+- Same size
+- Same spacing
+- Same active indicator
+- Same alignment
+
+=========================
+BOTTOM BUTTON
+=========================
+
+The button is positioned too low.
+
+Move it upward so the distance between the dots and the button matches the reference exactly.
+
+Do NOT change:
+
+- Width
+- Height
+- Radius
+- Color
+- Font
+- Animation
+
+Only fix the vertical position.
+
+=========================
+SCREEN BALANCE
+=========================
+
+The current layout has too much empty space in some places and too little in others.
+
+Redistribute all spacing so the entire screen matches the visual balance of the reference.
+
+The layout should feel identical to the reference screenshot.
+
+=========================
+VERY IMPORTANT
+=========================
+
+Apply these same corrections consistently to ALL FOUR onboarding screens.
+
+Do NOT modify:
+
+- Colors
+- Typography
+- Icons
+- Character artwork
+- Animations
+- Button design
+- Progress indicator design
+- Any functionality
+
+Only fix layout, alignment, spacing, sizing, positioning, and text wrapping.
+
+The final result should be visually indistinguishable from the provided reference screenshots.
+
+Do NOT make any creative decisions.
+Do NOT use your own judgement.
+Follow the reference screenshots exactly with pixel-perfect accuracy.

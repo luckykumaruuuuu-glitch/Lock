@@ -82,10 +82,14 @@ const SLIDES: SlideData[] = [
 // ─── Dimensions ──────────────────────────────────────────────────────────────
 const { width: SCREEN_W } = Dimensions.get("window");
 
-// Duck size: ~44% of screen width on mobile, capped at 190px so web preview
+// Duck size: ~46% of screen width on mobile, capped at 200px so web preview
 // (which reports full 1280px width) doesn't blow the layout.
-// On a typical Android 360-393px phone: 158-173px — matches reference screenshots.
-const DUCK_SIZE = Math.round(Math.min(SCREEN_W * 0.44, 190));
+// On a typical Android 360-393px phone: 166-181px — matches reference screenshots.
+const DUCK_SIZE = Math.round(Math.min(SCREEN_W * 0.46, 200));
+
+// Duck container height is taller than width to ensure the full character
+// (head and feet) is never cropped regardless of video AR.
+const DUCK_HEIGHT = Math.round(DUCK_SIZE * 1.42);
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function IntroScreen() {
@@ -171,6 +175,9 @@ export default function IntroScreen() {
       {/* ── Animated content (upper flex area) ───────────────────────────── */}
       <Animated.View style={[styles.upper, { opacity: fadeAnim }]}>
 
+        {/* Top spacer — absorbs ~60% of free space, pushing duck down from top */}
+        <View style={styles.spacerTop} />
+
         {/* Duck video — large, NO box/container, floats on black background */}
         <View style={styles.duckWrap}>
           {players.map((player, i) => (
@@ -195,11 +202,17 @@ export default function IntroScreen() {
           ))}
         </View>
 
+        {/* Gap: duck → card */}
+        <View style={styles.duckCardGap} />
+
         {/* Info card */}
         <View style={styles.card}>
           <Text style={styles.heading}>{slide.heading}</Text>
           <Text style={styles.body}>{slide.body}</Text>
         </View>
+
+        {/* Gap: card → dots */}
+        <View style={styles.cardDotsGap} />
 
         {/* Progress dots */}
         <View style={styles.dotsRow}>
@@ -215,6 +228,9 @@ export default function IntroScreen() {
             />
           ))}
         </View>
+
+        {/* Bottom spacer — absorbs ~40% of free space, setting dots→button gap */}
+        <View style={styles.spacerBottom} />
       </Animated.View>
 
       {/* ── Bottom actions (pinned to bottom) ────────────────────────────── */}
@@ -255,28 +271,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
 
-  // ── Upper section — vertically centers the duck + card + dots ──────────────
+  // ── Upper section — flex spacers distribute space above/below the group ─────
   upper: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
+  },
+  // Top spacer takes ~60% of free space (heavier), placing duck at ~15% from top
+  spacerTop: {
+    flex: 1.5,
+    width: "100%",
+  },
+  // Bottom spacer takes ~40% of free space, setting the dots→button gap
+  spacerBottom: {
+    flex: 1,
+    width: "100%",
+  },
+  // Fixed gap between duck and card (~20px matches reference)
+  duckCardGap: {
+    height: 20,
+  },
+  // Fixed gap between card and dots (~14px matches reference)
+  cardDotsGap: {
+    height: 14,
   },
 
-  // ── Duck video — large, no background, no border radius ────────────────────
+  // ── Duck video — tall container prevents head/feet from being cropped ───────
   duckWrap: {
     width: DUCK_SIZE,
-    height: DUCK_SIZE,
+    height: DUCK_HEIGHT,
     alignItems: "center",
     justifyContent: "center",
   },
   duckSlot: {
     width: DUCK_SIZE,
-    height: DUCK_SIZE,
+    height: DUCK_HEIGHT,
   },
   duckVideo: {
     width: DUCK_SIZE,
-    height: DUCK_SIZE,
+    height: DUCK_HEIGHT,
   },
 
   // ── Info card ──────────────────────────────────────────────────────────────
@@ -285,7 +317,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1C1C1E",
     borderRadius: 16,
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingVertical: 16,
     gap: 10,
   },
   heading: {
