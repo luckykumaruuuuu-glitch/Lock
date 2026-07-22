@@ -217,15 +217,20 @@ export default function IntroScreen() {
         {/* Progress dots */}
         <View style={styles.dotsRow}>
           {SLIDES.map((_, i) => (
-            <View
+            <Pressable
               key={i}
-              style={[
-                styles.dot,
-                i === index
-                  ? { backgroundColor: slide.dotColor, width: 24, borderRadius: 4 }
-                  : styles.dotInactive,
-              ]}
-            />
+              onPress={() => transition(i)}
+              hitSlop={12}
+            >
+              <View
+                style={[
+                  styles.dot,
+                  i === index
+                    ? { backgroundColor: slide.dotColor, width: 24, borderRadius: 4 }
+                    : styles.dotInactive,
+                ]}
+              />
+            </Pressable>
           ))}
         </View>
 
