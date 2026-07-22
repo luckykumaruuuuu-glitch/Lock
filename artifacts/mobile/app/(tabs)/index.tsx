@@ -279,14 +279,14 @@ function useGoogleProfile(): GoogleProfile {
 // ─── HomeHeader ───────────────────────────────────────────────────────────────
 // Left: circular Google avatar (tap → Settings) + glassy app name (tap → mode toggle)
 // Right: DuckCharacter (unchanged)
-function HomeHeader({ appName, onBrandPress }: { appName: string; onBrandPress: () => void }) {
+function HomeHeader({ appName }: { appName: string }) {
   const profile = useGoogleProfile();
 
   return (
     <View style={styles.headerLeft}>
-      {/* Avatar — taps open Settings */}
+      {/* Avatar — taps open Settings with left-slide */}
       <Pressable
-        onPress={() => router.navigate("/(tabs)/settings")}
+        onPress={() => router.push("/settings" as never)}
         hitSlop={10}
       >
         {profile?.photo ? (
@@ -301,10 +301,10 @@ function HomeHeader({ appName, onBrandPress }: { appName: string; onBrandPress: 
         )}
       </Pressable>
 
-      {/* App name — taps toggle DuckLock ↔ DuckPal */}
-      <TouchableOpacity onPress={onBrandPress} activeOpacity={0.7} style={styles.headerBrandPill}>
+      {/* App name — plain text, no tap action */}
+      <View style={styles.headerBrandPill}>
         <Text style={styles.headerBrandText}>{appName}</Text>
-      </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -472,7 +472,7 @@ function DuckPalScreen() {
       >
         {/* Header — avatar + glassy brand left, duck icon right */}
         <View style={styles.header}>
-          <HomeHeader appName="DuckPal" onBrandPress={toggleAppMode} />
+          <HomeHeader appName="DuckPal" />
           <DuckCharacter />
         </View>
 
@@ -700,7 +700,7 @@ function DuckLockHomeContent() {
       >
         {/* Header — avatar + glassy brand left, duck icon right */}
         <Animated.View style={[styles.header, { transform: [{ translateY: headerY }], opacity: headerOpacity }]}>
-          <HomeHeader appName={t("appTitle")} onBrandPress={toggleAppMode} />
+          <HomeHeader appName={t("appTitle")} />
           <DuckCharacter />
         </Animated.View>
 

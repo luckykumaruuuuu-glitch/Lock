@@ -240,6 +240,16 @@ function RootLayoutNav() {
           }}
         />
         <Stack.Screen
+          name="settings/index"
+          options={{
+            headerShown: false,
+            animation: "slide_from_left",
+            animationDuration: 300,
+            gestureEnabled: true,
+            gestureDirection: "horizontal",
+          }}
+        />
+        <Stack.Screen
           name="settings/feedback"
           options={{
             headerShown: false,
