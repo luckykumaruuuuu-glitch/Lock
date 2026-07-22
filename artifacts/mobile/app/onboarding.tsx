@@ -165,8 +165,10 @@ export default function OnboardingScreen() {
     // Mark both keys so SetupGuard routes past both screens
     await AsyncStorage.setItem(ONBOARDING_DONE_KEY, "true");
     await AsyncStorage.setItem(GOOGLE_SIGNIN_DONE_KEY, "true");
-    // SetupGuard will redirect to /setup if Android permissions are pending
-    router.replace("/(tabs)");
+    // Go to permissions setup — setup.tsx auto-redirects to /(tabs) once all
+    // permissions are granted, so returning users with permissions already set
+    // will pass through immediately.
+    router.replace("/setup");
   }, []);
 
   // ── Real native Google Sign-In ───────────────────────────────────────────────
