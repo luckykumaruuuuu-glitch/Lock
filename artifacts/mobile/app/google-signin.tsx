@@ -36,10 +36,12 @@ import {
 } from "@/components/ui/GoogleSignInBottomSheet";
 import theme from "@/constants/theme";
 
-// ─── AsyncStorage key ────────────────────────────────────────────────────────
+// ─── AsyncStorage keys ───────────────────────────────────────────────────────
 export const GOOGLE_SIGNIN_DONE_KEY = "focuslock_google_signin_done";
 /** Stores the Google user-id so we can detect returning users. */
 const GOOGLE_USER_ID_KEY = "focuslock_google_user_id";
+/** Stores { name, email, photo } JSON for displaying in Settings. */
+export const GOOGLE_USER_PROFILE_KEY = "focuslock_google_user_profile";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -85,13 +87,21 @@ export default function GoogleSignInScreen() {
   const [signInMode, setSignInMode] = useState<GoogleSignInMode>("new_user");
 
   // Called after sign-in (real or simulated) to determine new vs returning.
-  const handleSignedIn = useCallback(async (googleUserId: string) => {
+  const handleSignedIn = useCallback(async (
+    googleUserId: string,
+    profile?: { name: string | null; email: string | null; photo: string | null },
+  ) => {
     const stored = await AsyncStorage.getItem(GOOGLE_USER_ID_KEY);
     const mode: GoogleSignInMode =
       stored === googleUserId ? "returning_user" : "new_user";
 
     if (stored !== googleUserId) {
       await AsyncStorage.setItem(GOOGLE_USER_ID_KEY, googleUserId);
+    }
+
+    // Persist profile so Settings screen can display it.
+    if (profile) {
+      await AsyncStorage.setItem(GOOGLE_USER_PROFILE_KEY, JSON.stringify(profile));
     }
 
     setSignInMode(mode);
@@ -120,7 +130,12 @@ export default function GoogleSignInScreen() {
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const userInfo = await GoogleSignin.signIn();
-      await handleSignedIn(userInfo.data?.user?.id ?? userInfo.user?.id ?? "unknown");
+      const u = userInfo.data?.user ?? userInfo.user;
+      await handleSignedIn(u?.id ?? "unknown", {
+        name:  u?.name  ?? null,
+        email: u?.email ?? null,
+        photo: u?.photo ?? null,
+      });
     } catch (error: unknown) {
       const code = (error as { code?: string })?.code;
       if (code === statusCodes.SIGN_IN_CANCELLED) {
@@ -149,8 +164,13 @@ export default function GoogleSignInScreen() {
     // Short delay to mimic the account picker appearing
     await new Promise<void>((r) => setTimeout(r, 600));
     setLoading(false);
-    // Use a fixed stub ID so second "sign-in" becomes returning user
-    await handleSignedIn("expo-go-stub-user");
+    // Use a fixed stub ID so second "sign-in" becomes returning user.
+    // No photo in stub — exercises the default-avatar fallback in Settings.
+    await handleSignedIn("expo-go-stub-user", {
+      name:  "Demo User",
+      email: "demo@gmail.com",
+      photo: null,
+    });
   }, [handleSignedIn]);
 
   const onPressSignIn = isExpoGoOrWeb ? handleSimulatedSignIn : handleNativeSignIn;

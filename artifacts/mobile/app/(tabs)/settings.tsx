@@ -1,8 +1,10 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Image,
   Linking,
   Modal,
   Platform,
@@ -21,6 +23,7 @@ import { useDebugLog } from "@/context/DebugLogContext";
 import { useUpdateCheckContext } from "@/context/UpdateCheckContext";
 import { useLanguage, LANGUAGES } from "@/context/LanguageContext";
 import { useSounds } from "@/hooks/useSounds";
+import { GOOGLE_USER_PROFILE_KEY } from "@/app/google-signin";
 
 const APP_VERSION = "1.0.0";
 const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.focuslock.app";
@@ -99,6 +102,93 @@ DuckLock does not knowingly collect data from children under 13.
 
 7. CONTACT
 For privacy concerns, contact the developer through the app's Google Play listing.`;
+
+/* ─── Google user profile ─── */
+type GoogleProfile = { name: string | null; email: string | null; photo: string | null } | null;
+
+function useGoogleProfile(): GoogleProfile {
+  const [profile, setProfile] = useState<GoogleProfile>(null);
+  useEffect(() => {
+    AsyncStorage.getItem(GOOGLE_USER_PROFILE_KEY).then((raw) => {
+      if (raw) {
+        try { setProfile(JSON.parse(raw)); } catch { /* ignore */ }
+      }
+    });
+  }, []);
+  return profile;
+}
+
+function DefaultAvatar() {
+  return (
+    <View style={profileSt.avatarFallback}>
+      <Feather name="user" size={36} color="#8E8E93" />
+    </View>
+  );
+}
+
+function ProfileSection() {
+  const profile = useGoogleProfile();
+  if (!profile) return null;
+
+  return (
+    <View style={profileSt.root}>
+      {/* Circular photo or fallback */}
+      {profile.photo ? (
+        <Image
+          source={{ uri: profile.photo }}
+          style={profileSt.avatar}
+        />
+      ) : (
+        <DefaultAvatar />
+      )}
+
+      {/* Name */}
+      {!!profile.name && (
+        <Text style={profileSt.name} numberOfLines={1}>{profile.name}</Text>
+      )}
+
+      {/* Email */}
+      {!!profile.email && (
+        <Text style={profileSt.email} numberOfLines={1}>{profile.email}</Text>
+      )}
+    </View>
+  );
+}
+
+const profileSt = StyleSheet.create({
+  root: {
+    alignItems: "center",
+    paddingVertical: 28,
+    gap: 8,
+  },
+  avatar: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    marginBottom: 4,
+  },
+  avatarFallback: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: "#2C2C2E",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  name: {
+    fontSize: 26,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+    letterSpacing: -0.5,
+  },
+  email: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: "#8E8E93",
+    letterSpacing: 0.1,
+  },
+});
 
 /* ─── Flat icon ─── */
 function FlatIcon({ name }: { name: string }) {
@@ -388,6 +478,9 @@ export default function SettingsScreen() {
       >
         {/* Page title */}
         <Text style={styles.pageTitle}>{t("settings")}</Text>
+
+        {/* Google account profile */}
+        <ProfileSection />
 
         {/* PREFERENCES */}
         <GlassCard padding={0}>
