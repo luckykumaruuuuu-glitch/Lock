@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -464,6 +464,16 @@ export default function SettingsScreen() {
   const { t, currentLanguage } = useLanguage();
   const { hasUpdate, reopenModal } = useUpdateCheckContext();
   const { showDebugIcon, setShowDebugIcon } = useDebugLog();
+
+  // `from` records which home screen opened Settings ("duckpal" | "ducklock").
+  // It is set by HomeHeader via router.push params so the origin is always
+  // explicit.  Back navigation is handled by the native stack gesture
+  // (right-swipe reverses the slide_from_left animation) which calls
+  // router.back() automatically — returning to whichever tab was active
+  // because Settings was opened with router.push(), not router.replace().
+  const { from } = useLocalSearchParams<{ from?: "duckpal" | "ducklock" }>();
+  // `from` is available here if needed (e.g. analytics, conditional UI).
+  void from;
 
   const topPad    = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 + 84 : 60 + insets.bottom;
