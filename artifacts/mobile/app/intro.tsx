@@ -307,6 +307,7 @@ const styles = StyleSheet.create({
   // ── Info card ──────────────────────────────────────────────────────────────
   card: {
     width: "100%",
+    marginHorizontal: 20,
     backgroundColor: "#1C1C1E",
     borderRadius: 16,
     paddingHorizontal: 20,
