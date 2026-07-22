@@ -301,10 +301,8 @@ function HomeHeader({ appName }: { appName: string }) {
         )}
       </Pressable>
 
-      {/* App name — plain text, no tap action */}
-      <View style={styles.headerBrandPill}>
-        <Text style={styles.headerBrandText}>{appName}</Text>
-      </View>
+      {/* App name — plain text, no background/pill */}
+      <Text style={styles.headerBrandText}>{appName}</Text>
     </View>
   );
 }
@@ -884,14 +882,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  headerBrandPill: {
-    backgroundColor: "rgba(255,255,255,0.07)",
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-  },
+  headerBrandPill: {},
   headerBrandText: {
     fontSize: 18,
     fontFamily: "Inter_700Bold",
