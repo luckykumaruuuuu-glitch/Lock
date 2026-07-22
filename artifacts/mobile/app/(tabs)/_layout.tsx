@@ -76,11 +76,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="home-pro"
         options={{
-          title: "Settings",
+          title: "Home Pro",
           tabBarIcon: ({ color, focused }) => (
-            <AnimatedTabIcon name="settings" color={color} focused={focused} />
+            <AnimatedTabIcon name="home" color={color} focused={focused} />
           ),
         }}
       />

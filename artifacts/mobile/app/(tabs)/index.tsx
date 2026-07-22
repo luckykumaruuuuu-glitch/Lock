@@ -26,7 +26,6 @@ import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 const lockIconImg = require("@/assets/images/lock-icon.png");
 import { Toast } from "@/components/ui/Toast";
 import { GradientBackground } from "@/components/ui/GradientBackground";
-import { PermissionGuardPopup } from "@/components/ui/PermissionGuardPopup";
 import { useAppMode } from "@/context/AppModeContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLock } from "@/context/LockContext";
@@ -50,7 +49,6 @@ import {
   getLockProgress,
   useActiveLocks,
 } from "@/hooks/useLockStorage";
-import { usePermissionGuard } from "@/hooks/usePermissionGuard";
 import { useSounds } from "@/hooks/useSounds";
 import { useReelCount } from "@/hooks/useReelCount";
 
@@ -595,7 +593,7 @@ function EmptyState() {
   );
 }
 
-function DuckLockHomeContent() {
+export function DuckLockHomeContent() {
   const insets = useSafeAreaInsets();
   const { resetSelection } = useLock();
   const { displayItems, locks, loading } = useActiveLocks(30_000);
@@ -832,24 +830,11 @@ function DuckLockHomeContent() {
   );
 }
 
+// "Home" tab — always shows DuckPal skin.
+// "Home Pro" tab (home-pro.tsx) always shows DuckLock skin.
+// Switching is done via the tab bar; AppModeContext is no longer used for routing.
 export default function HomeScreen() {
-  const { mode } = useAppMode();
-  // Permission guard lives here — shared by both DuckPal and DuckLock.
-  // One app, one permission system; the visual home-screen skin is the only
-  // thing that differs between modes.
-  const { missingPerms, recheck } = usePermissionGuard();
-  const [popupBypassed, setPopupBypassed] = useState(false); // dev-only; Expo Go + web
-
-  return (
-    <>
-      {mode === "DuckPal" ? <DuckPalScreen /> : <DuckLockHomeContent />}
-      <PermissionGuardPopup
-        missing={popupBypassed ? [] : missingPerms}
-        onRecheck={recheck}
-        onBypass={() => setPopupBypassed(true)}
-      />
-    </>
-  );
+  return <DuckPalScreen />;
 }
 
 const styles = StyleSheet.create({
