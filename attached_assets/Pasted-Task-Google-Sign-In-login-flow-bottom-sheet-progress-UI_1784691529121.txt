@@ -1,0 +1,11 @@
+Task: Google Sign-In login-flow + bottom-sheet progress UI banana hai
+Feature: App mein "Connect with Google" button hai jo Android ka native Google-account-picker kholta hai (@react-native-google-signin/google-signin library se). User apna Google-account select karta hai.
+Uske baad kya hona chahiye:
+Account select hone ke turant baad, ek progress-indicator dikhna chahiye — jo verify karega ki ye account naya hai ya pehle se app mein login ho chuka hai.
+UI-type important hai: Ye progress-indicator poori screen ka popup/modal NAHI hai — ye ek bottom-sheet/tab hona chahiye jo screen ke neeche se upar slide karke aata hai (partial-height, poori screen cover nahi karta) — bilkul jaisa main tumhe reference-screenshot mein dikha raha hoon.
+Reference-screenshots ke baare mein bahut zaroori baat: Main 2 screenshots dunga — inka use SIRF UI-layout/structure/visual-style samajhne ke liye karna hai (jaise: progress-circle kaisa dikhta hai, bottom-sheet kaise slide hoke aata hai, spacing/alignment kaisi hai). In screenshots ka koi bhi TEXT copy nahi karna — jo bhi text screen par dikhega, wo hum khud decide/likhenge, tumhe screenshot ka text bilkul use nahi karna. Sirf visual-layout ka reference lena hai, content ka nahi.
+Do cases handle karne hain:
+Naya user (account pehli baar login ho raha hai): bottom-sheet mein progress poora chalega — jaise ek "setting up account" process — jab tak setup complete na ho jaaye, phir home-screen par navigate karo
+Returning user (account pehle se exist karta hai): verification jaldi complete ho jaayegi (bottom-sheet thoda dikhega, quickly), phir seedha home-screen par navigate karo — poora setup-process dobara nahi chalega
+Styling: Bottom-sheet ka color/design app ke existing dark-theme UI ke hisaab se hona chahiye (dark background, jo bhi humara accent-color hai) — reference-screenshot ke exact colors copy nahi karne, sirf layout-pattern lena hai.
+Implementation-hint: Bottom-sheet ke liye @gorhom/bottom-sheet library use kar sakte ho (React Native mein standard/popular choice hai iske liye), ya Modal + custom slide-up animation (Animated.timing ke saath translateY) bhi bana sakte ho.

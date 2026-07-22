@@ -42,6 +42,14 @@ Firebase credentials are already set as shared environment variables in `.replit
 - `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `EXPO_PUBLIC_FIREBASE_APP_ID`
 
+## API server
+
+The Express API server runs as a separate workflow called **"artifacts/api-server: API Server"** on port 8080. Start it from the Workflows panel alongside the mobile app.
+
+- Health check: `GET /api/healthz` → `{"status":"ok"}`
+- Database: Replit's built-in PostgreSQL — `DATABASE_URL` is injected automatically
+- Schema: managed by Drizzle ORM in `lib/db/src/schema/index.ts`; push changes with `pnpm --filter @workspace/db run push`
+
 ## Setup verification
 
 After importing or cloning on Replit, confirm:
@@ -49,7 +57,7 @@ After importing or cloning on Replit, confirm:
 1. **Dependencies** — the Start application workflow runs `pnpm install --frozen-lockfile` automatically.
 2. **Firebase env vars** — all seven `EXPO_PUBLIC_FIREBASE_*` variables must be set. They are pre-configured as shared env vars in `.replit` (`userenv.shared`) and mirrored into `artifacts/mobile/.env`.
 3. **Web build** — the workflow builds the Expo web export and serves it on port 5000. Wait ~60 s for "Build complete" in the logs, then the preview pane loads the app.
-4. **API server** — the Express API server (`artifacts/api-server/`) is **not** started by the default workflow. Features that hit the backend will fail until it is wired in (see proposed follow-up tasks).
+4. **API server** — start the **"artifacts/api-server: API Server"** workflow. It builds and starts the Express server on port 8080 with `DATABASE_URL` auto-injected.
 
 To validate the web app is running correctly, check that the Replit preview shows the FocusLock onboarding screen and the workflow logs end with `Phase 2 done ✓ — Build complete`.
 
