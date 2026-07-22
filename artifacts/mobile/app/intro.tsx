@@ -1,16 +1,13 @@
 /**
  * intro.tsx — 4-slide feature intro shown after Google Sign-In, before /setup.
  *
- * Slides:
- *   1. Take Back Control    — duck-screen1.mp4
- *   2. Unbreakable Locks    — duck-screen2.mp4
- *   3. Server-Verified Time — duck-screen3.mp4
- *   4. True Enforcement     — duck-screen4.mp4
- *
- * Navigation:
- *   "Next →"        → next slide
- *   "Get Started ✓" (slide 4) → marks INTRO_DONE_KEY → /setup
- *   "Skip intro"    → marks INTRO_DONE_KEY → /setup (any slide)
+ * Layout matches reference screenshots exactly:
+ *   - Large duck video centered on black bg (no box/container)
+ *   - Dark rounded card below duck
+ *   - Progress dots below card
+ *   - Full-width CTA button pinned to bottom
+ *   - "Skip intro" link below button (non-final slides only)
+ *   - NO top-right skip link
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -66,7 +63,7 @@ const SLIDES: SlideData[] = [
   },
   {
     heading: "Server-Verified Time",
-    body: "DuckPal uses server time, not your device clock. Changing the date or time on your phone won't unlock a single app.",
+    body: "FocusLock uses Firebase server time, not your device clock. Changing the date or time on your phone won't unlock a single app.",
     btnColor: "#22C55E",
     dotColor: "#22C55E",
     btnLabel: "Next →",
@@ -74,7 +71,7 @@ const SLIDES: SlideData[] = [
   },
   {
     heading: "True Enforcement",
-    body: "Device Administrator prevents uninstalling DuckPal while active. The Accessibility Service blocks apps in real-time.",
+    body: "Device Administrator prevents uninstalling FocusLock while active. The Accessibility Service blocks apps in real-time.",
     btnColor: "#F5A44A",
     dotColor: "#F5A44A",
     btnLabel: "Get Started ✓",
@@ -82,10 +79,13 @@ const SLIDES: SlideData[] = [
   },
 ];
 
-const { width } = Dimensions.get("window");
-// Badge / video container size — matches the original rounded-square icon badge
-const BADGE_SIZE = 120;
-const BADGE_RADIUS = 28;
+// ─── Dimensions ──────────────────────────────────────────────────────────────
+const { width: SCREEN_W } = Dimensions.get("window");
+
+// Duck size: ~44% of screen width on mobile, capped at 190px so web preview
+// (which reports full 1280px width) doesn't blow the layout.
+// On a typical Android 360-393px phone: 158-173px — matches reference screenshots.
+const DUCK_SIZE = Math.round(Math.min(SCREEN_W * 0.44, 190));
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function IntroScreen() {
@@ -99,7 +99,7 @@ export default function IntroScreen() {
   // Button press scale
   const btnScale = useRef(new Animated.Value(1)).current;
 
-  // ── Video players (all 4 initialized unconditionally — rules of hooks) ──────
+  // ── All 4 video players initialized unconditionally (Rules of Hooks) ────────
   const player1 = useVideoPlayer(VIDEO_1, (p) => { p.loop = true; p.muted = true; });
   const player2 = useVideoPlayer(VIDEO_2, (p) => { p.loop = true; p.muted = true; });
   const player3 = useVideoPlayer(VIDEO_3, (p) => { p.loop = true; p.muted = true; });
@@ -111,11 +111,8 @@ export default function IntroScreen() {
   useEffect(() => {
     players.forEach((p, i) => {
       try {
-        if (i === index) {
-          p.play();
-        } else {
-          p.pause();
-        }
+        if (i === index) p.play();
+        else p.pause();
       } catch { /* safe on web */ }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -128,54 +125,70 @@ export default function IntroScreen() {
   }
 
   function transition(toIndex: number) {
-    Animated.timing(fadeAnim, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 140,
+      useNativeDriver: true,
+    }).start(() => {
       setIndex(toIndex);
-      Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
     });
   }
 
   function onNext() {
-    if (slide.isFinal) {
-      finish();
-    } else {
-      transition(index + 1);
-    }
+    if (slide.isFinal) finish();
+    else transition(index + 1);
   }
 
   function onBtnPressIn() {
-    Animated.spring(btnScale, { toValue: 0.96, useNativeDriver: true, tension: 300, friction: 10 }).start();
+    Animated.spring(btnScale, {
+      toValue: 0.96,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
   }
   function onBtnPressOut() {
-    Animated.spring(btnScale, { toValue: 1, useNativeDriver: true, tension: 300, friction: 10 }).start();
+    Animated.spring(btnScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
   }
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      {/* ── Top skip link ─────────────────────────────────────────────── */}
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={finish} activeOpacity={0.6} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Text style={styles.skipLink}>Skip intro</Text>
-        </TouchableOpacity>
-      </View>
+    <View
+      style={[
+        styles.root,
+        { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 20) },
+      ]}
+    >
+      {/* ── Animated content (upper flex area) ───────────────────────────── */}
+      <Animated.View style={[styles.upper, { opacity: fadeAnim }]}>
 
-      {/* ── Animated slide content ────────────────────────────────────── */}
-      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-
-        {/* Video badges — all rendered, only the active one visible */}
-        <View style={styles.badgeContainer}>
+        {/* Duck video — large, NO box/container, floats on black background */}
+        <View style={styles.duckWrap}>
           {players.map((player, i) => (
             <View
               key={i}
               style={[
-                styles.badge,
-                { opacity: i === index ? 1 : 0, position: i === 0 ? "relative" : "absolute" },
+                styles.duckSlot,
+                {
+                  opacity: i === index ? 1 : 0,
+                  position: i === 0 ? "relative" : "absolute",
+                },
               ]}
               pointerEvents={i === index ? "auto" : "none"}
             >
               <VideoView
                 player={player}
-                style={styles.video}
-                contentFit="cover"
+                style={styles.duckVideo}
+                contentFit="contain"
                 nativeControls={false}
               />
             </View>
@@ -196,7 +209,7 @@ export default function IntroScreen() {
               style={[
                 styles.dot,
                 i === index
-                  ? { backgroundColor: slide.dotColor, width: 28, borderRadius: 5 }
+                  ? { backgroundColor: slide.dotColor, width: 24, borderRadius: 4 }
                   : styles.dotInactive,
               ]}
             />
@@ -204,7 +217,7 @@ export default function IntroScreen() {
         </View>
       </Animated.View>
 
-      {/* ── Bottom actions ────────────────────────────────────────────── */}
+      {/* ── Bottom actions (pinned to bottom) ────────────────────────────── */}
       <View style={styles.bottom}>
         <Pressable onPress={onNext} onPressIn={onBtnPressIn} onPressOut={onBtnPressOut}>
           <Animated.View
@@ -217,13 +230,17 @@ export default function IntroScreen() {
           </Animated.View>
         </Pressable>
 
-        {/* Bottom skip link — hidden on final slide */}
+        {/* Skip link — shown only on non-final slides */}
         {!slide.isFinal ? (
-          <TouchableOpacity onPress={finish} activeOpacity={0.6} style={styles.skipBottomWrap}>
-            <Text style={styles.skipBottomLink}>Skip intro</Text>
+          <TouchableOpacity
+            onPress={finish}
+            activeOpacity={0.6}
+            style={styles.skipWrap}
+          >
+            <Text style={styles.skipText}>Skip intro</Text>
           </TouchableOpacity>
         ) : (
-          <View style={styles.skipBottomWrap} />
+          <View style={styles.skipWrap} />
         )}
       </View>
     </View>
@@ -235,75 +252,61 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: "#000000",
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
   },
 
-  // ── Top bar ──
-  topBar: {
-    alignItems: "flex-end",
-    paddingVertical: 12,
-  },
-  skipLink: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    color: "#8E8E93",
-    textDecorationLine: "underline",
-  },
-
-  // ── Content (fades on transition) ──
-  content: {
+  // ── Upper section — vertically centers the duck + card + dots ──────────────
+  upper: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 32,
+    gap: 16,
   },
 
-  // ── Video badge container ──
-  badgeContainer: {
-    width: BADGE_SIZE,
-    height: BADGE_SIZE,
+  // ── Duck video — large, no background, no border radius ────────────────────
+  duckWrap: {
+    width: DUCK_SIZE,
+    height: DUCK_SIZE,
     alignItems: "center",
     justifyContent: "center",
   },
-  badge: {
-    width: BADGE_SIZE,
-    height: BADGE_SIZE,
-    borderRadius: BADGE_RADIUS,
-    overflow: "hidden",
-    backgroundColor: "#1C1C1E",
+  duckSlot: {
+    width: DUCK_SIZE,
+    height: DUCK_SIZE,
   },
-  video: {
-    width: BADGE_SIZE,
-    height: BADGE_SIZE,
+  duckVideo: {
+    width: DUCK_SIZE,
+    height: DUCK_SIZE,
   },
 
-  // ── Info card ──
+  // ── Info card ──────────────────────────────────────────────────────────────
   card: {
     width: "100%",
     backgroundColor: "#1C1C1E",
-    borderRadius: 20,
-    padding: 24,
-    gap: 12,
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    gap: 10,
   },
   heading: {
-    fontSize: 34,
+    fontSize: 36,
     fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
     letterSpacing: -0.5,
-    lineHeight: 40,
+    lineHeight: 42,
   },
   body: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: "Inter_400Regular",
     color: "#8E8E93",
-    lineHeight: 24,
+    lineHeight: 22,
   },
 
-  // ── Progress dots ──
+  // ── Progress dots ──────────────────────────────────────────────────────────
   dotsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   dot: {
     height: 8,
@@ -314,14 +317,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#3A3A3C",
   },
 
-  // ── Bottom actions ──
+  // ── Bottom actions ─────────────────────────────────────────────────────────
   bottom: {
-    paddingBottom: 8,
+    // pinned below the upper flex area
   },
   btn: {
-    width: width - 48,
-    height: 62,
-    borderRadius: 34,
+    width: "100%",
+    height: 56,
+    borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -331,13 +334,13 @@ const styles = StyleSheet.create({
     color: "#1A1A1A",
     letterSpacing: 0.2,
   },
-  skipBottomWrap: {
+  skipWrap: {
     alignItems: "center",
-    paddingVertical: 16,
-    minHeight: 52,
+    paddingVertical: 14,
+    minHeight: 44,
     justifyContent: "center",
   },
-  skipBottomLink: {
+  skipText: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     color: "#636366",
