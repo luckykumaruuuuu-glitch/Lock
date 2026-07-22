@@ -606,8 +606,6 @@ function DuckLockHomeContent() {
   const [reelsLockEnabled, setReelsLockEnabled] = useState(false);
   const [reelsLockOffState, setReelsLockOffState] = useState<ReelsLockOffState | null>(null);
   const [reelsRemaining, setReelsRemaining] = useState<ReelsRemainingState | null>(null);
-  const [popupBypassed, setPopupBypassed] = useState(false); // dev-only; Expo Go + web
-
   // Load persisted Reels Lock toggle state on mount (Android only)
   useEffect(() => {
     if (Platform.OS === "android" && NativeModules.ReelsLock) {
@@ -664,7 +662,6 @@ function DuckLockHomeContent() {
     }, [])
   );
 
-  const { missingPerms, recheck } = usePermissionGuard();
   const { toggleAppMode } = useAppMode();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -757,7 +754,9 @@ function DuckLockHomeContent() {
                   // Set the pending flag, fix destination to duration-selector,
                   // and open the unlock-task flow.
                   setPendingReelsLockDisable();
-                  setUnlockFlowState("duration-selector");
+                  // Always DuckLock context here — record it so the
+                  // destination screen returns to the right home.
+                  setUnlockFlowState("duration-selector", null, "DuckLock");
                   router.push("/unlock-tasks");
                   return;
                 }
@@ -831,24 +830,28 @@ function DuckLockHomeContent() {
       </ScrollView>
 
       <Toast visible={toast} message={t("lockActivated")} type="success" onHide={() => setToast(false)} />
-
-      <PermissionGuardPopup
-        missing={popupBypassed ? [] : missingPerms}
-        onRecheck={recheck}
-        onBypass={() => setPopupBypassed(true)}
-      />
     </GradientBackground>
   );
 }
 
 export default function HomeScreen() {
   const { mode } = useAppMode();
+  // Permission guard lives here — shared by both DuckPal and DuckLock.
+  // One app, one permission system; the visual home-screen skin is the only
+  // thing that differs between modes.
+  const { missingPerms, recheck } = usePermissionGuard();
+  const [popupBypassed, setPopupBypassed] = useState(false); // dev-only; Expo Go + web
 
-  if (mode === "DuckPal") {
-    return <DuckPalScreen />;
-  }
-
-  return <DuckLockHomeContent />;
+  return (
+    <>
+      {mode === "DuckPal" ? <DuckPalScreen /> : <DuckLockHomeContent />}
+      <PermissionGuardPopup
+        missing={popupBypassed ? [] : missingPerms}
+        onRecheck={recheck}
+        onBypass={() => setPopupBypassed(true)}
+      />
+    </>
+  );
 }
 
 const styles = StyleSheet.create({

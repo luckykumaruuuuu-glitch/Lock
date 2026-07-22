@@ -242,7 +242,8 @@ export default function ReelsLockScreen() {
   }
 
   function handleUnlock() {
-    setUnlockFlowState("reel-count-schedule", platform as SourcePlatform);
+    // reels-lock is always reached from DuckLock context.
+    setUnlockFlowState("reel-count-schedule", platform as SourcePlatform, "DuckLock");
     router.push("/unlock-tasks");
   }
 

@@ -30,6 +30,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { consumePendingReelsLockDisable } from "@/lib/reelsLockPending";
 import { saveReelsLockOff, ReelsLockOffState } from "@/lib/reelsLockOff";
+import { useAppMode } from "@/context/AppModeContext";
+import { getUnlockSourceMode } from "@/lib/unlockFlowState";
 
 // ── Duration options ──────────────────────────────────────────────────────────
 type DurationId = "one_day" | "one_week" | "forever";
@@ -53,6 +55,7 @@ export default function DurationSelectorScreen() {
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<DurationId | null>(null);
   const [loading, setLoading]   = useState(false);
+  const { setMode } = useAppMode();
 
   const topPad    = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -83,7 +86,8 @@ export default function DurationSelectorScreen() {
         try { await NativeModules.ReelsLock.setEnabled(false); } catch (_) {}
       }
 
-      // Navigate to home (not the feed — DuckLock home)
+      // Restore whichever home-screen mode the user came from, then navigate.
+      setMode(getUnlockSourceMode());
       router.replace("/(tabs)");
     } catch (e) {
       console.warn("[DurationSelector] handleTurnOff error:", e);

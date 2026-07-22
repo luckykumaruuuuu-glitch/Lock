@@ -31,7 +31,8 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { getUnlockPlatform, SourcePlatform } from "@/lib/unlockFlowState";
+import { getUnlockPlatform, getUnlockSourceMode, SourcePlatform } from "@/lib/unlockFlowState";
+import { useAppMode } from "@/context/AppModeContext";
 import { saveReelsRemaining } from "@/lib/reelsLockReels";
 import { clearReelsLockOff } from "@/lib/reelsLockOff";
 
@@ -72,6 +73,7 @@ const PLATFORM_DEEP_LINKS: Partial<Record<NonNullable<SourcePlatform>, string>> 
 export default function ReelCountScheduleScreen() {
   const insets   = useSafeAreaInsets();
   const platform = getUnlockPlatform();
+  const { setMode } = useAppMode();
 
   const [selected, setSelected] = useState<number | null>(null);
   const [loading,  setLoading]  = useState(false);
@@ -94,6 +96,8 @@ export default function ReelCountScheduleScreen() {
       if (platform && PLATFORM_DEEP_LINKS[platform]) {
         Linking.openURL(PLATFORM_DEEP_LINKS[platform]!).catch(() => {});
       }
+      // Restore whichever home-screen mode the user came from, then navigate.
+      setMode(getUnlockSourceMode());
       router.replace("/(tabs)");
     } catch (e) {
       console.warn("[ReelCountSchedule] handleConfirm error:", e);
