@@ -84,6 +84,11 @@ export default function TabLayout() {
           ),
         }}
       />
+      {/* Settings is accessed via the profile-photo icon, not the tab bar */}
+      <Tabs.Screen
+        name="settings"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }
