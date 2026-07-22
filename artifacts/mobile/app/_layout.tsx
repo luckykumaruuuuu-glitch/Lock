@@ -40,6 +40,7 @@ import { UpdateCheckProvider, useUpdateCheckContext } from "@/context/UpdateChec
 import { usePermissionStatus } from "@/hooks/usePermissionStatus";
 import "@/lib/i18n";
 import { ONBOARDING_DONE_KEY } from "./onboarding";
+import { GOOGLE_SIGNIN_DONE_KEY } from "./google-signin";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -47,7 +48,7 @@ const queryClient = new QueryClient();
 
 // Routes that bypass the onboarding/setup guard — accessible directly in web
 // preview for design/dev iteration without completing the full setup flow.
-const DEV_BYPASS_ROUTES = ["/unlock-tasks", "/mock-reels", "/watch-video", "/coming-soon", "/duration-selector", "/reel-count-schedule"];
+const DEV_BYPASS_ROUTES = ["/unlock-tasks", "/mock-reels", "/watch-video", "/coming-soon", "/duration-selector", "/reel-count-schedule", "/google-signin"];
 
 function SetupGuard({ children }: { children: React.ReactNode }) {
   const { setupComplete, loading } = usePermissionStatus();
@@ -86,14 +87,24 @@ function SetupGuard({ children }: { children: React.ReactNode }) {
           const isDevBypass = DEV_BYPASS_ROUTES.some((r) => pathname.startsWith(r));
 
           if (!isDevBypass) {
-            const onboardingDone = await AsyncStorage.getItem(ONBOARDING_DONE_KEY);
+            const [onboardingDone, googleSignInDone] = await Promise.all([
+              AsyncStorage.getItem(ONBOARDING_DONE_KEY),
+              AsyncStorage.getItem(GOOGLE_SIGNIN_DONE_KEY),
+            ]);
+            const inGoogleSignIn = (segments[0] as string) === "google-signin";
+
             if (!onboardingDone && !inOnboarding) {
               hasRedirected.current = true;
               router.replace("/onboarding");
-            } else if (onboardingDone && setupComplete === false && !inSetup) {
+            } else if (onboardingDone && !googleSignInDone && !inGoogleSignIn) {
+              // Onboarding done but Google Sign-In not yet completed
+              hasRedirected.current = true;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              router.replace("/google-signin" as any);
+            } else if (onboardingDone && googleSignInDone && setupComplete === false && !inSetup) {
               hasRedirected.current = true;
               router.replace("/setup");
-            } else if (onboardingDone && setupComplete === true && inSetup) {
+            } else if (onboardingDone && googleSignInDone && setupComplete === true && inSetup) {
               hasRedirected.current = true;
               router.replace("/(tabs)");
             }
@@ -157,6 +168,15 @@ function RootLayoutNav() {
         <Stack.Screen
           name="onboarding"
           options={{ headerShown: false, gestureEnabled: false, animation: "fade" }}
+        />
+        <Stack.Screen
+          name="google-signin"
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+            animation: "slide_from_right",
+            animationDuration: 300,
+          }}
         />
         <Stack.Screen
           name="setup"

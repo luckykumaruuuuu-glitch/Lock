@@ -111,7 +111,8 @@ export default function OnboardingScreen() {
   async function handleFinish() {
     playSuccess();
     await AsyncStorage.setItem(ONBOARDING_DONE_KEY, "true");
-    router.replace("/setup");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    router.replace("/google-signin" as any);
   }
 
   return (
