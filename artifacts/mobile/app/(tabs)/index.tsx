@@ -1,7 +1,9 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome5, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { router, useFocusEffect } from "expo-router";
+import { GOOGLE_USER_PROFILE_KEY } from "@/app/google-signin";
 import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -259,6 +261,54 @@ function DuckPalHeroCharacter() {
   );
 }
 
+// ─── Google profile data (for home-screen header avatar) ─────────────────────
+type GoogleProfile = { name: string | null; email: string | null; photo: string | null } | null;
+
+function useGoogleProfile(): GoogleProfile {
+  const [profile, setProfile] = useState<GoogleProfile>(null);
+  useEffect(() => {
+    AsyncStorage.getItem(GOOGLE_USER_PROFILE_KEY).then((raw) => {
+      if (raw) {
+        try { setProfile(JSON.parse(raw)); } catch { /* ignore */ }
+      }
+    });
+  }, []);
+  return profile;
+}
+
+// ─── HomeHeader ───────────────────────────────────────────────────────────────
+// Left: circular Google avatar (tap → Settings) + glassy app name (tap → mode toggle)
+// Right: DuckCharacter (unchanged)
+function HomeHeader({ appName, onBrandPress }: { appName: string; onBrandPress: () => void }) {
+  const profile = useGoogleProfile();
+
+  return (
+    <View style={styles.headerLeft}>
+      {/* Avatar — taps open Settings */}
+      <Pressable
+        onPress={() => router.navigate("/(tabs)/settings")}
+        hitSlop={10}
+      >
+        {profile?.photo ? (
+          <Image
+            source={{ uri: profile.photo }}
+            style={styles.headerAvatar}
+          />
+        ) : (
+          <View style={styles.headerAvatarFallback}>
+            <Feather name="user" size={16} color="#8E8E93" />
+          </View>
+        )}
+      </Pressable>
+
+      {/* App name — taps toggle DuckLock ↔ DuckPal */}
+      <TouchableOpacity onPress={onBrandPress} activeOpacity={0.7} style={styles.headerBrandPill}>
+        <Text style={styles.headerBrandText}>{appName}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 function StatCard({ value, label, color }: { value: string | number; label: string; color: string }) {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -420,12 +470,9 @@ function DuckPalScreen() {
         contentContainerStyle={[styles.duckPalScrollContent, { paddingTop: topPad + 16, paddingBottom: bottomPad + 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header — same row layout/position as DuckLock: title left, duck icon top-right */}
+        {/* Header — avatar + glassy brand left, duck icon right */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={toggleAppMode} activeOpacity={0.7}>
-            <Text style={styles.greeting}>Your reel companion</Text>
-            <Text style={styles.appTitle}>DuckPal</Text>
-          </TouchableOpacity>
+          <HomeHeader appName="DuckPal" onBrandPress={toggleAppMode} />
           <DuckCharacter />
         </View>
 
@@ -651,12 +698,9 @@ function DuckLockHomeContent() {
         contentContainerStyle={[styles.content, { paddingTop: topPad + 16, paddingBottom: bottomPad + 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* Header — avatar + glassy brand left, duck icon right */}
         <Animated.View style={[styles.header, { transform: [{ translateY: headerY }], opacity: headerOpacity }]}>
-          <TouchableOpacity onPress={toggleAppMode} activeOpacity={0.7}>
-            <Text style={styles.greeting}>{t("stayFocused")}</Text>
-            <Text style={styles.appTitle}>{t("appTitle")}</Text>
-          </TouchableOpacity>
+          <HomeHeader appName={t("appTitle")} onBrandPress={toggleAppMode} />
           <DuckCharacter />
         </Animated.View>
 
@@ -813,6 +857,44 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
   greeting: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", marginBottom: 2 },
   appTitle: { fontSize: 30, fontFamily: "Inter_700Bold", color: "#FFFFFF", letterSpacing: -0.8 },
+
+  // ── Home header: avatar + glassy brand ──────────────────────────────────────
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  headerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,191,128,0.5)",
+  },
+  headerAvatarFallback: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerBrandPill: {
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  headerBrandText: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    color: "rgba(255,255,255,0.9)",
+    letterSpacing: 0.4,
+  },
   duckContainer: {
     width: 72,
     height: 72,
