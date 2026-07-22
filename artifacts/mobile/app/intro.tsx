@@ -2,21 +2,21 @@
  * intro.tsx — 4-slide feature intro shown after Google Sign-In, before /setup.
  *
  * Slides:
- *   1. Take Back Control   — shield icon, orange badge
- *   2. Unbreakable Locks   — lock icon, orange-red badge
- *   3. Server-Verified Time — clock icon, green badge
- *   4. True Enforcement    — warning-triangle icon, orange badge
+ *   1. Take Back Control    — duck-screen1.mp4
+ *   2. Unbreakable Locks    — duck-screen2.mp4
+ *   3. Server-Verified Time — duck-screen3.mp4
+ *   4. True Enforcement     — duck-screen4.mp4
  *
  * Navigation:
- *   "Next →"      → next slide
+ *   "Next →"        → next slide
  *   "Get Started ✓" (slide 4) → marks INTRO_DONE_KEY → /setup
- *   "Skip intro"  → marks INTRO_DONE_KEY → /setup (any slide)
+ *   "Skip intro"    → marks INTRO_DONE_KEY → /setup (any slide)
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useRef, useState } from "react";
+import { useVideoPlayer, VideoView } from "expo-video";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -31,64 +31,63 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 // ─── AsyncStorage key ────────────────────────────────────────────────────────
 export const INTRO_DONE_KEY = "focuslock_intro_done";
 
-// ─── Slide data ──────────────────────────────────────────────────────────────
+// ─── Video sources ───────────────────────────────────────────────────────────
+const VIDEO_1 = require("../assets/images/duck-screen1.mp4");
+const VIDEO_2 = require("../assets/images/duck-screen2.mp4");
+const VIDEO_3 = require("../assets/images/duck-screen3.mp4");
+const VIDEO_4 = require("../assets/images/duck-screen4.mp4");
+
+// ─── Slide data ───────────────────────────────────────────────────────────────
 type SlideData = {
-  badgeColor: string;
-  badgeShadow: string;
-  icon: React.ComponentProps<typeof Feather>["name"];
   heading: string;
   body: string;
   btnColor: string;
+  dotColor: string;
   btnLabel: string;
   isFinal: boolean;
 };
 
 const SLIDES: SlideData[] = [
   {
-    badgeColor: "#F5A44A",
-    badgeShadow: "#E8902A",
-    icon: "shield",
     heading: "Take Back Control",
     body: "DuckPal lets you lock distracting apps for a set period — with absolutely no way to bypass it early. Your commitment, enforced.",
     btnColor: "#F5A44A",
+    dotColor: "#F5A44A",
     btnLabel: "Next →",
     isFinal: false,
   },
   {
-    badgeColor: "#E8621A",
-    badgeShadow: "#C04A0A",
-    icon: "lock",
     heading: "Unbreakable Locks",
     body: "Once set, a lock is permanent until the timer expires. No PIN override, no settings bypass — only the clock unlocks you.",
     btnColor: "#E8621A",
+    dotColor: "#E8621A",
     btnLabel: "Next →",
     isFinal: false,
   },
   {
-    badgeColor: "#22C55E",
-    badgeShadow: "#16A34A",
-    icon: "clock",
     heading: "Server-Verified Time",
     body: "DuckPal uses server time, not your device clock. Changing the date or time on your phone won't unlock a single app.",
     btnColor: "#22C55E",
+    dotColor: "#22C55E",
     btnLabel: "Next →",
     isFinal: false,
   },
   {
-    badgeColor: "#F5A44A",
-    badgeShadow: "#E8902A",
-    icon: "alert-triangle",
     heading: "True Enforcement",
     body: "Device Administrator prevents uninstalling DuckPal while active. The Accessibility Service blocks apps in real-time.",
     btnColor: "#F5A44A",
+    dotColor: "#F5A44A",
     btnLabel: "Get Started ✓",
     isFinal: true,
   },
 ];
 
 const { width } = Dimensions.get("window");
+// Badge / video container size — matches the original rounded-square icon badge
+const BADGE_SIZE = 120;
+const BADGE_RADIUS = 28;
 
-// ─── Component ───────────────────────────────────────────────────────────────
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function IntroScreen() {
   const insets = useSafeAreaInsets();
   const [index, setIndex] = useState(0);
@@ -100,15 +99,36 @@ export default function IntroScreen() {
   // Button press scale
   const btnScale = useRef(new Animated.Value(1)).current;
 
+  // ── Video players (all 4 initialized unconditionally — rules of hooks) ──────
+  const player1 = useVideoPlayer(VIDEO_1, (p) => { p.loop = true; p.muted = true; });
+  const player2 = useVideoPlayer(VIDEO_2, (p) => { p.loop = true; p.muted = true; });
+  const player3 = useVideoPlayer(VIDEO_3, (p) => { p.loop = true; p.muted = true; });
+  const player4 = useVideoPlayer(VIDEO_4, (p) => { p.loop = true; p.muted = true; });
+
+  const players = [player1, player2, player3, player4];
+
+  // Play only the active slide's video; pause all others
+  useEffect(() => {
+    players.forEach((p, i) => {
+      try {
+        if (i === index) {
+          p.play();
+        } else {
+          p.pause();
+        }
+      } catch { /* safe on web */ }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
   async function finish() {
     await AsyncStorage.setItem(INTRO_DONE_KEY, "true");
     router.replace("/setup");
   }
 
   function transition(toIndex: number) {
-    Animated.sequence([
-      Animated.timing(fadeAnim, { toValue: 0, duration: 140, useNativeDriver: true }),
-    ]).start(() => {
+    Animated.timing(fadeAnim, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => {
       setIndex(toIndex);
       Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
     });
@@ -140,9 +160,26 @@ export default function IntroScreen() {
 
       {/* ── Animated slide content ────────────────────────────────────── */}
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-        {/* Icon badge */}
-        <View style={[styles.badge, { backgroundColor: slide.badgeColor, shadowColor: slide.badgeShadow }]}>
-          <Feather name={slide.icon} size={56} color="#1A1A1A" strokeWidth={1.8} />
+
+        {/* Video badges — all rendered, only the active one visible */}
+        <View style={styles.badgeContainer}>
+          {players.map((player, i) => (
+            <View
+              key={i}
+              style={[
+                styles.badge,
+                { opacity: i === index ? 1 : 0, position: i === 0 ? "relative" : "absolute" },
+              ]}
+              pointerEvents={i === index ? "auto" : "none"}
+            >
+              <VideoView
+                player={player}
+                style={styles.video}
+                contentFit="cover"
+                nativeControls={false}
+              />
+            </View>
+          ))}
         </View>
 
         {/* Info card */}
@@ -159,7 +196,7 @@ export default function IntroScreen() {
               style={[
                 styles.dot,
                 i === index
-                  ? { backgroundColor: slide.btnColor, width: 28, borderRadius: 5 }
+                  ? { backgroundColor: slide.dotColor, width: 28, borderRadius: 5 }
                   : styles.dotInactive,
               ]}
             />
@@ -169,11 +206,7 @@ export default function IntroScreen() {
 
       {/* ── Bottom actions ────────────────────────────────────────────── */}
       <View style={styles.bottom}>
-        <Pressable
-          onPress={onNext}
-          onPressIn={onBtnPressIn}
-          onPressOut={onBtnPressOut}
-        >
+        <Pressable onPress={onNext} onPressIn={onBtnPressIn} onPressOut={onBtnPressOut}>
           <Animated.View
             style={[
               styles.btn,
@@ -225,17 +258,23 @@ const styles = StyleSheet.create({
     gap: 32,
   },
 
-  // ── Icon badge ──
-  badge: {
-    width: 120,
-    height: 120,
-    borderRadius: 28,
+  // ── Video badge container ──
+  badgeContainer: {
+    width: BADGE_SIZE,
+    height: BADGE_SIZE,
     alignItems: "center",
     justifyContent: "center",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.45,
-    shadowRadius: 20,
-    elevation: 12,
+  },
+  badge: {
+    width: BADGE_SIZE,
+    height: BADGE_SIZE,
+    borderRadius: BADGE_RADIUS,
+    overflow: "hidden",
+    backgroundColor: "#1C1C1E",
+  },
+  video: {
+    width: BADGE_SIZE,
+    height: BADGE_SIZE,
   },
 
   // ── Info card ──
@@ -278,7 +317,6 @@ const styles = StyleSheet.create({
   // ── Bottom actions ──
   bottom: {
     paddingBottom: 8,
-    gap: 0,
   },
   btn: {
     width: width - 48,
