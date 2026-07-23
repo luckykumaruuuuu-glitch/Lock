@@ -1,0 +1,54 @@
+Background
+पूरा solid pure black (#000000 या उसके आसपास) background, पूरी screen पर।
+Top Section — Profile
+सबसे ऊपर center में एक circular avatar (करीब 80-90px diameter)
+Avatar के चारों तरफ एक dashed/dotted circular ring — bright neon-yellowish-green color (#D4FF3F टाइप), ring avatar से थोड़ा gap रखकर बाहर की तरफ
+Avatar के अंदर एक cartoon/3D character illustration (chef जैसा दिख रहा character, सिर्फ reference है)
+Avatar के नीचे, center-aligned:
+बड़ा bold white text (नाम) — करीब 22-24px, font-weight 700-800
+उसके नीचे छोटा muted grey text (@handle स्टाइल) — करीब 14px, grey color (#8E8E93 टाइप), कम opacity
+Stats Row (तीन column, एक horizontal line में)
+Center-aligned तीन blocks, बीच में दो पतली vertical divider lines (light grey, low opacity)
+हर block structure ऊपर से नीचे:
+छोटा icon (करीब 18-20px) + bold number/percentage same line में (icon left, text right) — icon और number दोनों neon green color में
+उसके नीचे छोटा label text, grey/white muted color, करीब 12px
+तीनों icons अलग-अलग shape के (circular arrow icon, checkmark-badge icon, calendar icon) पर सबका color same neon green
+Weekly Calendar Strip
+7 equal-width boxes एक row में, horizontally spaced evenly, कोई visible card-background नहीं (transparent, बस background पर float करता हुआ)
+हर box के अंदर top पर एक छोटा dot (ज्यादातर grey/dim, current day वाले पर green-bright dot, कुछ पर double-dot)
+Dot के नीचे 3-letter day name (Mon, Tue, Wed...) — small grey text
+उसके नीचे date-number (bold, white) — बड़ा size, करीब 16-18px
+Current/selected day (Thu) box अलग दिखता है: उसके चारों तरफ एक rounded rectangle border, neon-green color, बाकी boxes से थोड़ा ऊपर उठा हुआ जैसा दिखता है (elevated feel)
+Friends Row
+Left-aligned section, दो parts:
+Left: दो overlapping circular avatar images (एक के ऊपर एक थोड़ा overlap करके), छोटे size करीब 36-40px, white border outline हर एक के चारों तरफ
+Right side उसी row में: "Friends" bold white text (top line) + "14 online" green text (bottom line, छोटा size)
+कोई card-background नहीं, यह भी directly black background पर float करता है
+दो Cards (side-by-side row)
+Left Card — छोटा, square-ish
+Dark charcoal-grey rounded rectangle background (#1A1A1A से #222 टाइप), rounded corners करीब 20-24px radius
+अंदर सिर्फ एक बड़ा 3D glossy trophy icon — green/gold gradient, glowing/shiny effect, नीचे हल्का reflection
+Trophy थोड़ा bottom-right की तरफ position किया हुआ, बाकी card space empty/dark
+Right Card — बड़ा, rectangle
+Same dark grey rounded-rectangle background, same corner-radius, left card से चौड़ा (wider)
+Content left-aligned, दो हिस्सों में split (text left, icon graphic right):
+Top: bold white heading text ("Keep it up!" जैसा), करीब 16-18px
+नीचे: 2-line muted grey description text, छोटा size (~13px)
+उसके नीचे: एक horizontal dot-progress indicator — 6-7 छोटे dots एक line में, ज्यादातर dim/grey, एक-दो green filled, एक पर checkmark green-circle badge
+Right side (card के अंदर right corner में): वही glossy trophy 3D icon दिख रहा है repeat होते हुए, बड़ा साइज, green glow के साथ, card के edge से थोड़ा crop/overflow होता हुआ दिख रहा है
+Bottom Row (partially visible/cut off)
+Left item
+Rounded-square dark card, अंदर एक बड़ा glossy 3D icon — green/dark geometric shape (त्रिकोण/arrow जैसे stacked shapes), glowing green gradient, shiny highlight
+Right card (text वाला)
+Similar dark rounded card, अंदर bold white heading text ("Complete new tasks" टाइप) + नीचे 2-line grey description text
+Card का bottom edge screen के bottom पर cut हो रहा है (scroll indicate करता है और नीचे भी content है)
+Overall Color Palette
+Background: pure black
+Primary accent: bright neon-lime-green (glow/highlights/icons/active-states के लिए)
+Card background: dark charcoal grey (black से हल्का हल्का उठा हुआ)
+Text: white (headings), grey/muted (subtext), green (highlights/positive-numbers)
+3D icons: glossy/shiny render style with soft drop-shadow glow underneath, green-dominant gradient
+Spacing/Layout Pattern
+सारे sections vertically stacked, comfortable padding हर section के बीच (~16-20px gap)
+Cards का corner-radius consistently बड़ा और round (soft, नुकीला नहीं)
+कोई hard border-lines नहीं दिखती cards पर, सिर्फ subtle background-color-difference से separation होता है
