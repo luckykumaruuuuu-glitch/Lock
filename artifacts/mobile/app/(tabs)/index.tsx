@@ -67,6 +67,7 @@ const DUCKPAL_APP_ICONS = {
   Instagram: { iconName: "instagram" as const, iconColor: "#E1306C" },
   YouTube:   { iconName: "youtube"    as const, iconColor: "#FF0000" },
   Facebook:  { iconName: "facebook"   as const, iconColor: "#1877F2" },
+  LinkedIn:  { iconName: "linkedin"   as const, iconColor: "#0A66C2" },
 };
 
 function DuckCharacter() {
@@ -451,121 +452,217 @@ function WeeklyBarChart({ data }: { data: { day: string; count: number }[] }) {
   );
 }
 
+// ── Day labels for calendar strip ────────────────────────────────────────────
+const CAL_DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
 function DuckPalScreen() {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 + 84 : 60 + insets.bottom;
-  const { toggleAppMode } = useAppMode();
-  const [weekOffset, setWeekOffset] = useState(0);
-  const { count: instagramCount } = useReelCount();
-  // Split bar only has something worth showing once Instagram has at least one tracked reel.
-  const hasInstagramActivity = (instagramCount ?? 0) >= 1;
 
-  const weekStart = getWeekStart(new Date());
-  weekStart.setDate(weekStart.getDate() + weekOffset * 7);
-  const weekLabel = formatWeekRange(weekStart);
+  const { count: instagramCount } = useReelCount();
+  const { displayItems } = useActiveLocks(60_000);
+  const profile = useGoogleProfile();
+
+  // Current week Mon–Sun
+  const today = new Date();
+  const weekMon = getWeekStart(today);
+  const weekDates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekMon);
+    d.setDate(weekMon.getDate() + i);
+    return d;
+  });
+
+  const reelsToday = instagramCount ?? 0;
+  const appsBlocked = displayItems.length;
 
   return (
     <GradientBackground>
-      {/* Single continuous scroll — no nested scroll views */}
       <ScrollView
         style={styles.container}
-        contentContainerStyle={[styles.duckPalScrollContent, { paddingTop: topPad + 16, paddingBottom: bottomPad + 24 }]}
+        contentContainerStyle={[
+          styles.dpScrollContent,
+          { paddingTop: topPad + 8, paddingBottom: bottomPad + 24 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header — avatar + glassy brand left, duck icon right */}
-        <View style={styles.header}>
-          <HomeHeader appName="DuckPal" source="duckpal" />
-          <DuckCharacter />
-        </View>
+        {/* ── Profile header ── */}
+        <View style={styles.dpTopRow}>
+          {/* Left spacer mirrors duck width for visual centering */}
+          <View style={styles.dpTopSpacer} />
 
-        {/* Hero character — ambient looping video. The floating/growing overlay
-            version (shown while scrolling Reels) is a separate, later step. */}
-        <DuckPalHeroCharacter />
-
-        <View style={styles.duckPalReelsCountBlock}>
-          <Text style={styles.duckPalReelsCountNumber}>{instagramCount ?? 0}</Text>
-          <Text style={styles.duckPalReelsCountLabel}>Reels Scrolled Today</Text>
-        </View>
-
-        {/* Split bar — shown once Instagram has at least one tracked reel. */}
-        {hasInstagramActivity && (
-          <GlassCard style={styles.duckPalSplitCard} padding={14}>
-            <View style={styles.duckPalSplitRow}>
-              {/* Instagram — live tracking */}
-              <View style={styles.duckPalSplitItem}>
-                <View style={[styles.duckPalSplitIconBg, { backgroundColor: DUCKPAL_APP_ICONS.Instagram.iconColor }]}>
-                  <FontAwesome5 name={DUCKPAL_APP_ICONS.Instagram.iconName} size={16} color="#FFFFFF" />
+          {/* Centered profile */}
+          <View style={styles.dpProfileCenter}>
+            {/* Avatar with dashed accent ring */}
+            <View style={styles.dpAvatarRing}>
+              {profile?.photo ? (
+                <Image source={{ uri: profile.photo }} style={styles.dpAvatarImg} />
+              ) : (
+                <View style={styles.dpAvatarFallback}>
+                  <Feather name="user" size={36} color="#8E8E93" />
                 </View>
-                <Text style={styles.duckPalSplitCount}>{instagramCount ?? 0}</Text>
-              </View>
-              <View style={styles.duckPalSplitDivider} />
-              {/* YouTube — detection ready */}
-              <View style={styles.duckPalSplitItem}>
-                <View style={[styles.duckPalSplitIconBg, { backgroundColor: DUCKPAL_APP_ICONS.YouTube.iconColor }]}>
-                  <FontAwesome5 name={DUCKPAL_APP_ICONS.YouTube.iconName} size={16} color="#FFFFFF" />
-                </View>
-                <Text style={styles.duckPalSplitCount}>0</Text>
-              </View>
+              )}
             </View>
-          </GlassCard>
-        )}
-
-        <GlassCard padding={20}>
-          <View style={styles.duckPalWeekNav}>
-            <TouchableOpacity
-              onPress={() => setWeekOffset((w) => w - 1)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Feather name="chevron-left" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-            <Text style={styles.duckPalWeekLabel}>{weekLabel}</Text>
-            <TouchableOpacity
-              onPress={() => setWeekOffset((w) => w + 1)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Feather name="chevron-right" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
+            <Text style={styles.dpProfileName} numberOfLines={1}>
+              {profile?.name ?? "Your Name"}
+            </Text>
+            <Text style={styles.dpProfileEmail} numberOfLines={1}>
+              {profile?.email ?? "your@email.com"}
+            </Text>
           </View>
-          <WeeklyBarChart data={DUMMY_WEEKLY} />
 
-          <View style={styles.duckPalTotalsRow}>
-            <View style={styles.duckPalTotalItem}>
-              <Text style={styles.duckPalTotalValue}>{DUMMY_TOTAL_REELS}</Text>
-              <Text style={styles.duckPalTotalLabel}>Total Reels</Text>
-            </View>
-            <View style={styles.duckPalTotalsDivider} />
-            <View style={styles.duckPalTotalItem}>
-              <Text style={styles.duckPalTotalValue}>{DUMMY_DAILY_AVG}</Text>
-              <Text style={styles.duckPalTotalLabel}>Daily avg</Text>
-            </View>
+          {/* Duck character — top-right interactive */}
+          <View style={styles.dpTopDuck}>
+            <DuckCharacter />
           </View>
-        </GlassCard>
-
-        <View style={styles.sectionRow}>
-          <Feather name="bar-chart-2" size={15} color="#FFBF80" />
-          <Text style={styles.sectionTitle}>Top apps</Text>
         </View>
 
-        <View style={styles.lockList}>
-          {DUMMY_TOP_APPS.map((app) => {
-            const iconCfg = DUCKPAL_APP_ICONS[app.name as keyof typeof DUCKPAL_APP_ICONS];
-            const count = app.name === "Instagram" ? (instagramCount ?? 0) : app.count;
+        {/* ── Stats row — 3 metrics ── */}
+        <View style={styles.dpStatsCard}>
+          <View style={styles.dpStatCol}>
+            <View style={styles.dpStatIconRow}>
+              <Feather name="refresh-cw" size={15} color="#FFBF80" />
+              <Text style={styles.dpStatNum}>{reelsToday}</Text>
+            </View>
+            <Text style={styles.dpStatLbl}>Reels Today</Text>
+          </View>
+          <View style={styles.dpStatDiv} />
+          <View style={styles.dpStatCol}>
+            <View style={styles.dpStatIconRow}>
+              <Feather name="check-circle" size={15} color="#FFBF80" />
+              <Text style={styles.dpStatNum}>0</Text>
+            </View>
+            <Text style={styles.dpStatLbl}>Streak Days</Text>
+          </View>
+          <View style={styles.dpStatDiv} />
+          <View style={styles.dpStatCol}>
+            <View style={styles.dpStatIconRow}>
+              <Feather name="shield" size={15} color="#FFBF80" />
+              <Text style={styles.dpStatNum}>{appsBlocked}</Text>
+            </View>
+            <Text style={styles.dpStatLbl}>Apps Blocked</Text>
+          </View>
+        </View>
+
+        {/* ── Weekly calendar strip ── */}
+        <View style={styles.dpCalStrip}>
+          {weekDates.map((d, i) => {
+            const isToday = d.toDateString() === today.toDateString();
             return (
-              <GlassCard key={app.name} style={styles.lockCard}>
-                <View style={styles.lockCardInner}>
-                  <View style={[styles.lockIconBg, { backgroundColor: iconCfg?.iconColor ?? "#3A3A3C" }]}>
-                    <FontAwesome5 name={(iconCfg?.iconName ?? "mobile") as any} size={24} color="#FFFFFF" />
-                  </View>
-                  <View style={styles.lockInfo}>
-                    <Text style={styles.lockAppName}>{app.name}</Text>
-                  </View>
-                  <Text style={styles.duckPalTopAppCount}>{count}</Text>
-                </View>
-              </GlassCard>
+              <TouchableOpacity
+                key={i}
+                activeOpacity={0.7}
+                style={[styles.dpCalItem, isToday && styles.dpCalItemActive]}
+              >
+                <View style={[styles.dpCalDot, isToday && styles.dpCalDotActive]} />
+                <Text style={styles.dpCalDayName}>{CAL_DAY_LABELS[i]}</Text>
+                <Text style={[styles.dpCalDateNum, isToday && styles.dpCalDateNumActive]}>
+                  {d.getDate()}
+                </Text>
+              </TouchableOpacity>
             );
           })}
         </View>
+
+        {/* ── Friends section + Streak card (side by side) ── */}
+        <View style={styles.dpMidRow}>
+          {/* Friends — no card background, floats on black */}
+          <View style={styles.dpFriendsSection}>
+            <View style={styles.dpAvatarStack}>
+              {(["#FFBF80", "#FF6B6B", "#4ECDC4"] as const).map((color, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.dpFriendBubble,
+                    { backgroundColor: color, marginLeft: i > 0 ? -10 : 0, zIndex: 3 - i },
+                  ]}
+                />
+              ))}
+            </View>
+            <Text style={styles.dpFriendsTitle}>Friends</Text>
+            <Text style={styles.dpFriendsSub}>3 friends</Text>
+          </View>
+
+          {/* Keep it up card */}
+          <View style={styles.dpStreakCard}>
+            <View style={styles.dpStreakLeft}>
+              <Text style={styles.dpStreakTitle}>Keep it up!</Text>
+              <Text style={styles.dpStreakSub}>
+                Lock apps every{"\n"}day to build streak
+              </Text>
+              <View style={styles.dpDotRow}>
+                {Array.from({ length: 7 }, (_, i) => (
+                  <View
+                    key={i}
+                    style={[styles.dpProgressDot, i === 0 && styles.dpProgressDotDone]}
+                  />
+                ))}
+              </View>
+            </View>
+            <View style={styles.dpTrophyBox}>
+              <Text style={styles.dpTrophyEmoji}>🏆</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ── Task card — full width ── */}
+        <View style={styles.dpTaskCard}>
+          <View style={styles.dpTaskIconBox}>
+            <FontAwesome5 name="lock" size={26} color="#FFBF80" />
+          </View>
+          <View style={styles.dpTaskContent}>
+            <Text style={styles.dpTaskTitle}>Complete new tasks</Text>
+            <Text style={styles.dpTaskSub}>Lock apps and build your focus streak</Text>
+          </View>
+        </View>
+
+        {/* ── Platform tabs — horizontal scroll, varied sizes ── */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.dpPlatRow}
+          contentContainerStyle={styles.dpPlatScroll}
+        >
+          {/* YouTube — large */}
+          <View style={[styles.dpPlatTab, styles.dpPlatTabLg]}>
+            <View style={[styles.dpPlatIcon, { backgroundColor: DUCKPAL_APP_ICONS.YouTube.iconColor }]}>
+              <FontAwesome5 name={DUCKPAL_APP_ICONS.YouTube.iconName} size={24} color="#FFF" />
+            </View>
+            <Text style={styles.dpPlatCount}>
+              {DUMMY_TOP_APPS.find((a) => a.name === "YouTube")?.count ?? 0}
+            </Text>
+            <Text style={styles.dpPlatName}>YouTube</Text>
+          </View>
+
+          {/* Instagram — medium */}
+          <View style={[styles.dpPlatTab, styles.dpPlatTabMd]}>
+            <View style={[styles.dpPlatIcon, { backgroundColor: DUCKPAL_APP_ICONS.Instagram.iconColor }]}>
+              <FontAwesome5 name={DUCKPAL_APP_ICONS.Instagram.iconName} size={20} color="#FFF" />
+            </View>
+            <Text style={styles.dpPlatCount}>{reelsToday}</Text>
+            <Text style={styles.dpPlatName}>Instagram</Text>
+          </View>
+
+          {/* Facebook — medium */}
+          <View style={[styles.dpPlatTab, styles.dpPlatTabMd]}>
+            <View style={[styles.dpPlatIcon, { backgroundColor: DUCKPAL_APP_ICONS.Facebook.iconColor }]}>
+              <FontAwesome5 name={DUCKPAL_APP_ICONS.Facebook.iconName} size={20} color="#FFF" />
+            </View>
+            <Text style={styles.dpPlatCount}>
+              {DUMMY_TOP_APPS.find((a) => a.name === "Facebook")?.count ?? 0}
+            </Text>
+            <Text style={styles.dpPlatName}>Facebook</Text>
+          </View>
+
+          {/* LinkedIn — small, partially cut off at right edge */}
+          <View style={[styles.dpPlatTab, styles.dpPlatTabSm]}>
+            <View style={[styles.dpPlatIcon, { backgroundColor: DUCKPAL_APP_ICONS.LinkedIn.iconColor }]}>
+              <FontAwesome5 name={DUCKPAL_APP_ICONS.LinkedIn.iconName} size={18} color="#FFF" />
+            </View>
+            <Text style={styles.dpPlatCount}>0</Text>
+            <Text style={styles.dpPlatName}>LinkedIn</Text>
+          </View>
+        </ScrollView>
       </ScrollView>
     </GradientBackground>
   );
@@ -1003,4 +1100,193 @@ const styles = StyleSheet.create({
   duckPalTotalLabel: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   duckPalTotalsDivider: { width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.1)" },
   duckPalTopAppCount: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+
+  // ── DuckPal redesign ─────────────────────────────────────────────────────────
+
+  dpScrollContent: { paddingHorizontal: 20, paddingTop: 16, gap: 16 },
+
+  // Profile header row
+  dpTopRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
+  dpTopSpacer: { width: 72 }, // mirrors DuckCharacter width
+  dpProfileCenter: { flex: 1, alignItems: "center", gap: 6, paddingBottom: 4 },
+  dpTopDuck: { width: 72, alignItems: "flex-end" },
+
+  // Avatar with dashed accent ring
+  dpAvatarRing: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    borderWidth: 2,
+    borderColor: "#FFBF80",
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+    padding: 4,
+  },
+  dpAvatarImg: { width: 80, height: 80, borderRadius: 40 },
+  dpAvatarFallback: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dpProfileName: {
+    fontSize: 22,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+    letterSpacing: -0.3,
+    textAlign: "center",
+  },
+  dpProfileEmail: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "#8E8E93",
+    textAlign: "center",
+  },
+
+  // Stats row
+  dpStatsCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+  },
+  dpStatCol: { flex: 1, alignItems: "center", gap: 5 },
+  dpStatIconRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  dpStatNum: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#FFBF80" },
+  dpStatLbl: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: "#8E8E93",
+    textAlign: "center",
+  },
+  dpStatDiv: { width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.1)" },
+
+  // Weekly calendar strip
+  dpCalStrip: { flexDirection: "row", justifyContent: "space-between" },
+  dpCalItem: {
+    flex: 1,
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  dpCalItemActive: {
+    borderWidth: 1.5,
+    borderColor: "#FFBF80",
+    backgroundColor: "rgba(255,191,128,0.07)",
+  },
+  dpCalDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#3A3A3C" },
+  dpCalDotActive: { backgroundColor: "#FFBF80" },
+  dpCalDayName: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#8E8E93" },
+  dpCalDateNum: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  dpCalDateNumActive: { color: "#FFBF80" },
+
+  // Friends + Streak row
+  dpMidRow: { flexDirection: "row", gap: 12, alignItems: "stretch" },
+
+  dpFriendsSection: {
+    flex: 0.38,
+    alignItems: "flex-start",
+    justifyContent: "center",
+    gap: 5,
+    paddingHorizontal: 4,
+  },
+  dpAvatarStack: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
+  dpFriendBubble: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: "#000000",
+  },
+  dpFriendsTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  dpFriendsSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#FFBF80" },
+
+  dpStreakCard: {
+    flex: 0.62,
+    backgroundColor: "#1C1C1E",
+    borderRadius: 20,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  dpStreakLeft: { flex: 1, gap: 5 },
+  dpStreakTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  dpStreakSub: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: "#8E8E93",
+    lineHeight: 16,
+  },
+  dpDotRow: { flexDirection: "row", gap: 5, marginTop: 4 },
+  dpProgressDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#3A3A3C",
+  },
+  dpProgressDotDone: { backgroundColor: "#FFBF80" },
+  dpTrophyBox: { marginLeft: 8, alignItems: "center", justifyContent: "center" },
+  dpTrophyEmoji: { fontSize: 42 },
+
+  // Task card
+  dpTaskCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1C1C1E",
+    borderRadius: 20,
+    padding: 16,
+    gap: 14,
+  },
+  dpTaskIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,191,128,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dpTaskContent: { flex: 1, gap: 4 },
+  dpTaskTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  dpTaskSub: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#8E8E93",
+    lineHeight: 18,
+  },
+
+  // Platform tabs — horizontal scroll with varied sizes
+  dpPlatRow: { marginHorizontal: -20 }, // bleed to screen edges
+  dpPlatScroll: { paddingHorizontal: 20, gap: 10 }, // no right padding → last tab bleeds off edge
+  dpPlatTab: {
+    backgroundColor: "#1C1C1E",
+    borderRadius: 20,
+    padding: 16,
+    alignItems: "center",
+    gap: 8,
+    justifyContent: "center",
+  },
+  dpPlatTabLg: { width: 130, paddingVertical: 20 }, // tallest + widest
+  dpPlatTabMd: { width: 108, paddingVertical: 18 },
+  dpPlatTabSm: { width: 88, paddingVertical: 16 },  // partially cut off at right edge
+  dpPlatIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dpPlatCount: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  dpPlatName: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#8E8E93" },
 });
