@@ -65,54 +65,54 @@ const PLATFORM_CONFIG: Record<
 > = {
   instagram: {
     title: "Instagram is locked",
-    image: require("@/assets/lock_char_instagram.png"),           // ← lock_char, NOT reels_lock_char
-    unlockImage: require("@/assets/reels_lock_char_instagram.png"),
+    image: require("@/assets/lock_char_instagram.webp"),
+    unlockImage: require("@/assets/reels_lock_char_instagram.webp"),
   },
   youtube: {
     title: "YouTube is locked",
-    image: require("@/assets/lock_char_youtube.png"),             // ← lock_char, NOT reels_lock_char
-    unlockImage: require("@/assets/reels_lock_char_youtube.png"),
+    image: require("@/assets/lock_char_youtube.webp"),
+    unlockImage: require("@/assets/reels_lock_char_youtube.webp"),
   },
   facebook: {
     title: "Facebook is locked",
-    image: require("@/assets/lock_char_facebook.png"),            // ← lock_char, NOT reels_lock_char
-    unlockImage: require("@/assets/reels_lock_char_facebook.png"),
+    image: require("@/assets/lock_char_facebook.webp"),
+    unlockImage: require("@/assets/reels_lock_char_facebook.webp"),
   },
   tiktok: {
     title: "TikTok is locked",
-    image: require("@/assets/lock_char_tiktok.png"),
+    image: require("@/assets/lock_char_tiktok.webp"),
   },
   twitter: {
     title: "Twitter is locked",
-    image: require("@/assets/lock_char_twitter.png"),
+    image: require("@/assets/lock_char_twitter.webp"),
   },
   snapchat: {
     title: "Snapchat is locked",
-    image: require("@/assets/lock_char_snapchat.png"),
+    image: require("@/assets/lock_char_snapchat.webp"),
   },
   reddit: {
     title: "Reddit is locked",
-    image: require("@/assets/lock_char_reddit.png"),
+    image: require("@/assets/lock_char_reddit.webp"),
   },
   pinterest: {
     title: "Pinterest is locked",
-    image: require("@/assets/lock_char_pinterest.png"),
+    image: require("@/assets/lock_char_pinterest.webp"),
   },
   whatsapp: {
     title: "WhatsApp is locked",
-    image: require("@/assets/lock_char_whatsapp.png"),
+    image: require("@/assets/lock_char_whatsapp.webp"),
   },
   telegram: {
     title: "Telegram is locked",
-    image: require("@/assets/lock_char_telegram.png"),
+    image: require("@/assets/lock_char_telegram.webp"),
   },
   discord: {
     title: "Discord is locked",
-    image: require("@/assets/lock_char_discord.png"),
+    image: require("@/assets/lock_char_discord.webp"),
   },
   linkedin: {
     title: "LinkedIn is locked",
-    image: require("@/assets/lock_char_linkedin.png"),
+    image: require("@/assets/lock_char_linkedin.webp"),
   },
 };
 
