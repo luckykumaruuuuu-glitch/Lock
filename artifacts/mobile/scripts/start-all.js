@@ -145,7 +145,22 @@ log("Phase 2 — Building web export in background…");
 // so any in-flight file reads would fail. Serve the loading page instead.
 buildDone = false;
 
-const buildEnv = { ...process.env, CI: "1", NODE_ENV: "production" };
+// Pass current session's domain so expo export bakes the correct origin into
+// the web bundle.  Without this, REPLIT_DEV_DOMAIN is undefined inside the
+// child process on some Replit configurations, causing wrong asset URLs.
+const replitDomain =
+  process.env.REPLIT_INTERNAL_APP_DOMAIN ||
+  process.env.REPLIT_DEV_DOMAIN ||
+  "";
+const buildEnv = {
+  ...process.env,
+  CI: "1",
+  NODE_ENV: "production",
+  // Explicit pass-through so app.config.js getReplitOrigin() always sees the domain
+  REPLIT_DEV_DOMAIN: replitDomain,
+  REPLIT_INTERNAL_APP_DOMAIN: process.env.REPLIT_INTERNAL_APP_DOMAIN || "",
+  EXPO_PUBLIC_DOMAIN: replitDomain,
+};
 
 const buildProc = spawn(
   "pnpm",

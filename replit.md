@@ -50,6 +50,12 @@ The Express API server runs as a separate workflow called **"artifacts/api-serve
 - Database: Replit's built-in PostgreSQL — `DATABASE_URL` is injected automatically
 - Schema: managed by Drizzle ORM in `lib/db/src/schema/index.ts`; push changes with `pnpm --filter @workspace/db run push`
 
+## Preview URL — automatic per account
+
+The Expo web preview URL is generated **automatically** from `REPLIT_DEV_DOMAIN` on every session start. No manual changes are needed when importing the project to a new Replit account.
+
+**How it works:** `artifacts/mobile/app.config.js` reads `REPLIT_DEV_DOMAIN` at build time and passes it as the `expo-router` origin. `start-all.js` also injects the domain into the `expo export` environment. Both are read fresh from Replit's injected env vars each time.
+
 ## Setup verification
 
 After importing or cloning on Replit, confirm:
@@ -65,6 +71,7 @@ To validate the web app is running correctly, check that the Replit preview show
 
 - `package.json` has a `pnpm.overrides` entry pinning `tar` to `7.5.20` — Replit's package firewall blocks the default `tar@7.5.17` that `@expo/cli` pulls in. Do not remove this override.
 - `artifacts/mobile/.env` is generated from the shared Replit env vars and should not be committed to git (add to `.gitignore` if pushing to a public repo).
+- `app.json` has been replaced by `app.config.js` — do not re-create `app.json` as it would override the dynamic config.
 
 ## User preferences
 
