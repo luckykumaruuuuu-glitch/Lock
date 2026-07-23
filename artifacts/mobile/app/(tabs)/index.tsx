@@ -10,6 +10,7 @@ import {
   Animated,
   Image,
   NativeModules,
+  PanResponder,
   Platform,
   Pressable,
   ScrollView,
@@ -67,7 +68,6 @@ const DUCKPAL_APP_ICONS = {
   Instagram: { iconName: "instagram" as const, iconColor: "#E1306C" },
   YouTube:   { iconName: "youtube"    as const, iconColor: "#FF0000" },
   Facebook:  { iconName: "facebook"   as const, iconColor: "#1877F2" },
-  LinkedIn:  { iconName: "linkedin"   as const, iconColor: "#0A66C2" },
 };
 
 function DuckCharacter() {
@@ -464,14 +464,30 @@ function DuckPalScreen() {
   const { displayItems } = useActiveLocks(60_000);
   const profile = useGoogleProfile();
 
-  // Current week Mon–Sun
+  // ── Week navigation state ─────────────────────────────────────────────────
+  const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, -1 = last, +1 = next
   const today = new Date();
-  const weekMon = getWeekStart(today);
+  const baseMonday = getWeekStart(today);
+  const weekMon = new Date(baseMonday);
+  weekMon.setDate(baseMonday.getDate() + weekOffset * 7);
+
   const weekDates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekMon);
     d.setDate(weekMon.getDate() + i);
     return d;
   });
+
+  // PanResponder — left swipe = next week, right swipe = previous week
+  const calPan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) =>
+        Math.abs(gs.dx) > 12 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5,
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dx < -30) setWeekOffset((prev) => prev + 1);
+        else if (gs.dx > 30) setWeekOffset((prev) => prev - 1);
+      },
+    })
+  ).current;
 
   const reelsToday = instagramCount ?? 0;
   const appsBlocked = displayItems.length;
@@ -486,12 +502,14 @@ function DuckPalScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Profile header ── */}
-        <View style={styles.dpTopRow}>
-          {/* Left spacer mirrors duck width for visual centering */}
-          <View style={styles.dpTopSpacer} />
+        {/* ── Brand header row — mirrors DuckLock's HomeHeader ── */}
+        <View style={styles.dpBrandRow}>
+          <HomeHeader appName="DuckPal" source="duckpal" />
+        </View>
 
-          {/* Centered profile */}
+        {/* ── Profile header — duck is absolutely positioned bottom-right ── */}
+        <View style={styles.dpTopRow}>
+          {/* Centered profile — takes full width; duck floats via absolute */}
           <View style={styles.dpProfileCenter}>
             {/* Avatar with dashed accent ring */}
             <View style={styles.dpAvatarRing}>
@@ -511,7 +529,7 @@ function DuckPalScreen() {
             </Text>
           </View>
 
-          {/* Duck character — top-right interactive */}
+          {/* Duck character — absolute bottom-right, below avatar center */}
           <View style={styles.dpTopDuck}>
             <DuckCharacter />
           </View>
@@ -544,8 +562,8 @@ function DuckPalScreen() {
           </View>
         </View>
 
-        {/* ── Weekly calendar strip ── */}
-        <View style={styles.dpCalStrip}>
+        {/* ── Weekly calendar strip — swipeable via PanResponder ── */}
+        <View style={styles.dpCalStrip} {...calPan.panHandlers}>
           {weekDates.map((d, i) => {
             const isToday = d.toDateString() === today.toDateString();
             return (
@@ -605,18 +623,33 @@ function DuckPalScreen() {
           </View>
         </View>
 
-        {/* ── Task card — full width ── */}
-        <View style={styles.dpTaskCard}>
-          <View style={styles.dpTaskIconBox}>
-            <FontAwesome5 name="lock" size={26} color="#FFBF80" />
+        {/* ── Task card — green banner style (reference screenshot) ── */}
+        <LinearGradient
+          colors={["#6DBE45", "#4AAF2A"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.dpTaskCard}
+        >
+          {/* Overlapping app-icon bubbles on the left */}
+          <View style={styles.dpTaskIcons}>
+            <View style={[styles.dpTaskAppIcon, { backgroundColor: "#E1306C" }]}>
+              <FontAwesome5 name="instagram" size={13} color="#FFF" />
+            </View>
+            <View style={[styles.dpTaskAppIcon, { backgroundColor: "#FF0000", marginLeft: -10 }]}>
+              <FontAwesome5 name="youtube" size={13} color="#FFF" />
+            </View>
+            <View style={[styles.dpTaskAppIcon, { backgroundColor: "#1877F2", marginLeft: -10 }]}>
+              <FontAwesome5 name="facebook" size={13} color="#FFF" />
+            </View>
           </View>
+
           <View style={styles.dpTaskContent}>
             <Text style={styles.dpTaskTitle}>Complete new tasks</Text>
             <Text style={styles.dpTaskSub}>Lock apps and build your focus streak</Text>
           </View>
-        </View>
+        </LinearGradient>
 
-        {/* ── Platform tabs — horizontal scroll, varied sizes ── */}
+        {/* ── Platform tabs — horizontal scroll (YouTube / Instagram / Facebook) ── */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -643,7 +676,7 @@ function DuckPalScreen() {
             <Text style={styles.dpPlatName}>Instagram</Text>
           </View>
 
-          {/* Facebook — medium */}
+          {/* Facebook — medium, partially cut off at right edge */}
           <View style={[styles.dpPlatTab, styles.dpPlatTabMd]}>
             <View style={[styles.dpPlatIcon, { backgroundColor: DUCKPAL_APP_ICONS.Facebook.iconColor }]}>
               <FontAwesome5 name={DUCKPAL_APP_ICONS.Facebook.iconName} size={20} color="#FFF" />
@@ -652,15 +685,6 @@ function DuckPalScreen() {
               {DUMMY_TOP_APPS.find((a) => a.name === "Facebook")?.count ?? 0}
             </Text>
             <Text style={styles.dpPlatName}>Facebook</Text>
-          </View>
-
-          {/* LinkedIn — small, partially cut off at right edge */}
-          <View style={[styles.dpPlatTab, styles.dpPlatTabSm]}>
-            <View style={[styles.dpPlatIcon, { backgroundColor: DUCKPAL_APP_ICONS.LinkedIn.iconColor }]}>
-              <FontAwesome5 name={DUCKPAL_APP_ICONS.LinkedIn.iconName} size={18} color="#FFF" />
-            </View>
-            <Text style={styles.dpPlatCount}>0</Text>
-            <Text style={styles.dpPlatName}>LinkedIn</Text>
           </View>
         </ScrollView>
       </ScrollView>
@@ -1105,15 +1129,18 @@ const styles = StyleSheet.create({
 
   dpScrollContent: { paddingHorizontal: 20, paddingTop: 16, gap: 16 },
 
-  // Profile header row
+  // Brand row — same style as DuckLock HomeHeader row
+  dpBrandRow: { marginBottom: -4 },
+
+  // Profile header row — position:relative so duck can be absolute
   dpTopRow: {
-    flexDirection: "row",
+    position: "relative",
     alignItems: "flex-start",
-    justifyContent: "space-between",
+    minHeight: 170, // ensures enough room for the absolute duck below the avatar
   },
-  dpTopSpacer: { width: 72 }, // mirrors DuckCharacter width
-  dpProfileCenter: { flex: 1, alignItems: "center", gap: 6, paddingBottom: 4 },
-  dpTopDuck: { width: 72, alignItems: "flex-end" },
+  dpProfileCenter: { alignSelf: "stretch", alignItems: "center", gap: 6, paddingBottom: 4 },
+  // Duck — absolute bottom-right, sits below the avatar center
+  dpTopDuck: { position: "absolute", right: 0, bottom: 0 },
 
   // Avatar with dashed accent ring
   dpAvatarRing: {
@@ -1240,29 +1267,32 @@ const styles = StyleSheet.create({
   dpTrophyBox: { marginLeft: 8, alignItems: "center", justifyContent: "center" },
   dpTrophyEmoji: { fontSize: 42 },
 
-  // Task card
+  // Task card — green banner (reference screenshot style)
   dpTaskCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1C1C1E",
     borderRadius: 20,
-    padding: 16,
-    gap: 14,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
+    gap: 16,
   },
-  dpTaskIconBox: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,191,128,0.1)",
+  // Overlapping app-icon circles on the left
+  dpTaskIcons: { flexDirection: "row", alignItems: "center" },
+  dpTaskAppIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.35)",
   },
   dpTaskContent: { flex: 1, gap: 4 },
   dpTaskTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
   dpTaskSub: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: "#8E8E93",
+    color: "rgba(255,255,255,0.78)",
     lineHeight: 18,
   },
 
