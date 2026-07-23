@@ -188,7 +188,7 @@ export default function ReelCountScheduleScreen() {
             ]}
           >
             <LinearGradient
-              colors={["#FFB347", "#FF8C42"]}
+              colors={["#FFBF80", "#FFA660"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.ctaGradient}
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   pillSelected: {
     backgroundColor: "#2C2C2E",
     borderWidth: 1.5,
-    borderColor: "#FFB347",
+    borderColor: "#FFBF80",
   },
   pillText: {
     color: "#FFFFFF",
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
   },
   pillTextSelected: {
-    color: "#FFB347",
+    color: "#FFBF80",
   },
 
   // ── CTA ──

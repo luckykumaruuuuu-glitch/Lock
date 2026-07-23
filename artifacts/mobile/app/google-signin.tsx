@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingHorizontal: 14,
     paddingVertical: 7,
-    backgroundColor: "rgba(255,191,128,0.08)",
+    backgroundColor: "rgba(255,191,128,0.12)",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: theme.accentBorder,
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   },
   btnShadow: {
     width: width - 56,
-    borderRadius: 18,
+    borderRadius: 20,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.45,
     shadowRadius: 14,
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 12,
     paddingVertical: 18,
-    borderRadius: 18,
+    borderRadius: 20,
   },
   googleIcon: {
     width: 26,

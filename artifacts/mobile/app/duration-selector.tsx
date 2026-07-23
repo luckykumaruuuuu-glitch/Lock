@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   // Selected card — golden border + subtle golden tint
   optionCardSelected: {
     borderColor: GOLD,
-    backgroundColor: "rgba(255,191,128,0.07)",
+    backgroundColor: "rgba(255,191,128,0.12)",
   },
 
   radio: {
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 14,
+    borderRadius: 20,
     paddingVertical: 16,
   },
 

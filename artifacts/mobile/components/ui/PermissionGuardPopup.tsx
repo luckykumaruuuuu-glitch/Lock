@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   allowBtn: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 9,
+    borderRadius: 12,
   },
   allowBtnText: {
     fontSize: 13,
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
   bypassBtn: {
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#3A3A3C",
     alignSelf: "center",

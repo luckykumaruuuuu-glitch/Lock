@@ -149,10 +149,10 @@ const successStyles = StyleSheet.create({
   subtitle:   { fontSize: 15, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center" },
   infoRow:    { flexDirection: "row", alignItems: "center", gap: 12 },
   infoIcon:   { width: 32, height: 32, borderRadius: 10, backgroundColor: "#2C2C2E", alignItems: "center", justifyContent: "center" },
-  infoLabel:  { fontSize: 10, fontFamily: "Inter_500Medium", color: "#8E8E93", marginBottom: 3, letterSpacing: 0.8 },
+  infoLabel:  { fontSize: 12, fontFamily: "Inter_500Medium", color: "#8E8E93", marginBottom: 3, letterSpacing: 0.8 },
   infoValue:  { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#FFFFFF" },
   divider:    { height: 1, backgroundColor: "#2C2C2E", marginVertical: 14 },
-  skipText:   { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#FFA660", lineHeight: 18, marginLeft: 8 },
+  skipText:   { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#8E8E93", lineHeight: 18, marginLeft: 8 },
   tipText:    { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center", lineHeight: 21 },
 });
 
@@ -302,7 +302,7 @@ const agStyles = StyleSheet.create({
   titleUnderline: { height: 2, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 1, marginHorizontal: 40 },
 
   infoBlock:   { backgroundColor: "#2C2C2E", borderRadius: 10, padding: 11, gap: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  infoHeading: { fontSize: 9, fontFamily: "Inter_500Medium", letterSpacing: 1, color: "#8E8E93", marginBottom: 1 },
+  infoHeading: { fontSize: 11, fontFamily: "Inter_500Medium", letterSpacing: 1, color: "#8E8E93", marginBottom: 1 },
   infoValue:   { fontSize: 13, fontFamily: "Inter_700Bold", color: "#FFFFFF", lineHeight: 18 },
   infoSub:     { fontSize: 11, fontFamily: "Inter_400Regular", color: "#8E8E93" },
 

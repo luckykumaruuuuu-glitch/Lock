@@ -303,7 +303,8 @@ function RootLayoutNav() {
             headerShown: false,
             animation: "slide_from_bottom",
             animationDuration: 300,
-            gestureEnabled: false,
+            gestureEnabled: true,
+            gestureDirection: "vertical",
           }}
         />
         <Stack.Screen
@@ -312,7 +313,8 @@ function RootLayoutNav() {
             headerShown: false,
             animation: "slide_from_bottom",
             animationDuration: 300,
-            gestureEnabled: false,
+            gestureEnabled: true,
+            gestureDirection: "vertical",
           }}
         />
       </Stack>
