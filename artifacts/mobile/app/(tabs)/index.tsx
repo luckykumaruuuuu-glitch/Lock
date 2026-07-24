@@ -17,6 +17,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -455,6 +456,9 @@ function WeeklyBarChart({ data }: { data: { day: string; count: number }[] }) {
 // ── Day labels for calendar strip ────────────────────────────────────────────
 const CAL_DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+// Sun=0 Mon=1 … Sat=6  →  short label
+const DAY_NAMES_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 function DuckPalScreen() {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -464,27 +468,77 @@ function DuckPalScreen() {
   const { displayItems } = useActiveLocks(60_000);
   const profile = useGoogleProfile();
 
-  // ── Week navigation state ─────────────────────────────────────────────────
-  const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, -1 = last, +1 = next
+  // ── Day-by-day calendar state ─────────────────────────────────────────────
+  const { width: screenWidth } = useWindowDimensions();
+  // cell width = content area (screen - 2×20 padding) ÷ 7 visible cells
+  const calCellWidth = (screenWidth - 40) / 7;
+  const calCellWidthRef = useRef(calCellWidth);
+  calCellWidthRef.current = calCellWidth;
+
+  const [dayOffset, setDayOffset] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const calSlide = useRef(new Animated.Value(0)).current;
+
   const today = new Date();
   const baseMonday = getWeekStart(today);
-  const weekMon = new Date(baseMonday);
-  weekMon.setDate(baseMonday.getDate() + weekOffset * 7);
 
-  const weekDates = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekMon);
-    d.setDate(weekMon.getDate() + i);
+  // Render 9 dates: 1 buffer-left + 7 visible + 1 buffer-right
+  // window starts at (baseMonday + dayOffset), buffer-left = 1 day before that
+  const windowStart = new Date(baseMonday);
+  windowStart.setDate(baseMonday.getDate() + dayOffset);
+  const calDates = Array.from({ length: 9 }, (_, i) => {
+    const d = new Date(windowStart);
+    d.setDate(windowStart.getDate() - 1 + i); // i=0 → left buffer, i=1..7 → visible, i=8 → right buffer
     return d;
   });
 
-  // PanResponder — left swipe = next week, right swipe = previous week
+  // PanResponder — tracks live drag and commits on release
   const calPan = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gs) =>
-        Math.abs(gs.dx) > 12 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5,
+        Math.abs(gs.dx) > 8 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.3,
+      onPanResponderMove: (_, gs) => {
+        calSlide.setValue(gs.dx);
+      },
       onPanResponderRelease: (_, gs) => {
-        if (gs.dx < -30) setWeekOffset((prev) => prev + 1);
-        else if (gs.dx > 30) setWeekOffset((prev) => prev - 1);
+        const cellW = calCellWidthRef.current;
+        const threshold = cellW * 0.3;
+
+        if (gs.dx < -threshold || gs.vx < -0.4) {
+          // ← swipe left → advance 1 day
+          setIsTransitioning(true);
+          Animated.spring(calSlide, {
+            toValue: -cellW,
+            useNativeDriver: true,
+            tension: 320,
+            friction: 32,
+          }).start(() => {
+            setDayOffset((p) => p + 1);
+            calSlide.setValue(0);
+            setIsTransitioning(false);
+          });
+        } else if (gs.dx > threshold || gs.vx > 0.4) {
+          // → swipe right → go back 1 day
+          setIsTransitioning(true);
+          Animated.spring(calSlide, {
+            toValue: cellW,
+            useNativeDriver: true,
+            tension: 320,
+            friction: 32,
+          }).start(() => {
+            setDayOffset((p) => p - 1);
+            calSlide.setValue(0);
+            setIsTransitioning(false);
+          });
+        } else {
+          // short flick — snap back
+          Animated.spring(calSlide, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 320,
+            friction: 32,
+          }).start();
+        }
       },
     })
   ).current;
@@ -498,41 +552,33 @@ function DuckPalScreen() {
         style={styles.container}
         contentContainerStyle={[
           styles.dpScrollContent,
-          { paddingTop: topPad + 8, paddingBottom: bottomPad + 24 },
+          { paddingTop: topPad + 16, paddingBottom: bottomPad + 24 },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Brand header row — mirrors DuckLock's HomeHeader ── */}
-        <View style={styles.dpBrandRow}>
+        {/* ── Top header — identical structure to DuckLock (same styles.header) ── */}
+        <View style={styles.header}>
           <HomeHeader appName="DuckPal" source="duckpal" />
+          <DuckCharacter />
         </View>
 
-        {/* ── Profile header — duck is absolutely positioned bottom-right ── */}
-        <View style={styles.dpTopRow}>
-          {/* Centered profile — takes full width; duck floats via absolute */}
-          <View style={styles.dpProfileCenter}>
-            {/* Avatar with dashed accent ring */}
-            <View style={styles.dpAvatarRing}>
-              {profile?.photo ? (
-                <Image source={{ uri: profile.photo }} style={styles.dpAvatarImg} />
-              ) : (
-                <View style={styles.dpAvatarFallback}>
-                  <Feather name="user" size={36} color="#8E8E93" />
-                </View>
-              )}
-            </View>
-            <Text style={styles.dpProfileName} numberOfLines={1}>
-              {profile?.name ?? "Your Name"}
-            </Text>
-            <Text style={styles.dpProfileEmail} numberOfLines={1}>
-              {profile?.email ?? "your@email.com"}
-            </Text>
+        {/* ── Centered profile section (big avatar + name + email) ── */}
+        <View style={styles.dpProfileSection}>
+          <View style={styles.dpAvatarRing}>
+            {profile?.photo ? (
+              <Image source={{ uri: profile.photo }} style={styles.dpAvatarImg} />
+            ) : (
+              <View style={styles.dpAvatarFallback}>
+                <Feather name="user" size={36} color="#8E8E93" />
+              </View>
+            )}
           </View>
-
-          {/* Duck character — absolute bottom-right, below avatar center */}
-          <View style={styles.dpTopDuck}>
-            <DuckCharacter />
-          </View>
+          <Text style={styles.dpProfileName} numberOfLines={1}>
+            {profile?.name ?? "Your Name"}
+          </Text>
+          <Text style={styles.dpProfileEmail} numberOfLines={1}>
+            {profile?.email ?? "your@email.com"}
+          </Text>
         </View>
 
         {/* ── Stats row — 3 metrics ── */}
@@ -562,24 +608,43 @@ function DuckPalScreen() {
           </View>
         </View>
 
-        {/* ── Weekly calendar strip — swipeable via PanResponder ── */}
-        <View style={styles.dpCalStrip} {...calPan.panHandlers}>
-          {weekDates.map((d, i) => {
-            const isToday = d.toDateString() === today.toDateString();
-            return (
-              <TouchableOpacity
-                key={i}
-                activeOpacity={0.7}
-                style={[styles.dpCalItem, isToday && styles.dpCalItemActive]}
-              >
-                <View style={[styles.dpCalDot, isToday && styles.dpCalDotActive]} />
-                <Text style={styles.dpCalDayName}>{CAL_DAY_LABELS[i]}</Text>
-                <Text style={[styles.dpCalDateNum, isToday && styles.dpCalDateNumActive]}>
-                  {d.getDate()}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+        {/* ── Day-by-day calendar strip ─────────────────────────────────────────
+            Outer clips to 7-cell width (overflow hidden).
+            Inner animated strip is 9 cells wide, offset -1 cell left so the
+            left buffer is hidden. On swipe the strip animates ±1 cell, then
+            dayOffset updates and strip snaps back to 0 — no flash.          ── */}
+        <View style={styles.dpCalOuter} {...calPan.panHandlers}>
+          <Animated.View
+            style={[
+              styles.dpCalInner,
+              {
+                width: calCellWidth * 9,
+                marginLeft: -calCellWidth,
+                transform: [{ translateX: calSlide }],
+              },
+            ]}
+          >
+            {calDates.map((d, idx) => {
+              const isToday = d.toDateString() === today.toDateString();
+              const lit = isToday && !isTransitioning;
+              return (
+                <View
+                  key={idx}
+                  style={[
+                    styles.dpCalItem,
+                    { width: calCellWidth },
+                    isToday && (isTransitioning ? styles.dpCalItemDim : styles.dpCalItemActive),
+                  ]}
+                >
+                  <View style={[styles.dpCalDot, lit && styles.dpCalDotActive]} />
+                  <Text style={styles.dpCalDayName}>{DAY_NAMES_SHORT[d.getDay()]}</Text>
+                  <Text style={[styles.dpCalDateNum, lit && styles.dpCalDateNumActive]}>
+                    {d.getDate()}
+                  </Text>
+                </View>
+              );
+            })}
+          </Animated.View>
         </View>
 
         {/* ── Friends section + Streak card (side by side) ── */}
@@ -1129,18 +1194,8 @@ const styles = StyleSheet.create({
 
   dpScrollContent: { paddingHorizontal: 20, paddingTop: 16, gap: 16 },
 
-  // Brand row — same style as DuckLock HomeHeader row
-  dpBrandRow: { marginBottom: -4 },
-
-  // Profile header row — position:relative so duck can be absolute
-  dpTopRow: {
-    position: "relative",
-    alignItems: "flex-start",
-    minHeight: 170, // ensures enough room for the absolute duck below the avatar
-  },
-  dpProfileCenter: { alignSelf: "stretch", alignItems: "center", gap: 6, paddingBottom: 4 },
-  // Duck — absolute bottom-right, sits below the avatar center
-  dpTopDuck: { position: "absolute", right: 0, bottom: 0 },
+  // Centered profile section — big avatar + name + email below the shared header row
+  dpProfileSection: { alignItems: "center", gap: 6, paddingBottom: 4 },
 
   // Avatar with dashed accent ring
   dpAvatarRing: {
@@ -1198,10 +1253,12 @@ const styles = StyleSheet.create({
   },
   dpStatDiv: { width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.1)" },
 
-  // Weekly calendar strip
-  dpCalStrip: { flexDirection: "row", justifyContent: "space-between" },
+  // Day-by-day calendar strip
+  // dpCalOuter clips to exactly 7 cells wide; inner strip is 9 cells (7 + 1 buffer each side)
+  dpCalOuter: { overflow: "hidden" },
+  dpCalInner: { flexDirection: "row" },
   dpCalItem: {
-    flex: 1,
+    // width set dynamically via inline style (calCellWidth); no flex: 1
     alignItems: "center",
     gap: 5,
     paddingVertical: 10,
@@ -1211,6 +1268,12 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "#FFBF80",
     backgroundColor: "rgba(255,191,128,0.07)",
+  },
+  // Today border dimmed while a swipe transition is in progress
+  dpCalItemDim: {
+    borderWidth: 1.5,
+    borderColor: "rgba(255,191,128,0.22)",
+    backgroundColor: "rgba(255,191,128,0.03)",
   },
   dpCalDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#3A3A3C" },
   dpCalDotActive: { backgroundColor: "#FFBF80" },
