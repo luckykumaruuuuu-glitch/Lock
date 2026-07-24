@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { StreakCarousel } from "@/components/ui/StreakCarousel";
+import { useFriendAvatars } from "@/hooks/useFriendAvatars";
 
 const lockIconImg = require("@/assets/images/lock-icon.png");
 import { Toast } from "@/components/ui/Toast";
@@ -390,6 +391,10 @@ const DUMMY_WEEKLY = [
 const DUMMY_TOTAL_REELS = 0;
 const DUMMY_DAILY_AVG = 0;
 
+// Fallback colors shown when a friend has no profile photo.
+// Index maps to position in the avatar stack (rank 1 = index 0).
+const AVATAR_FALLBACK_COLORS = ["#FFBF80", "#FF6B6B", "#4ECDC4"] as const;
+
 const MONTH_SHORT = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -454,6 +459,7 @@ function DuckPalScreen() {
   const { count: instagramCount } = useReelCount();
   const { displayItems } = useActiveLocks(60_000);
   const profile = useGoogleProfile();
+  const { avatars: friendAvatars, count: friendCount } = useFriendAvatars();
 
   // ── Day-by-day calendar state ─────────────────────────────────────────────
   const { width: screenWidth } = useWindowDimensions();
@@ -672,24 +678,58 @@ function DuckPalScreen() {
 
         {/* ── Friends section + Streak card (side by side) ── */}
         <View style={styles.dpMidRow}>
-          {/* Friends — no card background, floats on black */}
+          {/* Friends — real-time ranked avatars from Friend Battle */}
           <Pressable
             style={styles.dpFriendsSection}
             onPress={() => router.push("/friend-battle" as never)}
           >
             <View style={styles.dpAvatarStack}>
-              {(["#FFBF80", "#FF6B6B", "#4ECDC4"] as const).map((color, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.dpFriendBubble,
-                    { backgroundColor: color, marginLeft: i > 0 ? -10 : 0, zIndex: 3 - i },
-                  ]}
-                />
-              ))}
+              {friendCount === 0 ? (
+                // No friends yet — show placeholder circles so layout is stable
+                (["#FFBF80", "#FF6B6B", "#4ECDC4"] as const).map((color, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.dpFriendBubble,
+                      { backgroundColor: color, marginLeft: i > 0 ? -10 : 0, zIndex: 3 - i },
+                    ]}
+                  />
+                ))
+              ) : (
+                // friendAvatars is already sorted rank-ascending (rank 1 at index 0).
+                // index 0 → front (highest zIndex), last index → back.
+                friendAvatars.map((avatar, i) => (
+                  <View
+                    key={avatar.userId}
+                    style={[
+                      styles.dpFriendBubble,
+                      { marginLeft: i > 0 ? -10 : 0, zIndex: friendAvatars.length - i },
+                      !avatar.photo && { backgroundColor: AVATAR_FALLBACK_COLORS[i % AVATAR_FALLBACK_COLORS.length] },
+                    ]}
+                  >
+                    {avatar.photo ? (
+                      <Image
+                        source={{ uri: avatar.photo }}
+                        style={styles.dpFriendBubbleImg}
+                      />
+                    ) : (
+                      // Initials fallback when photo URL is empty
+                      <Text style={styles.dpFriendBubbleInitial}>
+                        {avatar.name ? avatar.name.charAt(0).toUpperCase() : "?"}
+                      </Text>
+                    )}
+                  </View>
+                ))
+              )}
             </View>
             <Text style={styles.dpFriendsTitle}>Friends</Text>
-            <Text style={styles.dpFriendsSub}>3 friends</Text>
+            <Text style={styles.dpFriendsSub}>
+              {friendCount === 0
+                ? "3 friends"
+                : friendCount === 1
+                ? "1 friend"
+                : `${friendCount} friends`}
+            </Text>
           </Pressable>
 
           {/* Keep it up card — swipeable carousel */}
@@ -1271,6 +1311,19 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 2,
     borderColor: "#000000",
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dpFriendBubbleImg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  dpFriendBubbleInitial: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+    color: "#000000",
   },
   dpFriendsTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
   dpFriendsSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#FFBF80" },
