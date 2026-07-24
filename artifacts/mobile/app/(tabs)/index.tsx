@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
+import { StreakCarousel } from "@/components/ui/StreakCarousel";
 
 const lockIconImg = require("@/assets/images/lock-icon.png");
 import { Toast } from "@/components/ui/Toast";
@@ -691,25 +692,9 @@ function DuckPalScreen() {
             <Text style={styles.dpFriendsSub}>3 friends</Text>
           </Pressable>
 
-          {/* Keep it up card */}
+          {/* Keep it up card — swipeable carousel */}
           <View style={styles.dpStreakCard}>
-            <View style={styles.dpStreakLeft}>
-              <Text style={styles.dpStreakTitle}>Keep it up!</Text>
-              <Text style={styles.dpStreakSub}>
-                Lock apps every{"\n"}day to build streak
-              </Text>
-              <View style={styles.dpDotRow}>
-                {Array.from({ length: 7 }, (_, i) => (
-                  <View
-                    key={i}
-                    style={[styles.dpProgressDot, i === 0 && styles.dpProgressDotDone]}
-                  />
-                ))}
-              </View>
-            </View>
-            <View style={styles.dpTrophyBox}>
-              <Text style={styles.dpTrophyEmoji}>🏆</Text>
-            </View>
+            <StreakCarousel />
           </View>
         </View>
 
@@ -1290,33 +1275,13 @@ const styles = StyleSheet.create({
   dpFriendsTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
   dpFriendsSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#FFBF80" },
 
+  // Carousel outer shell — no padding/flexDirection here; StreakCarousel owns its own layout.
   dpStreakCard: {
     flex: 0.62,
     backgroundColor: "#1C1C1E",
     borderRadius: 20,
-    padding: 14,
-    flexDirection: "row",
-    alignItems: "center",
     overflow: "hidden",
   },
-  dpStreakLeft: { flex: 1, gap: 5 },
-  dpStreakTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
-  dpStreakSub: {
-    fontSize: 11,
-    fontFamily: "Inter_400Regular",
-    color: "#8E8E93",
-    lineHeight: 16,
-  },
-  dpDotRow: { flexDirection: "row", gap: 5, marginTop: 4 },
-  dpProgressDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#3A3A3C",
-  },
-  dpProgressDotDone: { backgroundColor: "#FFBF80" },
-  dpTrophyBox: { marginLeft: 8, alignItems: "center", justifyContent: "center" },
-  dpTrophyEmoji: { fontSize: 42 },
 
   // Task card — green banner (reference screenshot style)
   dpTaskCard: {
