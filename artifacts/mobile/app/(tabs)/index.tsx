@@ -501,28 +501,14 @@ function DuckPalScreen() {
     return d;
   });
 
-  // Today's slot index in the visible 7-cell window (0 = Mon of current window)
-  const todaySlot = Math.round(
-    (today.getTime() - windowStart.getTime()) / (1000 * 60 * 60 * 24)
+  // todaySlotBase: today's fixed 0-indexed column in the Mon–Sun week (0=Mon … 6=Sun).
+  // This is constant — the highlight frame always sits at this visual column regardless of dayOffset.
+  const todaySlotBase = Math.round(
+    (today.getTime() - baseMonday.getTime()) / (1000 * 60 * 60 * 24)
   );
-  const todayVisible = todaySlot >= 0 && todaySlot <= 6;
-
-  // Helper: is today visible for a given dayOffset?
-  const isTodayVisibleFor = (offset: number) => {
-    const ws = new Date(baseMondayRef.current);
-    ws.setDate(baseMondayRef.current.getDate() + offset);
-    const slot = Math.round(
-      (todayRef.current.getTime() - ws.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    return slot >= 0 && slot <= 6;
-  };
-
-  const dimBorder = () =>
-    Animated.timing(calDim, {
-      toValue: 1,
-      duration: 0,
-      useNativeDriver: false,
-    }).start();
+  // selectedIdx: index in calDates that is "selected" (shown inside the highlight frame).
+  // calDates[0] = left buffer, calDates[1..7] = visible, calDates[8] = right buffer.
+  const selectedIdx = 1 + todaySlotBase;
 
   const lightBorder = () =>
     Animated.timing(calDim, {
@@ -531,6 +517,38 @@ function DuckPalScreen() {
       easing: Easing.out(Easing.quad),
       useNativeDriver: false,
     }).start();
+
+  // Tap a calendar cell → slide it into the highlighted frame, then open the detail screen.
+  const handleDateTap = (tappedIdx: number, tappedDate: Date) => {
+    if (tappedIdx < 1 || tappedIdx > 7) return; // buffer cells — ignore
+    const tappedSlot = tappedIdx - 1; // 0-6 visible slot
+    const delta = tappedSlot - todaySlotBase; // how many cells to shift
+    const cellW = calCellWidthRef.current;
+
+    const navigate = () =>
+      router.push({
+        pathname: "/date-detail",
+        params: { date: tappedDate.toISOString() },
+      } as never);
+
+    if (delta === 0) {
+      navigate();
+      return;
+    }
+
+    calDim.setValue(1);
+    Animated.timing(calSlide, {
+      toValue: -(delta * cellW),
+      duration: 220,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start(() => {
+      setDayOffset((p) => p + delta);
+      calSlide.setValue(0);
+      lightBorder();
+      navigate();
+    });
+  };
 
   // PanResponder — tracks live drag and commits on release
   const calPan = useRef(
@@ -559,7 +577,7 @@ function DuckPalScreen() {
           }).start(() => {
             setDayOffset(newOffset);
             calSlide.setValue(0);
-            if (isTodayVisibleFor(newOffset)) lightBorder();
+            lightBorder();
           });
         } else if (gs.dx > threshold || gs.vx > 0.4) {
           // → swipe right → go back 1 day
@@ -572,17 +590,17 @@ function DuckPalScreen() {
           }).start(() => {
             setDayOffset(newOffset);
             calSlide.setValue(0);
-            if (isTodayVisibleFor(newOffset)) lightBorder();
+            lightBorder();
           });
         } else {
-          // short flick — snap back, re-light if today is visible
+          // short flick — snap back
           Animated.spring(calSlide, {
             toValue: 0,
             useNativeDriver: true,
             tension: 400,
             friction: 38,
           }).start(() => {
-            if (isTodayVisibleFor(dayOffsetRef.current)) lightBorder();
+            lightBorder();
           });
         }
       },
@@ -677,10 +695,11 @@ function DuckPalScreen() {
             ]}
           >
             {calDates.map((d, idx) => {
-              const isToday = d.toDateString() === today.toDateString();
-              return (
-                <View key={idx} style={[styles.dpCalItem, { width: calCellWidth }]}>
-                  {isToday ? (
+              const isSelected = idx === selectedIdx;
+              const isVisible = idx >= 1 && idx <= 7;
+              const cell = (
+                <View style={[styles.dpCalItem, { width: calCellWidth }]}>
+                  {isSelected ? (
                     <Animated.View
                       style={[
                         styles.dpCalDot,
@@ -696,7 +715,7 @@ function DuckPalScreen() {
                     <View style={styles.dpCalDot} />
                   )}
                   <Text style={styles.dpCalDayName}>{DAY_NAMES_SHORT[d.getDay()]}</Text>
-                  {isToday ? (
+                  {isSelected ? (
                     <Animated.Text
                       style={[
                         styles.dpCalDateNum,
@@ -715,39 +734,47 @@ function DuckPalScreen() {
                   )}
                 </View>
               );
+              return isVisible ? (
+                <Pressable key={idx} onPress={() => handleDateTap(idx, d)}>
+                  {cell}
+                </Pressable>
+              ) : (
+                <View key={idx}>{cell}</View>
+              );
             })}
           </Animated.View>
 
-          {/* Fixed highlight frame — never moves, always rounded */}
-          {todayVisible && (
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.dpCalFrame,
-                {
-                  left: todaySlot * calCellWidth,
-                  width: calCellWidth,
-                  borderColor: calDim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ["#FFBF80", "rgba(255,191,128,0.22)"],
-                  }),
-                  backgroundColor: calDim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [
-                      "rgba(255,191,128,0.07)",
-                      "rgba(255,191,128,0.03)",
-                    ],
-                  }),
-                },
-              ]}
-            />
-          )}
+          {/* Fixed highlight frame — anchored at todaySlotBase, never translates */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.dpCalFrame,
+              {
+                left: todaySlotBase * calCellWidth,
+                width: calCellWidth,
+                borderColor: calDim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["#FFBF80", "rgba(255,191,128,0.22)"],
+                }),
+                backgroundColor: calDim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [
+                    "rgba(255,191,128,0.07)",
+                    "rgba(255,191,128,0.03)",
+                  ],
+                }),
+              },
+            ]}
+          />
         </View>
 
         {/* ── Friends section + Streak card (side by side) ── */}
         <View style={styles.dpMidRow}>
           {/* Friends — no card background, floats on black */}
-          <View style={styles.dpFriendsSection}>
+          <Pressable
+            style={styles.dpFriendsSection}
+            onPress={() => router.push("/coming-soon" as never)}
+          >
             <View style={styles.dpAvatarStack}>
               {(["#FFBF80", "#FF6B6B", "#4ECDC4"] as const).map((color, i) => (
                 <View
@@ -761,7 +788,7 @@ function DuckPalScreen() {
             </View>
             <Text style={styles.dpFriendsTitle}>Friends</Text>
             <Text style={styles.dpFriendsSub}>3 friends</Text>
-          </View>
+          </Pressable>
 
           {/* Keep it up card */}
           <View style={styles.dpStreakCard}>
@@ -786,30 +813,32 @@ function DuckPalScreen() {
         </View>
 
         {/* ── Task card — green banner style (reference screenshot) ── */}
-        <LinearGradient
-          colors={["#6DBE45", "#4AAF2A"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.dpTaskCard}
-        >
-          {/* Overlapping app-icon bubbles on the left */}
-          <View style={styles.dpTaskIcons}>
-            <View style={[styles.dpTaskAppIcon, { backgroundColor: "#E1306C" }]}>
-              <FontAwesome5 name="instagram" size={13} color="#FFF" />
+        <Pressable onPress={() => router.push("/coming-soon" as never)}>
+          <LinearGradient
+            colors={["#6DBE45", "#4AAF2A"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.dpTaskCard}
+          >
+            {/* Overlapping app-icon bubbles on the left */}
+            <View style={styles.dpTaskIcons}>
+              <View style={[styles.dpTaskAppIcon, { backgroundColor: "#E1306C" }]}>
+                <FontAwesome5 name="instagram" size={13} color="#FFF" />
+              </View>
+              <View style={[styles.dpTaskAppIcon, { backgroundColor: "#FF0000", marginLeft: -10 }]}>
+                <FontAwesome5 name="youtube" size={13} color="#FFF" />
+              </View>
+              <View style={[styles.dpTaskAppIcon, { backgroundColor: "#1877F2", marginLeft: -10 }]}>
+                <FontAwesome5 name="facebook" size={13} color="#FFF" />
+              </View>
             </View>
-            <View style={[styles.dpTaskAppIcon, { backgroundColor: "#FF0000", marginLeft: -10 }]}>
-              <FontAwesome5 name="youtube" size={13} color="#FFF" />
-            </View>
-            <View style={[styles.dpTaskAppIcon, { backgroundColor: "#1877F2", marginLeft: -10 }]}>
-              <FontAwesome5 name="facebook" size={13} color="#FFF" />
-            </View>
-          </View>
 
-          <View style={styles.dpTaskContent}>
-            <Text style={styles.dpTaskTitle}>Complete new tasks</Text>
-            <Text style={styles.dpTaskSub}>Lock apps and build your focus streak</Text>
-          </View>
-        </LinearGradient>
+            <View style={styles.dpTaskContent}>
+              <Text style={styles.dpTaskTitle}>Complete new tasks</Text>
+              <Text style={styles.dpTaskSub}>Lock apps and build your focus streak</Text>
+            </View>
+          </LinearGradient>
+        </Pressable>
 
         {/* ── Platform tabs — horizontal scroll (YouTube / Instagram / Facebook) ── */}
         <ScrollView
