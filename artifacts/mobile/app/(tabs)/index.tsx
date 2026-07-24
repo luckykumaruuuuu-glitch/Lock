@@ -8,6 +8,7 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Easing,
   Image,
   NativeModules,
   PanResponder,
@@ -476,11 +477,19 @@ function DuckPalScreen() {
   calCellWidthRef.current = calCellWidth;
 
   const [dayOffset, setDayOffset] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const dayOffsetRef = useRef(0);
+  dayOffsetRef.current = dayOffset;
+
+  // calSlide: drives the 9-cell strip translateX (native driver — smooth)
   const calSlide = useRef(new Animated.Value(0)).current;
+  // calDim: 0 = border lit (#FFBF80), 1 = border dim — JS driver for color interp
+  const calDim = useRef(new Animated.Value(0)).current;
 
   const today = new Date();
   const baseMonday = getWeekStart(today);
+  // Stable refs so the PanResponder closure can access current values
+  const baseMondayRef = useRef(baseMonday);
+  const todayRef = useRef(today);
 
   // Render 9 dates: 1 buffer-left + 7 visible + 1 buffer-right
   // window starts at (baseMonday + dayOffset), buffer-left = 1 day before that
@@ -492,11 +501,46 @@ function DuckPalScreen() {
     return d;
   });
 
+  // Today's slot index in the visible 7-cell window (0 = Mon of current window)
+  const todaySlot = Math.round(
+    (today.getTime() - windowStart.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  const todayVisible = todaySlot >= 0 && todaySlot <= 6;
+
+  // Helper: is today visible for a given dayOffset?
+  const isTodayVisibleFor = (offset: number) => {
+    const ws = new Date(baseMondayRef.current);
+    ws.setDate(baseMondayRef.current.getDate() + offset);
+    const slot = Math.round(
+      (todayRef.current.getTime() - ws.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return slot >= 0 && slot <= 6;
+  };
+
+  const dimBorder = () =>
+    Animated.timing(calDim, {
+      toValue: 1,
+      duration: 0,
+      useNativeDriver: false,
+    }).start();
+
+  const lightBorder = () =>
+    Animated.timing(calDim, {
+      toValue: 0,
+      duration: 180,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: false,
+    }).start();
+
   // PanResponder — tracks live drag and commits on release
   const calPan = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gs) =>
         Math.abs(gs.dx) > 8 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.3,
+      onPanResponderGrant: () => {
+        // Immediately dim the frame — no state update, no re-render
+        calDim.setValue(1);
+      },
       onPanResponderMove: (_, gs) => {
         calSlide.setValue(gs.dx);
       },
@@ -506,38 +550,40 @@ function DuckPalScreen() {
 
         if (gs.dx < -threshold || gs.vx < -0.4) {
           // ← swipe left → advance 1 day
-          setIsTransitioning(true);
-          Animated.spring(calSlide, {
+          const newOffset = dayOffsetRef.current + 1;
+          Animated.timing(calSlide, {
             toValue: -cellW,
+            duration: 220,
+            easing: Easing.out(Easing.quad),
             useNativeDriver: true,
-            tension: 320,
-            friction: 32,
           }).start(() => {
-            setDayOffset((p) => p + 1);
+            setDayOffset(newOffset);
             calSlide.setValue(0);
-            setIsTransitioning(false);
+            if (isTodayVisibleFor(newOffset)) lightBorder();
           });
         } else if (gs.dx > threshold || gs.vx > 0.4) {
           // → swipe right → go back 1 day
-          setIsTransitioning(true);
-          Animated.spring(calSlide, {
+          const newOffset = dayOffsetRef.current - 1;
+          Animated.timing(calSlide, {
             toValue: cellW,
+            duration: 220,
+            easing: Easing.out(Easing.quad),
             useNativeDriver: true,
-            tension: 320,
-            friction: 32,
           }).start(() => {
-            setDayOffset((p) => p - 1);
+            setDayOffset(newOffset);
             calSlide.setValue(0);
-            setIsTransitioning(false);
+            if (isTodayVisibleFor(newOffset)) lightBorder();
           });
         } else {
-          // short flick — snap back
+          // short flick — snap back, re-light if today is visible
           Animated.spring(calSlide, {
             toValue: 0,
             useNativeDriver: true,
-            tension: 320,
-            friction: 32,
-          }).start();
+            tension: 400,
+            friction: 38,
+          }).start(() => {
+            if (isTodayVisibleFor(dayOffsetRef.current)) lightBorder();
+          });
         }
       },
     })
@@ -609,11 +655,17 @@ function DuckPalScreen() {
         </View>
 
         {/* ── Day-by-day calendar strip ─────────────────────────────────────────
-            Outer clips to 7-cell width (overflow hidden).
-            Inner animated strip is 9 cells wide, offset -1 cell left so the
-            left buffer is hidden. On swipe the strip animates ±1 cell, then
-            dayOffset updates and strip snaps back to 0 — no flash.          ── */}
-        <View style={styles.dpCalOuter} {...calPan.panHandlers}>
+            Outer clips to 7-cell width (overflow hidden), position:relative
+            so the fixed highlight frame can be absolutely positioned inside.
+
+            Layer 1 (slides): 9-cell Animated strip — dots, day names, date
+              numbers. No borders on any cell; strip translates ±1 cell on
+              swipe, then dayOffset updates and snaps back to 0.
+            Layer 2 (fixed): absolute highlight frame positioned at todaySlot.
+              Border color driven by calDim (JS driver): lit when settled on
+              today, dim during any gesture or animation.               ── */}
+        <View style={[styles.dpCalOuter, { width: calCellWidth * 7 }]} {...calPan.panHandlers}>
+          {/* Sliding content — NO borders */}
           <Animated.View
             style={[
               styles.dpCalInner,
@@ -626,25 +678,70 @@ function DuckPalScreen() {
           >
             {calDates.map((d, idx) => {
               const isToday = d.toDateString() === today.toDateString();
-              const lit = isToday && !isTransitioning;
               return (
-                <View
-                  key={idx}
-                  style={[
-                    styles.dpCalItem,
-                    { width: calCellWidth },
-                    isToday && (isTransitioning ? styles.dpCalItemDim : styles.dpCalItemActive),
-                  ]}
-                >
-                  <View style={[styles.dpCalDot, lit && styles.dpCalDotActive]} />
+                <View key={idx} style={[styles.dpCalItem, { width: calCellWidth }]}>
+                  {isToday ? (
+                    <Animated.View
+                      style={[
+                        styles.dpCalDot,
+                        {
+                          backgroundColor: calDim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ["#FFBF80", "#3A3A3C"],
+                          }),
+                        },
+                      ]}
+                    />
+                  ) : (
+                    <View style={styles.dpCalDot} />
+                  )}
                   <Text style={styles.dpCalDayName}>{DAY_NAMES_SHORT[d.getDay()]}</Text>
-                  <Text style={[styles.dpCalDateNum, lit && styles.dpCalDateNumActive]}>
-                    {d.getDate()}
-                  </Text>
+                  {isToday ? (
+                    <Animated.Text
+                      style={[
+                        styles.dpCalDateNum,
+                        {
+                          color: calDim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ["#FFBF80", "#FFFFFF"],
+                          }),
+                        },
+                      ]}
+                    >
+                      {d.getDate()}
+                    </Animated.Text>
+                  ) : (
+                    <Text style={styles.dpCalDateNum}>{d.getDate()}</Text>
+                  )}
                 </View>
               );
             })}
           </Animated.View>
+
+          {/* Fixed highlight frame — never moves, always rounded */}
+          {todayVisible && (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.dpCalFrame,
+                {
+                  left: todaySlot * calCellWidth,
+                  width: calCellWidth,
+                  borderColor: calDim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ["#FFBF80", "rgba(255,191,128,0.22)"],
+                  }),
+                  backgroundColor: calDim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [
+                      "rgba(255,191,128,0.07)",
+                      "rgba(255,191,128,0.03)",
+                    ],
+                  }),
+                },
+              ]}
+            />
+          )}
         </View>
 
         {/* ── Friends section + Streak card (side by side) ── */}
@@ -1254,32 +1351,29 @@ const styles = StyleSheet.create({
   dpStatDiv: { width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.1)" },
 
   // Day-by-day calendar strip
-  // dpCalOuter clips to exactly 7 cells wide; inner strip is 9 cells (7 + 1 buffer each side)
-  dpCalOuter: { overflow: "hidden" },
+  // dpCalOuter clips to exactly 7 cells; inner strip is 9 cells (7 + 1 buffer each side).
+  // position:relative so the absolute highlight frame is anchored here.
+  dpCalOuter: { overflow: "hidden", position: "relative" },
   dpCalInner: { flexDirection: "row" },
   dpCalItem: {
     // width set dynamically via inline style (calCellWidth); no flex: 1
     alignItems: "center",
     gap: 5,
     paddingVertical: 10,
+    // No border here — border lives on the fixed dpCalFrame overlay
+  },
+  // Fixed highlight frame — absolutely positioned, never translates with the strip.
+  // Border color/bg driven by calDim Animated.Value (0=lit, 1=dim).
+  dpCalFrame: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
     borderRadius: 14,
-  },
-  dpCalItemActive: {
     borderWidth: 1.5,
-    borderColor: "#FFBF80",
-    backgroundColor: "rgba(255,191,128,0.07)",
-  },
-  // Today border dimmed while a swipe transition is in progress
-  dpCalItemDim: {
-    borderWidth: 1.5,
-    borderColor: "rgba(255,191,128,0.22)",
-    backgroundColor: "rgba(255,191,128,0.03)",
   },
   dpCalDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#3A3A3C" },
-  dpCalDotActive: { backgroundColor: "#FFBF80" },
   dpCalDayName: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   dpCalDateNum: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
-  dpCalDateNumActive: { color: "#FFBF80" },
 
   // Friends + Streak row
   dpMidRow: { flexDirection: "row", gap: 12, alignItems: "stretch" },
