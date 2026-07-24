@@ -18,7 +18,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
+import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import theme from "@/constants/theme";
 
 interface Props {
@@ -40,16 +40,20 @@ export function InviteBottomSheet({ visible, inviteCode, onClose }: Props) {
 
   useEffect(() => {
     if (visible) {
+      // Always reset to the bottom before animating up so re-triggers are
+      // always smooth, even if a previous close animation was mid-way.
+      slideAnim.stopAnimation();
+      slideAnim.setValue(SHEET_HEIGHT);
       Animated.spring(slideAnim, {
         toValue: 0,
         useNativeDriver: true,
-        tension: 90,
-        friction: 16,
+        tension: 80,
+        friction: 14,
       }).start();
     } else {
       Animated.timing(slideAnim, {
         toValue: SHEET_HEIGHT,
-        duration: 240,
+        duration: 220,
         useNativeDriver: true,
       }).start();
       setCopied(false);
@@ -129,11 +133,11 @@ export function InviteBottomSheet({ visible, inviteCode, onClose }: Props) {
             <Text style={styles.linkText} numberOfLines={1}>
               {inviteLink}
             </Text>
-            <View style={styles.copyBtn}>
+            <View style={[styles.copyBtn, copied && styles.copyBtnDone]}>
               <Feather
                 name={copied ? "check" : "copy"}
                 size={16}
-                color={copied ? theme.success : theme.accent}
+                color={copied ? "#fff" : theme.accent}
               />
             </View>
           </TouchableOpacity>
@@ -147,7 +151,7 @@ export function InviteBottomSheet({ visible, inviteCode, onClose }: Props) {
               onPress={handleWhatsApp}
             >
               <View style={[styles.shareIcon, { backgroundColor: "#25D366" }]}>
-                <Text style={styles.shareEmoji}>📱</Text>
+                <FontAwesome5 name="whatsapp" size={28} color="#fff" />
               </View>
               <Text style={styles.shareLabel}>WhatsApp</Text>
             </TouchableOpacity>
@@ -158,15 +162,8 @@ export function InviteBottomSheet({ visible, inviteCode, onClose }: Props) {
               activeOpacity={0.8}
               onPress={handleInstagram}
             >
-              <View
-                style={[
-                  styles.shareIcon,
-                  {
-                    backgroundColor: "#C13584",
-                  },
-                ]}
-              >
-                <Text style={styles.shareEmoji}>📸</Text>
+              <View style={[styles.shareIcon, { backgroundColor: "#C13584" }]}>
+                <FontAwesome5 name="instagram" size={28} color="#fff" />
               </View>
               <Text style={styles.shareLabel}>Instagram</Text>
             </TouchableOpacity>
@@ -259,6 +256,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  copyBtnDone: {
+    backgroundColor: "#34C759",
+  },
   shareRow: {
     flexDirection: "row",
     justifyContent: "center",
@@ -275,9 +275,6 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
-  },
-  shareEmoji: {
-    fontSize: 26,
   },
   shareLabel: {
     fontSize: 12,

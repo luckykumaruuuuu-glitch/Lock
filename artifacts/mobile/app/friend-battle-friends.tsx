@@ -69,9 +69,13 @@ export default function FriendBattleFriendsScreen() {
     }
     setUserId(uid);
 
+    // Show empty list immediately (same pattern as BattleScreen) so the
+    // screen never hangs on the spinner if Firebase is slow or offline.
+    setFriends([]);
+    setLoading(false);
+
     const unsubscribe = listenToFriendsList(uid, (list) => {
       setFriends(list);
-      setLoading(false);
     });
 
     return unsubscribe;
