@@ -29,7 +29,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm install --frozen-lockfile && PORT=5000 pnpm --filter @workspace/mobile run start-all"
+args = "pnpm install --frozen-lockfile && PORT=5000 node scripts/start-web.js"
 waitForPort = 5000
 
 [agent]

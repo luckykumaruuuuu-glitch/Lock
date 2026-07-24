@@ -16,17 +16,24 @@ A mobile-first screen-time & focus app built with Expo + React Native (web previ
 
 ## How to run
 
-All workflows are configured and start automatically.
+One workflow starts everything:
 
 | Workflow | Command | Port |
 |---|---|---|
-| **Start application** (main) | `pnpm install --frozen-lockfile && PORT=5000 pnpm --filter @workspace/mobile run start-all` | 5000 |
-| **API Server** | `pnpm --filter @workspace/api-server run dev` | 8080 |
-| **App UI Design** | `pnpm --filter @workspace/ui-design run dev` | auto |
-| **Component Preview Server** | `pnpm --filter @workspace/mockup-sandbox run dev` | auto |
-| **Expo (Metro dev)** | `pnpm --filter @workspace/mobile run dev` | 18115 |
+| **Start application** | `pnpm install --frozen-lockfile && PORT=5000 node scripts/start-web.js` | 5000 (web UI), 3001 (API) |
 
-The main workflow serves the Expo web export on port 5000 (mapped to `:80`). Metro also starts for Expo Go scanning via a Cloudflared tunnel.
+`scripts/start-web.js` launches two processes in parallel:
+- **ui-design** Vite dev server on port 5000 (visible in the Replit preview pane)
+- **api-server** Express server on port 3001
+
+Vite proxies all `/api/*` requests to the API server, so the web UI talks to the API through the same origin.
+
+### Mobile (Expo Go)
+The Expo app (`artifacts/mobile`) runs separately — it is not part of the web workflow above. To run Metro for Expo Go, use:
+```bash
+pnpm --filter @workspace/mobile run start-all
+```
+Metro prints a QR code; scan it with the **Expo Go** app. A Cloudflared tunnel is used for the public URL.
 
 ## Environment
 
