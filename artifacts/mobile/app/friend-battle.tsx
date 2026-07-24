@@ -26,6 +26,7 @@ import theme from "@/constants/theme";
 import { GOOGLE_USER_PROFILE_KEY } from "@/app/google-signin";
 import {
   BattleSlot,
+  generateInviteCode,
   listenToBattleSlots,
   publishReelCount,
   setupBattleUser,
@@ -126,6 +127,40 @@ function InviteRow({
   );
 }
 
+// ─── Fallback slots (shown instantly from local data, before Firebase) ───────
+
+const INVITE_PROMPTS = [
+  { text: "Invite your brother", emoji: "👊" },
+  { text: "Invite the Night ghost", emoji: "👻" },
+  { text: "Invite the Reel Addict", emoji: "🎉" },
+] as const;
+
+function buildFallbackSlots(
+  self: { userId: string; profile: { name: string; photo: string } } | null,
+): BattleSlot[] {
+  const slots: BattleSlot[] = [];
+
+  // Slot 0: current user (empty shell if no user)
+  if (self) {
+    slots.push({
+      type: "self",
+      userId: self.userId,
+      profile: self.profile,
+      todayCount: 0,
+      rank: 1,
+    });
+  }
+
+  // Remaining slots: invite prompts
+  const needed = self ? 3 : 4;
+  for (let i = 0; i < needed; i++) {
+    const p = INVITE_PROMPTS[i % INVITE_PROMPTS.length];
+    slots.push({ type: "invite", invitePrompt: p.text, inviteEmoji: p.emoji });
+  }
+
+  return slots;
+}
+
 // ─── Main screen ─────────────────────────────────────────────
 
 export default function FriendBattleScreen() {
@@ -145,41 +180,61 @@ export default function FriendBattleScreen() {
   }, [count]);
 
   const init = useCallback(async () => {
-    const [userId, profileRaw] = await Promise.all([
-      AsyncStorage.getItem(GOOGLE_USER_ID_KEY),
-      AsyncStorage.getItem(GOOGLE_USER_PROFILE_KEY),
-    ]);
+    try {
+      const [userId, profileRaw] = await Promise.all([
+        AsyncStorage.getItem(GOOGLE_USER_ID_KEY),
+        AsyncStorage.getItem(GOOGLE_USER_PROFILE_KEY),
+      ]);
 
-    if (!userId) {
+      // No signed-in user — show empty invite slots immediately.
+      if (!userId) {
+        const fallback = buildFallbackSlots(null);
+        setSlots(fallback);
+        setLoading(false);
+        return;
+      }
+
+      userIdRef.current = userId;
+
+      const profile = (() => {
+        try {
+          return profileRaw ? JSON.parse(profileRaw) : { name: "You", photo: "" };
+        } catch {
+          return { name: "You", photo: "" };
+        }
+      })();
+
+      // Show a local slot immediately so the screen is never blank.
+      setSlots(buildFallbackSlots({ userId, profile }));
       setLoading(false);
-      return;
-    }
 
-    userIdRef.current = userId;
+      // Firebase setup — fire-and-forget; failures must not block the screen.
+      setupBattleUser(userId, {
+        name: profile.name ?? "You",
+        photo: profile.photo ?? "",
+      })
+        .then((code) => setInviteCode(code))
+        .catch(() => {
+          // Offline / permission error — generate a local code so Invite still works.
+          setInviteCode(generateInviteCode());
+        });
 
-    const profile = profileRaw
-      ? JSON.parse(profileRaw)
-      : { name: "You", photo: "" };
+      // Reel count publish — fire-and-forget.
+      if (count !== null) {
+        publishReelCount(userId, count).catch(() => {});
+      }
 
-    // Setup user in Firebase (idempotent)
-    const code = await setupBattleUser(userId, {
-      name: profile.name ?? "You",
-      photo: profile.photo ?? "",
-    });
-    setInviteCode(code);
+      // Real-time listener — updates slots whenever Firebase data changes.
+      const unsubscribe = listenToBattleSlots(userId, (newSlots) => {
+        setSlots(newSlots);
+      });
 
-    // Publish current reel count
-    if (count !== null) {
-      await publishReelCount(userId, count);
-    }
-
-    // Start real-time listener
-    const unsubscribe = listenToBattleSlots(userId, (newSlots) => {
-      setSlots(newSlots);
+      return unsubscribe;
+    } catch {
+      // Unexpected error — surface the invite slots so the screen is usable.
+      setSlots(buildFallbackSlots(null));
       setLoading(false);
-    });
-
-    return unsubscribe;
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
