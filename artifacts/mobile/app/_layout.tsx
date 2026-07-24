@@ -49,7 +49,7 @@ const queryClient = new QueryClient();
 
 // Routes that bypass the onboarding/setup guard — accessible directly in web
 // preview for design/dev iteration without completing the full setup flow.
-const DEV_BYPASS_ROUTES = ["/unlock-tasks", "/mock-reels", "/watch-video", "/coming-soon", "/duration-selector", "/reel-count-schedule", "/google-signin", "/intro"];
+const DEV_BYPASS_ROUTES = ["/unlock-tasks", "/mock-reels", "/watch-video", "/coming-soon", "/duration-selector", "/reel-count-schedule", "/google-signin", "/intro", "/friend-battle", "/friend-battle-friends"];
 
 function SetupGuard({ children }: { children: React.ReactNode }) {
   const { setupComplete, loading } = usePermissionStatus();
@@ -315,6 +315,26 @@ function RootLayoutNav() {
             animationDuration: 300,
             gestureEnabled: true,
             gestureDirection: "vertical",
+          }}
+        />
+        <Stack.Screen
+          name="friend-battle"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            animationDuration: 300,
+            gestureEnabled: true,
+            gestureDirection: "horizontal",
+          }}
+        />
+        <Stack.Screen
+          name="friend-battle-friends"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            animationDuration: 300,
+            gestureEnabled: true,
+            gestureDirection: "horizontal",
           }}
         />
       </Stack>

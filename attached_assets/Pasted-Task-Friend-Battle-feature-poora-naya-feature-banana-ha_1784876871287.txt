@@ -1,0 +1,60 @@
+Task: "Friend Battle" feature — poora naya feature banana hai, Friends-card ke tap-action se shuru hoga
+Context/background: Abhi DuckPal Home-tab screen par ek "Friends" naam ka card/section hai jisme heading "Friends" likha hai aur 3 placeholder circular-avatars dikhte hain (overlapping-style). Abhi tak is card par tap karne se koi functional-screen nahi khulti thi (ya sirf "Coming Soon" tha) — ab is par tap karne se ek poora naya multi-screen feature khulna chahiye jiska naam "Friend Battle" hai.
+⚠️ Naming — bahut zaroori: Feature ka sahi naam "Friend Battle" hai. Ye "Scroll Battle" nahi hai — "Scroll Battle" kisi doosri, unrelated app ka naam hai jo reference-screenshot mein dikh raha tha, wo sirf UI-layout dikhane ke liye tha, uska naam copy nahi karna. Har jagah — screen-title, code-comments, variable-names, file-names — sab jagah "Friend Battle" hi use karna, "Scroll" wala koi bhi reference nahi hona chahiye.
+⚠️ Real-time data — bahut zaroori: Is poore feature (leaderboard-scores, friends-list, sab kuch) ka data hamesha real-time hona chahiye. Koi bhi caching, koi bhi stale-data, koi bhi delay bilkul acceptable nahi hai. Jaise hi koi reel dekhi jaati hai ya koi friend join karta hai, wo turant, bina refresh kiye, screen par reflect hona chahiye.
+Screen 1: "Friend Battle" Leaderboard-screen (Friends-card tap karne par khulti hai)
+Top-header row:
+Top-left: Ek Back-button hona chahiye (round-circle, transparent-background, chevron-arrow icon — bilkul wahi style jo humne poore app mein baaki jagah standardize kiya hai) — is button se user wapas DuckPal Home-screen par chala jaaye
+Top-right: Ek "Friends" naam ka pill-shaped button — is par tap karne se Screen 3 (Friends-list) khule (niche detail mein explain kiya hai)
+Bilkul important: Top-left par ye Back-button hoga, profile-photo nahi — profile-photo sirf Home-screen ke top-left par hota hai, is Friend-Battle-screen ke top-left par Back-button hi hoga
+Day-navigation row (header ke neeche):
+Center mein "Today" text
+Uske dono side < aur > arrows — inse user pichle/agle din ka leaderboard dekh sakta hai (agar ye feature-scope mein hai, warna sirf "Today" tak simit rakho abhi — Replit khud decide kare agar day-by-day history-tracking abhi complexity badhaayegi to sirf "Today" ka static-label rakh sakte hain for now)
+Leaderboard-list (main content):
+Ye ek vertical list hogi, jisme har row ek entry hogi
+Har row mein: rank-number/badge (left side, jaise "1", "2" — ya top-1 ke liege special-badge/medal-icon jaisa kuch), uske baad circular avatar (real Google profile-photo — user ka apna aur uske friends ka), uske baad naam (Google-account ka naam), aur right side mein score (jaise "95" — jo bhi metric use ho rahi hai, abhi ke liye reel-count maan lo)
+Current-logged-in-user ka apna row kisi tarah se highlighted/distinguished dikhna chahiye baaki rows se (jaise thoda alag background-shade ya border) — taaki user turant pehchan sake ki list mein "main kahan hoon"
+List mein sirf actual-joined-friends + khud-user honge — jitne bhi log invite-link se join kar chuke hain
+Invite-slots section (leaderboard ke neeche):
+Maximum 4 invite-slots honge total — na kam, na zyada
+Har slot ek unique labeled-prompt hoga apne emoji ke saath — jaise:
+"Invite your brother 👊"
+"Invite the Night ghost 👻"
+"Invite the Reel Addict 🎉"
+(Ye exact-text/emoji-suggestions hain reference se — Replit chahe to inhi ko use kare ya similar-tone ke apne khud ke likh de, jab tak overall "fun/casual invite-prompt" feel bana rahe)
+Har slot ke saamne ek "Invite" button hoga (pill-shaped, accent-color)
+Screen 2: Invite Bottom-Sheet (kisi bhi "Invite" button par tap karne se khulta hai)
+Ye ek bottom-se-slide-up hone wala sheet/panel hoga (poori-screen-modal nahi — jaise humne Google-Sign-In-bottom-sheet mein bhi kiya tha, wahi pattern)
+Heading-text upar — kuch is tarah ka message jaise "Invite 5+ friends to enjoy battle more" (ya Replit khud koi appropriate casual-tone-wala heading likh sakta hai)
+Uske neeche, ek rounded-box mein ek unique invite-link dikhega — format jaisa: https://join.duckpalapp.ai/XXXXX (jahan XXXXX ek auto-generated unique code hoga, har invite ke liye alag) — is link ke bagal mein ek copy-icon/button hoga jisse user link ko clipboard mein copy kar sake
+Uske neeche, share-icons ka ek row — kam-se-kam ye teen:
+WhatsApp icon — tap karne se WhatsApp-share khule us link ke saath
+Instagram icon — tap karne se Instagram-share khule (ya jo bhi Instagram ka native-share-support ho)
+Generic/native "Share" icon — device ka standard share-sheet khole, jisse user kisi bhi app se share kar sake
+Jab koi doosra-user is unique-link ko open/click kare (agar app installed hai to deep-link se app khule, nahi to Play-Store par redirect ho aur install ke baad link-context yaad rahe), to wo user automatically inviter ke Friend-Battle-leaderboard mein add ho jaaye, aur inviter ki bhi list mein wo naya-friend add ho jaaye — dono taraf se mutually connect ho jaayein
+Screen 3: Friends-list-screen (top-right "Friends" button se khulta hai, Screen 1 se)
+Ye ek simple list-screen hai jisme sabhi joined-friends dikhte hain
+Har entry mein: us friend ki real Google profile-photo (circular) + uska naam
+Ye list us poore friend-network ko dikhati hai — na ki sirf leaderboard-ranking, sirf "kaun-kaun friend hai" ye dikhana hai
+Yahin se, har friend-entry ke saath ek delete/remove-option bhi hona chahiye (jaise ek "X" icon ya swipe-to-delete ya kebab-menu se "Remove friend") — niche delete-logic detail mein explain kiya hai
+Delete-Friend Logic (bahut zaroori, exactly is tarah kaam karna chahiye)
+Ye mutual/bidirectional removal hai — matlab friendship ek do-tarfa relationship hai, aur delete karna bhi do-tarfa hi hoga:
+Case 1 — Agar MAIN kisi friend ko delete karta hoon:
+Wo friend meri friends-list se hat jaayega
+AUR main bhi uski friends-list se hat jaaunga (uski taraf se dekhne par, use bhi wo dikhega ki main ab uski list mein nahi hoon)
+Case 2 — Agar MERA FRIEND mujhe delete kare (unki taraf se):
+Main unki friends-list se hat jaaunga
+AUR wo bhi meri friends-list se hat jaayenge (mujhe bhi dikhega ki wo ab meri list mein nahi hain)
+Summary: Delete kisi bhi ek taraf se ho, effect dono taraf hota hai — ye ek symmetric/mutual relationship hai, ek-tarfa delete possible nahi hai. Jaise hi ek side delete-action leta hai, database mein dono users ke friend-records se ek-doosre ko hataya jaaye (Firestore mein agar dono users ke friend-list-arrays/sub-collections hain, to dono se remove-operation chalani hogi ek hi transaction/batch mein, taaki data-consistency bani rahe)
+⚠️ Ranking-Order Logic — ABHI IMPLEMENT MAT KARNA, sirf note/plan kar ke rakho
+Leaderboard mein jo ranking-order hai (kaun #1 par aayega, kaun last par) — iske liye ek proposed-idea abhi discussion mein hai, final nahi hai:
+Proposed-idea (sirf reference ke liye, code mat karna): Inverse-ranking — jis user ne sabse KAM reels dekhi hain, wo #1/top par aayega; usse thodi zyada dekhne wala #2 par; aur jisne sabse ZYADA reels dekhi hain, wo sabse last/bottom par jaayega. Matlab is "battle" mein "jeetna" = kam scroll karna hai — reverse-leaderboard jaisa concept.
+Kya karna hai abhi: Leaderboard-UI (list, rows, rank-badges) poora build kar sakte ho — bas ranking-sorting-algorithm ko abhi hardcode/dummy-order mein rakho ya simple-placeholder-sort use karo (jaise join-order ya random). Actual inverse-ranking-logic ko implement mat karna jab tak main specifically confirm na karoon — ye abhi sirf ek proposal hai, final decision baaki hai.
+1. Total 4 slots hi honge (reference mein 5 the, wo galat hai):
+Slot 1 (sabse upar): Hamesha khud user ki apni profile real-time mein auto-fill hogi — apna avatar+naam+aaj-ki-reel-count, aur us waqt ki live-ranking ke hisaab se medal/badge
+Baaki 3 slots: Shuru mein khaali "Invite" prompts honge ("Invite your brother 👊"
+"Invite the Night ghost 👻"
+"Invite the Reel Addict 🎉"). Jab koi friend us invite-link se join kare, wahi slot permanently us friend ki real-profile mein badal jaayega (avatar+naam+rank+aaj-ki-count) — same format jaisa apni profile ka hai
+Har rank-position (1st/2nd/3rd/4th) ka apna medal/badge-style hoga
+2. Instagram-share Instagram ke DM-picker mein directly khule:
+Invite bottom-sheet ke Instagram-icon se tap karne par, Instagram ka native "Share to..." DM-picker khulna chahiye — jisme user directly koi specific-friend select kar sake Instagram ke andar, aur invite-link us DM mein pre-filled/paste ho jaaye — sirf generic "Instagram-app-open" nahi.

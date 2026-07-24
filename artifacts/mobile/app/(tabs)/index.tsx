@@ -674,7 +674,7 @@ function DuckPalScreen() {
           {/* Friends — no card background, floats on black */}
           <Pressable
             style={styles.dpFriendsSection}
-            onPress={() => router.push("/coming-soon" as never)}
+            onPress={() => router.push("/friend-battle" as never)}
           >
             <View style={styles.dpAvatarStack}>
               {(["#FFBF80", "#FF6B6B", "#4ECDC4"] as const).map((color, i) => (
