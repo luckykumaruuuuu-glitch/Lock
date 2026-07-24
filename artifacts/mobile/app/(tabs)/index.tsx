@@ -5,13 +5,12 @@ import * as Haptics from "expo-haptics";
 import { router, useFocusEffect } from "expo-router";
 import { GOOGLE_USER_PROFILE_KEY } from "@/app/google-signin";
 import { useVideoPlayer, VideoView } from "expo-video";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
-  Easing,
+  FlatList,
   Image,
   NativeModules,
-  PanResponder,
   Platform,
   Pressable,
   ScrollView,
@@ -473,139 +472,69 @@ function DuckPalScreen() {
   const { width: screenWidth } = useWindowDimensions();
   // cell width = content area (screen - 2×20 padding) ÷ 7 visible cells
   const calCellWidth = (screenWidth - 40) / 7;
+
+  // 801 dates centred on today: 400 before + today + 400 after.
+  // Generated once — never recreated — so FlatList never sees a new data array.
+  const CAL_TOTAL = 801;
+  const CAL_CENTER = 400; // index of today in the array
+
+  const calDates = useMemo(() => {
+    const base = new Date();
+    base.setHours(0, 0, 0, 0);
+    return Array.from({ length: CAL_TOTAL }, (_, i) => {
+      const d = new Date(base);
+      d.setDate(base.getDate() + (i - CAL_CENTER));
+      return d;
+    });
+  }, []); // intentionally empty — today captured once on mount
+
+  // Index of the currently centred (selected) date
+  const [selectedCalIdx, setSelectedCalIdx] = useState(CAL_CENTER);
+  const selectedCalIdxRef = useRef(CAL_CENTER);
+  selectedCalIdxRef.current = selectedCalIdx;
+
+  const calListRef = useRef<FlatList<Date>>(null);
   const calCellWidthRef = useRef(calCellWidth);
   calCellWidthRef.current = calCellWidth;
 
-  const [dayOffset, setDayOffset] = useState(0);
-  const dayOffsetRef = useRef(0);
-  dayOffsetRef.current = dayOffset;
-
-  // calSlide: drives the 9-cell strip translateX (native driver — smooth)
-  const calSlide = useRef(new Animated.Value(0)).current;
-  // calDim: 0 = border lit (#FFBF80), 1 = border dim — JS driver for color interp
-  const calDim = useRef(new Animated.Value(0)).current;
-
-  const today = new Date();
-  const baseMonday = getWeekStart(today);
-  // Stable refs so the PanResponder closure can access current values
-  const baseMondayRef = useRef(baseMonday);
-  const todayRef = useRef(today);
-
-  // Render 9 dates: 1 buffer-left + 7 visible + 1 buffer-right
-  // window starts at (baseMonday + dayOffset), buffer-left = 1 day before that
-  const windowStart = new Date(baseMonday);
-  windowStart.setDate(baseMonday.getDate() + dayOffset);
-  const calDates = Array.from({ length: 9 }, (_, i) => {
-    const d = new Date(windowStart);
-    d.setDate(windowStart.getDate() - 1 + i); // i=0 → left buffer, i=1..7 → visible, i=8 → right buffer
-    return d;
+  // Required by FlatList for initialScrollIndex + no blank gaps
+  const getCalItemLayout = (_: ArrayLike<Date> | null | undefined, index: number) => ({
+    length: calCellWidthRef.current,
+    offset: calCellWidthRef.current * index,
+    index,
   });
 
-  // todaySlotBase: today's fixed 0-indexed column in the Mon–Sun week (0=Mon … 6=Sun).
-  // This is constant — the highlight frame always sits at this visual column regardless of dayOffset.
-  const todaySlotBase = Math.round(
-    (today.getTime() - baseMonday.getTime()) / (1000 * 60 * 60 * 24)
+  // Called when momentum scroll settles — figure out which date is centred
+  const handleCalScrollEnd = useCallback(
+    (e: { nativeEvent: { contentOffset: { x: number } } }) => {
+      const cellW = calCellWidthRef.current;
+      const offset = e.nativeEvent.contentOffset.x;
+      // The FlatList scrolls so that item[n] is flush with the left edge.
+      // Centre slot is visual position 3 (0-indexed), so centred item = n + 3.
+      const centeredIdx = Math.round(offset / cellW) + 3;
+      const clamped = Math.max(0, Math.min(CAL_TOTAL - 1, centeredIdx));
+      setSelectedCalIdx(clamped);
+    },
+    []
   );
-  // selectedIdx: index in calDates that is "selected" (shown inside the highlight frame).
-  // calDates[0] = left buffer, calDates[1..7] = visible, calDates[8] = right buffer.
-  const selectedIdx = 1 + todaySlotBase;
 
-  const lightBorder = () =>
-    Animated.timing(calDim, {
-      toValue: 0,
-      duration: 180,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: false,
-    }).start();
-
-  // Tap a calendar cell → slide it into the highlighted frame, then open the detail screen.
-  const handleDateTap = (tappedIdx: number, tappedDate: Date) => {
-    if (tappedIdx < 1 || tappedIdx > 7) return; // buffer cells — ignore
-    const tappedSlot = tappedIdx - 1; // 0-6 visible slot
-    const delta = tappedSlot - todaySlotBase; // how many cells to shift
-    const cellW = calCellWidthRef.current;
-
-    const navigate = () =>
-      router.push({
-        pathname: "/date-detail",
-        params: { date: tappedDate.toISOString() },
-      } as never);
-
-    if (delta === 0) {
-      navigate();
-      return;
-    }
-
-    calDim.setValue(1);
-    Animated.timing(calSlide, {
-      toValue: -(delta * cellW),
-      duration: 220,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: true,
-    }).start(() => {
-      setDayOffset((p) => p + delta);
-      calSlide.setValue(0);
-      lightBorder();
-      navigate();
-    });
-  };
-
-  // PanResponder — tracks live drag and commits on release
-  const calPan = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gs) =>
-        Math.abs(gs.dx) > 8 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.3,
-      onPanResponderGrant: () => {
-        // Immediately dim the frame — no state update, no re-render
-        calDim.setValue(1);
-      },
-      onPanResponderMove: (_, gs) => {
-        calSlide.setValue(gs.dx);
-      },
-      onPanResponderRelease: (_, gs) => {
-        const cellW = calCellWidthRef.current;
-        const threshold = cellW * 0.3;
-
-        if (gs.dx < -threshold || gs.vx < -0.4) {
-          // ← swipe left → advance 1 day
-          const newOffset = dayOffsetRef.current + 1;
-          Animated.timing(calSlide, {
-            toValue: -cellW,
-            duration: 220,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }).start(() => {
-            setDayOffset(newOffset);
-            calSlide.setValue(0);
-            lightBorder();
-          });
-        } else if (gs.dx > threshold || gs.vx > 0.4) {
-          // → swipe right → go back 1 day
-          const newOffset = dayOffsetRef.current - 1;
-          Animated.timing(calSlide, {
-            toValue: cellW,
-            duration: 220,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }).start(() => {
-            setDayOffset(newOffset);
-            calSlide.setValue(0);
-            lightBorder();
-          });
-        } else {
-          // short flick — snap back
-          Animated.spring(calSlide, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 400,
-            friction: 38,
-          }).start(() => {
-            lightBorder();
-          });
-        }
-      },
-    })
-  ).current;
+  // Tap any of the 7 visible cells → snap it to centre (slot 3) + navigate
+  const handleDateTap = useCallback(
+    (globalIdx: number, date: Date) => {
+      const cellW = calCellWidthRef.current;
+      // Scroll so globalIdx lands at visual slot 3 (centre of 7)
+      const targetOffset = (globalIdx - 3) * cellW;
+      calListRef.current?.scrollToOffset({ offset: targetOffset, animated: true });
+      setSelectedCalIdx(globalIdx);
+      setTimeout(() => {
+        router.push({
+          pathname: "/date-detail",
+          params: { date: date.toISOString() },
+        } as never);
+      }, 260);
+    },
+    []
+  );
 
   const reelsToday = instagramCount ?? 0;
   const appsBlocked = displayItems.length;
@@ -673,96 +602,80 @@ function DuckPalScreen() {
         </View>
 
         {/* ── Day-by-day calendar strip ─────────────────────────────────────────
-            Outer clips to 7-cell width (overflow hidden), position:relative
-            so the fixed highlight frame can be absolutely positioned inside.
+            FlatList with snapToInterval so native scroll physics handle
+            momentum/fling naturally. 801 pre-generated dates (400 each side)
+            with getItemLayout mean no lazy-load pop-in or blank gaps ever.
 
-            Layer 1 (slides): 9-cell Animated strip — dots, day names, date
-              numbers. No borders on any cell; strip translates ±1 cell on
-              swipe, then dayOffset updates and snaps back to 0.
-            Layer 2 (fixed): absolute highlight frame positioned at todaySlot.
-              Border color driven by calDim (JS driver): lit when settled on
-              today, dim during any gesture or animation.               ── */}
-        <View style={[styles.dpCalOuter, { width: calCellWidth * 7 }]} {...calPan.panHandlers}>
-          {/* Sliding content — NO borders */}
-          <Animated.View
-            style={[
-              styles.dpCalInner,
-              {
-                width: calCellWidth * 9,
-                marginLeft: -calCellWidth,
-                transform: [{ translateX: calSlide }],
-              },
-            ]}
-          >
-            {calDates.map((d, idx) => {
-              const isSelected = idx === selectedIdx;
-              const isVisible = idx >= 1 && idx <= 7;
-              const cell = (
-                <View style={[styles.dpCalItem, { width: calCellWidth }]}>
-                  {isSelected ? (
-                    <Animated.View
-                      style={[
-                        styles.dpCalDot,
-                        {
-                          backgroundColor: calDim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: ["#FFBF80", "#3A3A3C"],
-                          }),
-                        },
-                      ]}
-                    />
-                  ) : (
-                    <View style={styles.dpCalDot} />
-                  )}
-                  <Text style={styles.dpCalDayName}>{DAY_NAMES_SHORT[d.getDay()]}</Text>
-                  {isSelected ? (
-                    <Animated.Text
-                      style={[
-                        styles.dpCalDateNum,
-                        {
-                          color: calDim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: ["#FFBF80", "#FFFFFF"],
-                          }),
-                        },
-                      ]}
-                    >
-                      {d.getDate()}
-                    </Animated.Text>
-                  ) : (
-                    <Text style={styles.dpCalDateNum}>{d.getDate()}</Text>
-                  )}
-                </View>
-              );
-              return isVisible ? (
-                <Pressable key={idx} onPress={() => handleDateTap(idx, d)}>
-                  {cell}
+            Layer 1: FlatList — scrolls freely, snaps per cell
+            Layer 2: fixed highlight frame pinned to centre slot (3 of 0–6)  ── */}
+        <View style={[styles.dpCalOuter, { width: calCellWidth * 7 }]}>
+          <FlatList<Date>
+            ref={calListRef}
+            data={calDates}
+            horizontal
+            keyExtractor={(_, i) => String(i)}
+            renderItem={({ item: d, index: idx }) => {
+              const isSelected = idx === selectedCalIdx;
+              return (
+                <Pressable
+                  onPress={() => handleDateTap(idx, d)}
+                  style={[styles.dpCalItem, { width: calCellWidth }]}
+                >
+                  <View
+                    style={[
+                      styles.dpCalDot,
+                      isSelected && styles.dpCalDotSelected,
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.dpCalDayName,
+                      isSelected && styles.dpCalDayNameSelected,
+                    ]}
+                  >
+                    {DAY_NAMES_SHORT[d.getDay()]}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.dpCalDateNum,
+                      isSelected && styles.dpCalDateNumSelected,
+                    ]}
+                  >
+                    {d.getDate()}
+                  </Text>
                 </Pressable>
-              ) : (
-                <View key={idx}>{cell}</View>
               );
-            })}
-          </Animated.View>
+            }}
+            getItemLayout={getCalItemLayout}
+            initialScrollIndex={CAL_CENTER - 3}
+            snapToInterval={calCellWidth}
+            snapToAlignment="start"
+            decelerationRate="fast"
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={handleCalScrollEnd}
+            onScrollToIndexFailed={({ index }) => {
+              // fallback: jump directly to offset without animation
+              calListRef.current?.scrollToOffset({
+                offset: (index - 3) * calCellWidthRef.current,
+                animated: false,
+              });
+            }}
+            // Keep enough rendered items on both sides so there is never
+            // a blank gap during fast flings in either direction.
+            windowSize={21}
+            maxToRenderPerBatch={21}
+            initialNumToRender={21}
+            removeClippedSubviews={false}
+          />
 
-          {/* Fixed highlight frame — anchored at todaySlotBase, never translates */}
-          <Animated.View
+          {/* Fixed highlight frame — always at centre slot (3), never moves */}
+          <View
             pointerEvents="none"
             style={[
               styles.dpCalFrame,
               {
-                left: todaySlotBase * calCellWidth,
+                left: 3 * calCellWidth,
                 width: calCellWidth,
-                borderColor: calDim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ["#FFBF80", "rgba(255,191,128,0.22)"],
-                }),
-                backgroundColor: calDim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [
-                    "rgba(255,191,128,0.07)",
-                    "rgba(255,191,128,0.03)",
-                  ],
-                }),
               },
             ]}
           />
@@ -1379,30 +1292,31 @@ const styles = StyleSheet.create({
   },
   dpStatDiv: { width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.1)" },
 
-  // Day-by-day calendar strip
-  // dpCalOuter clips to exactly 7 cells; inner strip is 9 cells (7 + 1 buffer each side).
-  // position:relative so the absolute highlight frame is anchored here.
+  // Day-by-day calendar strip — FlatList-based, 801 pre-generated dates.
+  // dpCalOuter clips to exactly 7 cells; position:relative anchors the fixed frame.
   dpCalOuter: { overflow: "hidden", position: "relative" },
-  dpCalInner: { flexDirection: "row" },
   dpCalItem: {
-    // width set dynamically via inline style (calCellWidth); no flex: 1
+    // width set dynamically via inline style (calCellWidth)
     alignItems: "center",
     gap: 5,
     paddingVertical: 10,
-    // No border here — border lives on the fixed dpCalFrame overlay
   },
-  // Fixed highlight frame — absolutely positioned, never translates with the strip.
-  // Border color/bg driven by calDim Animated.Value (0=lit, 1=dim).
+  // Fixed highlight frame — absolutely positioned at centre slot (3 of 0–6).
   dpCalFrame: {
     position: "absolute",
     top: 0,
     bottom: 0,
     borderRadius: 14,
     borderWidth: 1.5,
+    borderColor: "#FFBF80",
+    backgroundColor: "rgba(255,191,128,0.07)",
   },
   dpCalDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#3A3A3C" },
+  dpCalDotSelected: { backgroundColor: "#FFBF80" },
   dpCalDayName: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#8E8E93" },
+  dpCalDayNameSelected: { color: "#FFBF80" },
   dpCalDateNum: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  dpCalDateNumSelected: { color: "#FFBF80" },
 
   // Friends + Streak row
   dpMidRow: { flexDirection: "row", gap: 12, alignItems: "stretch" },
