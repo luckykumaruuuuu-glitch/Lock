@@ -470,8 +470,10 @@ function DuckPalScreen() {
 
   // ── Day-by-day calendar state ─────────────────────────────────────────────
   const { width: screenWidth } = useWindowDimensions();
-  // cell width = content area (screen - 2×20 padding) ÷ 7 visible cells
-  const calCellWidth = (screenWidth - 40) / 7;
+  // Floor to a whole pixel so snapToInterval always lands on an exact integer
+  // boundary — fractional cell widths cause the FlatList to snap to
+  // non-integer offsets, making boxes wobble/land in half-positions.
+  const calCellWidth = Math.floor((screenWidth - 40) / 7);
 
   // 801 dates centred on today: 400 before + today + 400 after.
   // Generated once — never recreated — so FlatList never sees a new data array.
