@@ -154,14 +154,7 @@ function RootLayoutNav() {
         <StatusBar style="light" />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: "rgba(0,0,0,0.97)" },
-          headerTintColor: "#E8A030",
-          headerTitleStyle: {
-            fontFamily: "Inter_700Bold",
-            color: "#FFFFFF",
-            fontSize: 17,
-          },
-          headerShadowVisible: false,
+          headerShown: false,
           contentStyle: { backgroundColor: "#000000" },
           animation: "slide_from_right",
           animationDuration: 300,
@@ -198,9 +191,7 @@ function RootLayoutNav() {
         <Stack.Screen
           name="setup"
           options={{
-            title: "Permission Setup",
-            headerShown: true,
-            headerBackVisible: false,
+            headerShown: false,
             gestureEnabled: false,
             animation: "slide_from_right",
             animationDuration: 300,
