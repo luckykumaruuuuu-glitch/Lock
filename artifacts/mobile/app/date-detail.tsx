@@ -1,6 +1,6 @@
 import { FontAwesome5, Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Platform,
   Pressable,
@@ -14,48 +14,190 @@ import { GradientBackground } from "@/components/ui/GradientBackground";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const DAY_LONG = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const DAY_LONG = [
+  "Sunday", "Monday", "Tuesday", "Wednesday",
+  "Thursday", "Friday", "Saturday",
+];
 const MONTH_LONG = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 
 function formatDate(d: Date) {
   return `${DAY_LONG[d.getDay()]}, ${MONTH_LONG[d.getMonth()]} ${d.getDate()}`;
 }
 
-// ── Platform config ───────────────────────────────────────────────────────────
+// ── Platform config (counts will come from real data later) ───────────────────
 
-const PLATFORMS = [
-  { key: "instagram", label: "Instagram", icon: "instagram", color: "#E1306C", count: 0 },
-  { key: "youtube",   label: "YouTube",   icon: "youtube",   color: "#FF0000", count: 0 },
-  { key: "facebook",  label: "Facebook",  icon: "facebook",  color: "#1877F2", count: 0 },
-] as const;
+const PLATFORM_DEFS = [
+  { key: "instagram", label: "Instagram", icon: "instagram" as const, color: "#E1306C" },
+  { key: "youtube",   label: "YouTube",   icon: "youtube"   as const, color: "#FF0000" },
+  { key: "facebook",  label: "Facebook",  icon: "facebook"  as const, color: "#1877F2" },
+];
 
-const MAX_REELS = 20; // scale bars against this ceiling
+// Placeholder: in a real integration these come from the daily reel-count store.
+// Counts are intentionally 0 until per-platform tracking is wired up.
+const MOCK_COUNTS: Record<string, number> = {
+  instagram: 0,
+  youtube:   0,
+  facebook:  0,
+};
 
-// ── Mini bar chart ────────────────────────────────────────────────────────────
+// ── Vertical bar chart ────────────────────────────────────────────────────────
 
-function MiniBar({ count, color }: { count: number; color: string }) {
-  const pct = Math.max(4, Math.min(100, (count / MAX_REELS) * 100));
+const BAR_MAX_H = 140; // px — tallest possible bar
+
+function PlatformBarChart({
+  platforms,
+}: {
+  platforms: Array<{ key: string; label: string; icon: typeof PLATFORM_DEFS[number]["icon"]; color: string; count: number }>;
+}) {
+  const maxCount = Math.max(...platforms.map((p) => p.count), 1); // avoid ÷0
+
   return (
-    <View style={barStyles.track}>
-      <View style={[barStyles.fill, { width: `${count === 0 ? 4 : pct}%` as any, backgroundColor: color }]} />
+    <View style={chartStyles.wrap}>
+      {platforms.map((p) => {
+        const barH = Math.max(6, Math.round((p.count / maxCount) * BAR_MAX_H));
+        return (
+          <View key={p.key} style={chartStyles.col}>
+            {/* count label above bar */}
+            <Text style={chartStyles.countLabel}>
+              {p.count > 0 ? p.count : ""}
+            </Text>
+            {/* bar track — bar sits at bottom */}
+            <View style={chartStyles.track}>
+              <View
+                style={[
+                  chartStyles.bar,
+                  { height: barH, backgroundColor: p.color },
+                ]}
+              />
+            </View>
+            {/* platform icon below bar */}
+            <View style={[chartStyles.iconCircle, { backgroundColor: p.color + "22" }]}>
+              <FontAwesome5 name={p.icon} size={15} color={p.color} />
+            </View>
+            <Text style={chartStyles.iconLabel} numberOfLines={1}>
+              {p.label}
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
 }
 
-const barStyles = StyleSheet.create({
-  track: {
+const chartStyles = StyleSheet.create({
+  wrap: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "flex-end",
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 20,
+    backgroundColor: "#1C1C1E",
+    borderRadius: 20,
+    marginBottom: 24,
+    // reserve fixed height = BAR_MAX_H + labels above + labels below
+    minHeight: BAR_MAX_H + 80,
+  },
+  col: {
     flex: 1,
-    height: 6,
+    alignItems: "center",
+    gap: 8,
+  },
+  countLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+    minHeight: 18,
+  },
+  track: {
+    width: 36,
+    height: BAR_MAX_H,
+    justifyContent: "flex-end",
     backgroundColor: "#2C2C2E",
-    borderRadius: 3,
+    borderRadius: 8,
     overflow: "hidden",
   },
-  fill: {
-    height: "100%",
-    borderRadius: 3,
+  bar: {
+    width: "100%",
+    borderRadius: 8,
+  },
+  iconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconLabel: {
+    fontSize: 10,
+    fontFamily: "Inter_400Regular",
+    color: "#8E8E93",
+    textAlign: "center",
+  },
+});
+
+// ── Ranked list row ───────────────────────────────────────────────────────────
+
+function PlatformRow({
+  platform,
+  rank,
+}: {
+  platform: { key: string; label: string; icon: typeof PLATFORM_DEFS[number]["icon"]; color: string; count: number };
+  rank: number;
+}) {
+  return (
+    <View style={rowStyles.row}>
+      <Text style={rowStyles.rank}>#{rank}</Text>
+      <View style={[rowStyles.iconBox, { backgroundColor: platform.color }]}>
+        <FontAwesome5 name={platform.icon} size={18} color="#FFF" />
+      </View>
+      <Text style={rowStyles.name}>{platform.label}</Text>
+      <Text style={rowStyles.count}>
+        {platform.count > 0 ? platform.count : "—"}
+      </Text>
+    </View>
+  );
+}
+
+const rowStyles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: "#1C1C1E",
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  rank: {
+    width: 22,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#8E8E93",
+    textAlign: "center",
+  },
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  name: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+  },
+  count: {
+    fontSize: 22,
+    fontFamily: "Inter_700Bold",
+    color: "#FFBF80",
   },
 });
 
@@ -69,11 +211,21 @@ export default function DateDetailScreen() {
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
+  // Build platform list with counts, sorted highest first
+  const platforms = useMemo(() => {
+    return PLATFORM_DEFS
+      .map((p) => ({ ...p, count: MOCK_COUNTS[p.key] ?? 0 }))
+      .sort((a, b) => b.count - a.count);
+  }, []);
+
   return (
     <GradientBackground>
       <ScrollView
         style={styles.root}
-        contentContainerStyle={[styles.content, { paddingTop: topPad + 12 }]}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: topPad + 12, paddingBottom: 48 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* ── Header ── */}
@@ -83,46 +235,29 @@ export default function DateDetailScreen() {
           </Pressable>
           <View style={styles.headerTextCol}>
             <Text style={styles.headerDate}>{formatDate(date)}</Text>
-            {isToday && <Text style={styles.headerToday}>Today</Text>}
+            {isToday && <Text style={styles.headerBadge}>Today</Text>}
           </View>
         </View>
 
-        {/* ── Summary label ── */}
-        <Text style={styles.sectionLabel}>Reels watched by platform</Text>
+        {/* ── Platform bar chart ── */}
+        <Text style={styles.sectionLabel}>Reels by platform</Text>
+        <PlatformBarChart platforms={platforms} />
 
-        {/* ── Platform cards ── */}
-        {PLATFORMS.map((p) => (
-          <View key={p.key} style={styles.platformCard}>
-            {/* Icon */}
-            <View style={[styles.platformIcon, { backgroundColor: p.color }]}>
-              <FontAwesome5 name={p.icon} size={18} color="#FFF" />
-            </View>
-
-            {/* Name + bar + count */}
-            <View style={styles.platformBody}>
-              <View style={styles.platformRow}>
-                <Text style={styles.platformName}>{p.label}</Text>
-                <Text style={[styles.platformCount, { color: p.color }]}>
-                  {p.count}
-                </Text>
-              </View>
-              <MiniBar count={p.count} color={p.color} />
-              <Text style={styles.platformSub}>
-                {p.count === 0
-                  ? "No reels recorded for this day"
-                  : `${p.count} reel${p.count !== 1 ? "s" : ""} watched`}
-              </Text>
-            </View>
-          </View>
+        {/* ── Ranked list ── */}
+        <Text style={styles.sectionLabel}>Ranking</Text>
+        {platforms.map((p, i) => (
+          <PlatformRow key={p.key} platform={p} rank={i + 1} />
         ))}
 
-        {/* ── Empty state note ── */}
-        <View style={styles.emptyNote}>
-          <Feather name="info" size={14} color="#8E8E93" />
-          <Text style={styles.emptyNoteText}>
-            Per-platform tracking will populate once your focus sessions are recorded.
-          </Text>
-        </View>
+        {/* ── Empty-state note (shown when all counts are 0) ── */}
+        {platforms.every((p) => p.count === 0) && (
+          <View style={styles.emptyNote}>
+            <Feather name="info" size={13} color="#8E8E93" />
+            <Text style={styles.emptyNoteText}>
+              Per-platform counts will appear here once focus sessions are recorded for this day.
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </GradientBackground>
   );
@@ -132,13 +267,13 @@ export default function DateDetailScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingBottom: 40 },
+  content: { paddingHorizontal: 20 },
 
   header: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    marginBottom: 28,
+    marginBottom: 32,
   },
   backBtn: {
     width: 40,
@@ -148,13 +283,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  headerTextCol: { flex: 1, gap: 2 },
+  headerTextCol: { flex: 1, gap: 3 },
   headerDate: {
     fontSize: 20,
     fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
   },
-  headerToday: {
+  headerBadge: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
     color: "#FFBF80",
@@ -162,57 +297,19 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: "#8E8E93",
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-    marginBottom: 14,
-  },
-
-  platformCard: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 14,
-    backgroundColor: "#1C1C1E",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-  },
-  platformIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  platformBody: { flex: 1, gap: 8 },
-  platformRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  platformName: {
-    fontSize: 15,
-    fontFamily: "Inter_700Bold",
-    color: "#FFFFFF",
-  },
-  platformCount: {
-    fontSize: 22,
-    fontFamily: "Inter_700Bold",
-  },
-  platformSub: {
     fontSize: 11,
     fontFamily: "Inter_400Regular",
     color: "#8E8E93",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    marginBottom: 12,
   },
 
   emptyNote: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
-    marginTop: 8,
+    marginTop: 12,
     paddingHorizontal: 4,
   },
   emptyNoteText: {
