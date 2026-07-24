@@ -28,20 +28,40 @@ One workflow starts everything:
 
 Vite proxies all `/api/*` requests to the API server, so the web UI talks to the API through the same origin.
 
+### Verifying the stack is healthy
+
+Once the workflow is running, confirm both services are up:
+
+```bash
+# API health check (via Vite proxy)
+curl http://localhost:5000/api/healthz
+# Expected: {"status":"ok"}
+
+# API direct (bypasses proxy)
+curl http://localhost:3001/healthz
+```
+
+The health route lives in `artifacts/api-server/src/routes/health.ts`.
+
 ### Mobile (Expo Go)
+
 The Expo app (`artifacts/mobile`) runs separately — it is not part of the web workflow above. To run Metro for Expo Go, use:
+
 ```bash
 pnpm --filter @workspace/mobile run start-all
 ```
-Metro prints a QR code; scan it with the **Expo Go** app. A Cloudflared tunnel is used for the public URL.
+
+Metro prints a QR code; scan it with the **Expo Go** app. A Cloudflared tunnel is used for the public URL. The tunnel URL looks like `exp://...expo.pike.replit.dev`.
+
+For native (Android/iOS) builds, place `google-services.json` at `artifacts/mobile/android/app/google-services.json` and use EAS (`eas build`).
 
 ## Environment
 
-All Firebase keys (`EXPO_PUBLIC_FIREBASE_*`) are pre-configured as shared env vars.
-
-The database (PostgreSQL 16) is Replit-managed — `DATABASE_URL` and `PG*` variables are injected automatically.
-
-`SESSION_SECRET` is stored as a Replit Secret.
+| Variable | Source | Notes |
+|---|---|---|
+| `DATABASE_URL`, `PG*` | Replit-managed (auto-injected) | PostgreSQL 16 |
+| `SESSION_SECRET` | Replit Secret | Required by the API server |
+| `EXPO_PUBLIC_FIREBASE_*` | Shared env vars | Pre-configured |
 
 ## Database
 
@@ -53,11 +73,7 @@ cd lib/db && pnpm run push
 
 Schema lives in `lib/db/src/schema/index.ts`.
 
-## Mobile (Expo Go)
-
-The Metro dev server prints a QR code in the `artifacts/mobile: expo` workflow logs. Scan it with the **Expo Go** app. The tunnel URL looks like `exp://...expo.pike.replit.dev`.
-
-For native (Android/iOS) builds, place `google-services.json` at `artifacts/mobile/android/app/google-services.json` and use EAS (`eas build`).
+> **Note:** The schema currently exports an empty object — tables need to be defined before any data is persisted.
 
 ## User preferences
 
