@@ -61,15 +61,6 @@ const DUCK_FULL = require("../../assets/duck-full.mp4");
 // DuckPal home hero character — always-muted, always-looping ambient animation.
 const DUCKPAL_HERO = require("../../assets/duckpal-hero.mp4");
 
-// Brand glyph + color-background icons for Instagram/YouTube — mirrors the
-// same fallback pattern already used on the DuckLock "Select Apps" screen
-// (FontAwesome5 glyph over a solid brand-color box), kept in sync here so
-// DuckPal's icons look consistent with DuckLock. Not derived from images.
-const DUCKPAL_APP_ICONS = {
-  Instagram: { iconName: "instagram" as const, iconColor: "#E1306C" },
-  YouTube:   { iconName: "youtube"    as const, iconColor: "#FF0000" },
-  Facebook:  { iconName: "facebook"   as const, iconColor: "#1877F2" },
-};
 
 function DuckCharacter() {
   const isTouchedRef = useRef(false);
@@ -397,11 +388,6 @@ const DUMMY_WEEKLY = [
 ];
 const DUMMY_TOTAL_REELS = 0;
 const DUMMY_DAILY_AVG = 0;
-const DUMMY_TOP_APPS = [
-  { name: "Instagram", icon: "instagram" as const, count: 0 },
-  { name: "YouTube",   icon: "youtube"   as const, count: 0 },
-  { name: "Facebook",  icon: "facebook"  as const, count: 0 },
-];
 
 const MONTH_SHORT = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -755,44 +741,7 @@ function DuckPalScreen() {
           </LinearGradient>
         </Pressable>
 
-        {/* ── Platform tabs — horizontal scroll (YouTube / Instagram / Facebook) ── */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.dpPlatRow}
-          contentContainerStyle={styles.dpPlatScroll}
-        >
-          {/* YouTube — large */}
-          <View style={[styles.dpPlatTab, styles.dpPlatTabLg]}>
-            <View style={[styles.dpPlatIcon, { backgroundColor: DUCKPAL_APP_ICONS.YouTube.iconColor }]}>
-              <FontAwesome5 name={DUCKPAL_APP_ICONS.YouTube.iconName} size={24} color="#FFF" />
-            </View>
-            <Text style={styles.dpPlatCount}>
-              {DUMMY_TOP_APPS.find((a) => a.name === "YouTube")?.count ?? 0}
-            </Text>
-            <Text style={styles.dpPlatName}>YouTube</Text>
-          </View>
 
-          {/* Instagram — medium */}
-          <View style={[styles.dpPlatTab, styles.dpPlatTabMd]}>
-            <View style={[styles.dpPlatIcon, { backgroundColor: DUCKPAL_APP_ICONS.Instagram.iconColor }]}>
-              <FontAwesome5 name={DUCKPAL_APP_ICONS.Instagram.iconName} size={20} color="#FFF" />
-            </View>
-            <Text style={styles.dpPlatCount}>{reelsToday}</Text>
-            <Text style={styles.dpPlatName}>Instagram</Text>
-          </View>
-
-          {/* Facebook — medium, partially cut off at right edge */}
-          <View style={[styles.dpPlatTab, styles.dpPlatTabMd]}>
-            <View style={[styles.dpPlatIcon, { backgroundColor: DUCKPAL_APP_ICONS.Facebook.iconColor }]}>
-              <FontAwesome5 name={DUCKPAL_APP_ICONS.Facebook.iconName} size={20} color="#FFF" />
-            </View>
-            <Text style={styles.dpPlatCount}>
-              {DUMMY_TOP_APPS.find((a) => a.name === "Facebook")?.count ?? 0}
-            </Text>
-            <Text style={styles.dpPlatName}>Facebook</Text>
-          </View>
-        </ScrollView>
       </ScrollView>
     </GradientBackground>
   );
@@ -1398,27 +1347,4 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // Platform tabs — horizontal scroll with varied sizes
-  dpPlatRow: { marginHorizontal: -20 }, // bleed to screen edges
-  dpPlatScroll: { paddingHorizontal: 20, gap: 10 }, // no right padding → last tab bleeds off edge
-  dpPlatTab: {
-    backgroundColor: "#1C1C1E",
-    borderRadius: 20,
-    padding: 16,
-    alignItems: "center",
-    gap: 8,
-    justifyContent: "center",
-  },
-  dpPlatTabLg: { width: 130, paddingVertical: 20 }, // tallest + widest
-  dpPlatTabMd: { width: 108, paddingVertical: 18 },
-  dpPlatTabSm: { width: 88, paddingVertical: 16 },  // partially cut off at right edge
-  dpPlatIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  dpPlatCount: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
-  dpPlatName: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#8E8E93" },
 });
