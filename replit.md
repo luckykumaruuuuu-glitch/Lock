@@ -1,83 +1,42 @@
-# FocusLock (DuckLock / DuckPal)
+# BrainPal / DuckPal
 
-A mobile-first screen-time & focus app built with Expo + React Native (web preview via Metro), an Express API backend, and a React/Vite web UI.
+A social media screen-time tracker and app-blocker. Users see how many reels they've watched, set limits, and lock distracting apps (Instagram, TikTok, YouTube, Snapchat, Facebook, etc.).
 
-## Project structure
+## Monorepo structure
 
-| Path | Purpose |
+| Path | Role |
 |---|---|
-| `artifacts/mobile` | Expo app (iOS / Android / web via Metro) |
-| `artifacts/api-server` | Express REST API (Node.js + Drizzle ORM + PostgreSQL) |
-| `artifacts/ui-design` | Web landing / design preview (React 19 + Vite + Tailwind 4) |
-| `artifacts/mockup-sandbox` | Component playground for design iteration |
-| `lib/db` | Shared Drizzle schema + database client (`@workspace/db`) |
-| `lib/api-zod` | Shared Zod request/response schemas (`@workspace/api-zod`) |
-| `lib/api-client-react` | Typed React hooks for the API (`@workspace/api-client-react`) |
+| `artifacts/mobile` | React Native / Expo app — the primary product |
+| `artifacts/api-server` | Express 5 + Drizzle ORM API (port 3001) |
+| `artifacts/ui-design` | Vite/React web UI (port 5000) |
+| `artifacts/mockup-sandbox` | Design sandbox (not production) |
+| `libs/` | Shared TypeScript packages (`@workspace/*`) |
 
-## How to run
+## Running on Replit
 
-The default workflow starts the web UI and API:
+Two workflows are configured and start automatically:
 
-| Workflow | Command | Port |
-|---|---|---|
-| **Start application** | `pnpm install --frozen-lockfile && PORT=5000 node scripts/start-web.js` | 5000 (web UI), 3001 (API) |
-
-`scripts/start-web.js` launches two processes in parallel:
-- **ui-design** Vite dev server on port 5000 (visible in the Replit preview pane)
-- **api-server** Express server on port 3001
-
-Vite proxies all `/api/*` requests to the API server, so the web UI talks to the API through the same origin.
-
-For the Expo mobile preview, start the optional **Expo Go preview** workflow. It serves the exported mobile web build on port 8080 and starts Metro on port 18116 with a Cloudflare tunnel for Expo Go. Scan the Expo Go QR code shown in that workflow's logs.
-
-### Verifying the stack is healthy
-
-Once the workflow is running, confirm both services are up:
-
-```bash
-# API health check (via Vite proxy)
-curl http://localhost:5000/api/healthz
-# Expected: {"status":"ok"}
-
-# API direct (bypasses proxy)
-curl http://localhost:3001/healthz
+### Web preview (port 5000)
+**Workflow:** `Start application`
 ```
-
-The health route lives in `artifacts/api-server/src/routes/health.ts`.
-
-### Mobile (Expo Go)
-
-The Expo app (`artifacts/mobile`) runs separately — it is not part of the web workflow above. To run Metro for Expo Go, use:
-
-```bash
-pnpm --filter @workspace/mobile run start-all
+pnpm install --frozen-lockfile && PORT=5000 node scripts/start-web.js
 ```
+Starts the Vite web UI on port 5000 and the API server on port 3001.
 
-Metro prints a QR code; scan it with the **Expo Go** app. A Cloudflared tunnel is used for the public URL. The tunnel URL looks like `exp://...expo.pike.replit.dev`.
-
-For native (Android/iOS) builds, place `google-services.json` at `artifacts/mobile/android/app/google-services.json` and use EAS (`eas build`).
-
-## Environment
-
-| Variable | Source | Notes |
-|---|---|---|
-| `DATABASE_URL`, `PG*` | Replit-managed (auto-injected) | PostgreSQL 16 |
-| `SESSION_SECRET` | Replit Secret | Required by the API server |
-| `EXPO_PUBLIC_FIREBASE_*` | Shared env vars | Pre-configured |
-
-## Database
-
-Drizzle ORM with PostgreSQL. Push schema changes:
-
-```bash
-cd lib/db && pnpm run push
+### Expo Go preview (port 8080)
+**Workflow:** `Expo Go preview`
 ```
+pnpm install --frozen-lockfile && PORT=8080 EXPO_PORT=18116 pnpm --filter @workspace/mobile run start-all
+```
+- Serves a web export of the Expo app on port 8080
+- Spins up Metro bundler + a cloudflared tunnel for scanning with the **Expo Go** mobile app
 
-Schema lives in `lib/db/src/schema/index.ts`.
+## Firebase
+Firebase config is set via env vars in `.replit` (`[userenv.shared]`):
+- `EXPO_PUBLIC_FIREBASE_*` keys are already configured for the `focus-lock-6b0ab` project.
 
-> **Note:** The schema currently exports an empty object — tables need to be defined before any data is persisted.
+## Session secret
+`SESSION_SECRET` is managed as a Replit secret.
 
 ## User preferences
-
-- Keep the existing monorepo structure (pnpm workspaces).
-- Do not migrate or replace the Replit-managed PostgreSQL database unless explicitly asked.
+_None recorded yet._
