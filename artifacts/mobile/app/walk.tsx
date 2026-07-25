@@ -367,28 +367,28 @@ export default function WalkScreen() {
           style={[
             styles.pencil,
             {
-              // Tip of 8×63 SVG rotated 45° CW lands at (26, 54) in view space
-              left: pencilPos.x - 26,
-              top: pencilPos.y - 54,
+              // Tip of 8×44 SVG rotated 45° CW lands at (20, 38) in view space
+              left: pencilPos.x - 20,
+              top: pencilPos.y - 38,
               transform: [{ rotate: "45deg" }],
             },
           ]}
         >
-          {/* 8×63 dp ≈ 1 cm tall at standard mobile DPI (160 dp/in ÷ 2.54) */}
-          <Svg width={8} height={63} viewBox="0 0 8 63">
+          {/* 8×44 dp ≈ 0.70 cm tall at standard mobile DPI (160 dp/in ÷ 2.54) */}
+          <Svg width={8} height={44} viewBox="0 0 8 44">
             {/* Eraser cap */}
             <SvgPath
-              d="M 1 0 Q 4 0 7 0 Q 8 0 8 2 L 8 6 L 0 6 L 0 2 Q 0 0 1 0 Z"
+              d="M 1 0 Q 4 0 7 0 Q 8 0 8 2 L 8 5 L 0 5 L 0 2 Q 0 0 1 0 Z"
               fill="#D8D8D8"
             />
             {/* Cap band */}
-            <SvgPath d="M 0 6 L 8 6 L 8 9 L 0 9 Z" fill="#B0B0B0" />
+            <SvgPath d="M 0 5 L 8 5 L 8 7 L 0 7 Z" fill="#B0B0B0" />
             {/* White body */}
-            <SvgPath d="M 0 9 L 8 9 L 8 53 L 0 53 Z" fill="#FFFFFF" />
+            <SvgPath d="M 0 7 L 8 7 L 8 37 L 0 37 Z" fill="#FFFFFF" />
             {/* Taper */}
-            <SvgPath d="M 0 53 L 8 53 L 5.5 59 L 2.5 59 Z" fill="#E0E0E0" />
+            <SvgPath d="M 0 37 L 8 37 L 5.5 41 L 2.5 41 Z" fill="#E0E0E0" />
             {/* Metal tip */}
-            <SvgPath d="M 2.5 59 L 5.5 59 L 4 63 Z" fill="#A8A8A8" />
+            <SvgPath d="M 2.5 41 L 5.5 41 L 4 44 Z" fill="#A8A8A8" />
           </Svg>
         </View>
       )}
