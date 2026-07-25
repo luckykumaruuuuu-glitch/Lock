@@ -246,9 +246,8 @@ const styles = StyleSheet.create({
     width: "100%",
     flex: 1,
     alignItems: "center",
-    justifyContent: "flex-start",
+    justifyContent: "flex-end",
     paddingHorizontal: 16,
-    paddingTop: 180,
     paddingBottom: 18,
   },
   headlineBlock: {
