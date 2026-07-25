@@ -360,41 +360,35 @@ export default function WalkScreen() {
         </View>
       )}
 
-      {/* Apple Pencil cursor — follows the finger, tip at touch point */}
+      {/* Apple Pencil cursor — same size & angle as original ✏️ emoji */}
       {pencilPos && (
         <View
           pointerEvents="none"
           style={[
             styles.pencil,
-            { left: pencilPos.x - 7, top: pencilPos.y - 76 },
+            {
+              // After −45° rotation the tip (bottom-centre of SVG) lands at finger
+              left: pencilPos.x - 15,
+              top: pencilPos.y - 24,
+              transform: [{ rotate: "-45deg" }],
+            },
           ]}
         >
-          <Svg width={14} height={76} viewBox="0 0 14 76">
-            {/* Eraser cap — light gray rounded top */}
+          {/* 10×28 — matches ~26 px emoji footprint when rotated 45° */}
+          <Svg width={10} height={28} viewBox="0 0 10 28">
+            {/* Eraser cap */}
             <SvgPath
-              d="M 2 0 Q 7 0 12 0 Q 14 0 14 4 L 14 10 L 0 10 L 0 4 Q 0 0 2 0 Z"
+              d="M 1 0 Q 5 0 9 0 Q 10 0 10 2 L 10 5 L 0 5 L 0 2 Q 0 0 1 0 Z"
               fill="#D8D8D8"
             />
             {/* Cap band */}
-            <SvgPath
-              d="M 0 10 L 14 10 L 14 14 L 0 14 Z"
-              fill="#B0B0B0"
-            />
+            <SvgPath d="M 0 5 L 10 5 L 10 7 L 0 7 Z" fill="#B0B0B0" />
             {/* White body */}
-            <SvgPath
-              d="M 0 14 L 14 14 L 14 62 L 0 62 Z"
-              fill="#FFFFFF"
-            />
-            {/* Taper section */}
-            <SvgPath
-              d="M 0 62 L 14 62 L 10 70 L 4 70 Z"
-              fill="#E0E0E0"
-            />
+            <SvgPath d="M 0 7 L 10 7 L 10 22 L 0 22 Z" fill="#FFFFFF" />
+            {/* Taper */}
+            <SvgPath d="M 0 22 L 10 22 L 7 26 L 3 26 Z" fill="#E0E0E0" />
             {/* Metal tip */}
-            <SvgPath
-              d="M 4 70 L 10 70 L 7 76 Z"
-              fill="#A8A8A8"
-            />
+            <SvgPath d="M 3 26 L 7 26 L 5 28 Z" fill="#A8A8A8" />
           </Svg>
         </View>
       )}
