@@ -367,10 +367,10 @@ export default function WalkScreen() {
           style={[
             styles.pencil,
             {
-              // Tip of 8×63 SVG rotated 30° CW lands at (20, 59) in view space
-              left: pencilPos.x - 20,
-              top: pencilPos.y - 59,
-              transform: [{ rotate: "30deg" }],
+              // Tip of 8×63 SVG rotated 45° CW lands at (26, 54) in view space
+              left: pencilPos.x - 26,
+              top: pencilPos.y - 54,
+              transform: [{ rotate: "45deg" }],
             },
           ]}
         >
