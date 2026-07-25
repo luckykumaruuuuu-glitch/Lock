@@ -534,6 +534,15 @@ function DuckPalScreen() {
   const reelsToday = instagramCount ?? 0;
   const appsBlocked = displayItems.length;
 
+  // ── Revolut-style task card press animation ───────────────────────────────
+  const taskCardScale = useRef(new Animated.Value(1)).current;
+  const handleTaskCardPressIn = useCallback(() => {
+    Animated.spring(taskCardScale, { toValue: 0.96, useNativeDriver: true, speed: 50, bounciness: 0 }).start();
+  }, [taskCardScale]);
+  const handleTaskCardPressOut = useCallback(() => {
+    Animated.spring(taskCardScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }).start();
+  }, [taskCardScale]);
+
   return (
     <GradientBackground>
       <ScrollView
@@ -738,32 +747,21 @@ function DuckPalScreen() {
           </View>
         </View>
 
-        {/* ── Task card — green banner style (reference screenshot) ── */}
-        <Pressable onPress={() => router.push("/coming-soon" as never)}>
-          <LinearGradient
-            colors={["#6DBE45", "#4AAF2A"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.dpTaskCard}
-          >
-            {/* Overlapping app-icon bubbles on the left */}
-            <View style={styles.dpTaskIcons}>
-              <View style={[styles.dpTaskAppIcon, { backgroundColor: "#E1306C" }]}>
-                <FontAwesome5 name="instagram" size={13} color="#FFF" />
-              </View>
-              <View style={[styles.dpTaskAppIcon, { backgroundColor: "#FF0000", marginLeft: -10 }]}>
-                <FontAwesome5 name="youtube" size={13} color="#FFF" />
-              </View>
-              <View style={[styles.dpTaskAppIcon, { backgroundColor: "#1877F2", marginLeft: -10 }]}>
-                <FontAwesome5 name="facebook" size={13} color="#FFF" />
-              </View>
-            </View>
-
+        {/* ── Task card — Revolut-style dark elevated promo card ── */}
+        <Pressable
+          onPress={() => router.push("/coming-soon" as never)}
+          onPressIn={handleTaskCardPressIn}
+          onPressOut={handleTaskCardPressOut}
+        >
+          <Animated.View style={[styles.dpTaskCard, { transform: [{ scale: taskCardScale }] }]}>
             <View style={styles.dpTaskContent}>
               <Text style={styles.dpTaskTitle}>Complete new tasks</Text>
               <Text style={styles.dpTaskSub}>Lock apps and build your focus streak</Text>
             </View>
-          </LinearGradient>
+            <View style={styles.dpTaskBtn}>
+              <Text style={styles.dpTaskBtnText}>Start Now</Text>
+            </View>
+          </Animated.View>
         </Pressable>
 
 
@@ -1336,33 +1334,40 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
 
-  // Task card — green banner (reference screenshot style)
+  // Task card — Revolut-style dark elevated promo card
   dpTaskCard: {
-    flexDirection: "row",
-    alignItems: "center",
     borderRadius: 20,
     paddingVertical: 20,
-    paddingHorizontal: 18,
-    gap: 16,
+    paddingHorizontal: 20,
+    gap: 14,
+    backgroundColor: "#232327",
+    // iOS shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    // Android elevation
+    elevation: 8,
   },
-  // Overlapping app-icon circles on the left
-  dpTaskIcons: { flexDirection: "row", alignItems: "center" },
-  dpTaskAppIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.35)",
-  },
-  dpTaskContent: { flex: 1, gap: 4 },
-  dpTaskTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  dpTaskContent: { gap: 6 },
+  dpTaskTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
   dpTaskSub: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.78)",
-    lineHeight: 18,
+    color: "rgba(255,255,255,0.55)",
+    lineHeight: 19,
+  },
+  dpTaskBtn: {
+    alignSelf: "flex-start",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 50,
+    paddingVertical: 10,
+    paddingHorizontal: 22,
+  },
+  dpTaskBtnText: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+    color: "#1A1A1A",
   },
 
 });

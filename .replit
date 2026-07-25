@@ -42,7 +42,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "PORT=8080 EXPO_PORT=18116 pnpm --filter @workspace/mobile run start-all"
+args = "pnpm install --frozen-lockfile && PORT=8080 EXPO_PORT=18116 pnpm --filter @workspace/mobile run start-all"
 
 [workflows.workflow.metadata]
 outputType = "console"
