@@ -192,7 +192,7 @@ export default function SelectAppsScreen() {
           }}
         />
       )}
-      <GlassCard style={styles.searchBar} borderColor="rgba(255,255,255,0.1)" radius={16}>
+      <GlassCard style={[styles.searchBar, { marginTop: insets.top + 16 }]} borderColor="rgba(255,255,255,0.1)" radius={16}>
         <View style={styles.searchInner}>
           <Feather name="search" size={16} color="#8E8E93" />
           <TextInput
@@ -233,10 +233,29 @@ export default function SelectAppsScreen() {
 
       <View style={[styles.footer, { paddingBottom: bottomPad + 20 }]}>
         <View style={styles.nextBtnShadow}>
-          <Pressable onPress={handleNext} disabled={selection.selectedApps.length === 0} style={({ pressed }) => [{ opacity: selection.selectedApps.length === 0 ? 0.35 : pressed ? 0.85 : 1 }]}>
-            <LinearGradient colors={["#FFBF80", "#FFA660"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.nextBtn}>
-              <Text style={styles.nextBtnText}>Next — Set Duration</Text>
-              <Feather name="arrow-right" size={18} color="#000000" />
+          <Pressable
+            onPress={handleNext}
+            disabled={selection.selectedApps.length === 0}
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+          >
+            <LinearGradient
+              colors={
+                selection.selectedApps.length === 0
+                  ? ["#3A3A3C", "#2C2C2E"]   // disabled — clearly greyed, still textured
+                  : ["#FFBF80", "#FFA660"]   // enabled  — vibrant orange CTA
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.nextBtn}
+            >
+              <Text style={[styles.nextBtnText, selection.selectedApps.length === 0 && styles.nextBtnTextDisabled]}>
+                Next — Set Duration
+              </Text>
+              <Feather
+                name="arrow-right"
+                size={18}
+                color={selection.selectedApps.length === 0 ? "#6A6A6C" : "#000000"}
+              />
             </LinearGradient>
           </Pressable>
         </View>
@@ -267,6 +286,7 @@ const styles = StyleSheet.create({
   nextBtnShadow: { borderRadius: 18, shadowColor: "#FFBF80", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 14, elevation: 10 },
   nextBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 17, borderRadius: 18 },
   nextBtnText: { color: "#000000", fontSize: 16, fontFamily: "Inter_700Bold" },
+  nextBtnTextDisabled: { color: "#6A6A6C" },
 });
 
 const popupStyles = StyleSheet.create({
