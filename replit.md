@@ -16,7 +16,7 @@ A mobile-first screen-time & focus app built with Expo + React Native (web previ
 
 ## How to run
 
-One workflow starts everything:
+The default workflow starts the web UI and API:
 
 | Workflow | Command | Port |
 |---|---|---|
@@ -27,6 +27,8 @@ One workflow starts everything:
 - **api-server** Express server on port 3001
 
 Vite proxies all `/api/*` requests to the API server, so the web UI talks to the API through the same origin.
+
+For the Expo mobile preview, start the optional **Expo Go preview** workflow. It serves the exported mobile web build on port 8080 and starts Metro on port 18116 with a Cloudflare tunnel for Expo Go. Scan the Expo Go QR code shown in that workflow's logs.
 
 ### Verifying the stack is healthy
 

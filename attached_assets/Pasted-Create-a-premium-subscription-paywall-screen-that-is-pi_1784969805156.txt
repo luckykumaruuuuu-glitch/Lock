@@ -1,0 +1,48 @@
+Create a premium subscription / paywall screen that is pixel-perfect same as the reference screenshot (the iPhone mockup with “Create Headshots without limits”).
+Important Changes (must follow strictly):
+Remove the entire background collage of AI-generated portraits completely.
+No images, no texture of faces, no grid of photos.
+Background should be pure solid black (#000000) for now. We will change the background later.
+Only 2 plans instead of 3:
+Keep only Monthly and Yearly.
+Completely remove the Weekly plan.
+Everything else must be exactly same-to-same as the reference:
+Same layout, same spacing, same fonts, same colors, same corner radius, same button styles, same timer style, same “85% OFF” badge position and style.
+Same title text, same subtitle text, same button text, same “Terms of Service and Privacy Policy” text.
+Same status bar style (time, signal, battery).
+Same close (X) button and “Restore” text position.
+Exact UI Structure (top to bottom):
+Status bar: time on left, signal + battery on right (same as reference).
+Top right: “Restore” text (white, small).
+Top left: white “X” close button.
+Main headline (centered, large):
+Create Headshots (in bright lime green #A8FF00 or exact same green as reference)
+without limits (in pure white)
+Subtitle below headline (centered, light gray):
+“Generate professional or unique portraits with various tools and styles”
+Two pricing cards side by side (same size, same rounded corners, same dark background as reference):
+Left Card – Monthly
+Label: “POPULAR” (small gray capsule)
+Title: “Monthly”
+Price: “$19.99”
+Bottom text: “$4.99/week”
+Right Card – Yearly
+Label: “BEST DEAL” (small gray capsule)
+Orange/red badge on top-right of the card: “85% OFF” (exact same style and position)
+Title: “Yearly”
+Price: “$39.99”
+Bottom text: “$0.79/week”
+(Make the Yearly card have a thin green border like the “Most Taken” card had in the reference, so it looks selected/highlighted.)
+Below the two cards: countdown timer in 4 black rounded boxes with white numbers:
+00 : 11 : 24 : 20
+(exact same style, spacing and colon separators)
+Large white rounded button at the bottom:
+TRY FREE 3-DAYS TRIAL
+(black text, full width, same height and corner radius as reference)
+Very bottom: small gray text
+“Terms of Service and Privacy Policy”
+Extra Notes for the Agent:
+This screen will open when the user taps the big green button “Complete new tasks” on the Home screen (the button that currently shows “Coming Soon”).
+Do not change any text content, colors, fonts, or proportions from the reference except the two changes mentioned above (background removed + only Monthly & Yearly plans).
+Keep the exact same visual weight, shadows, and card styling.
+Output should look like a real iPhone screen with the same notch/dynamic island area.

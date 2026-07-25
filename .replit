@@ -20,6 +20,10 @@ author = "agent"
 task = "workflow.run"
 args = "Start application"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Expo Go preview"
+
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -31,6 +35,17 @@ outputType = "webview"
 task = "shell.exec"
 args = "pnpm install --frozen-lockfile && PORT=5000 node scripts/start-web.js"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Expo Go preview"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=8080 EXPO_PORT=18116 pnpm --filter @workspace/mobile run start-all"
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
