@@ -236,7 +236,7 @@ export default function WatchVideoScreen() {
   }, []);
 
   // ── Playback state ──────────────────────────────────────────────────────
-  const [isPlaying,    setIsPlaying]    = useState(false);
+  const [isPlaying,    setIsPlaying]    = useState(true);
   const [elapsed,      setElapsed]      = useState(0);
   const [showControls, setShowControls] = useState(true);
 
