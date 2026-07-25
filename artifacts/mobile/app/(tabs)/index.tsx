@@ -748,21 +748,20 @@ function DuckPalScreen() {
         </View>
 
         {/* ── Task card — Revolut-style dark elevated promo card ── */}
-        <Pressable
-          onPress={() => router.push("/coming-soon" as never)}
-          onPressIn={handleTaskCardPressIn}
-          onPressOut={handleTaskCardPressOut}
-        >
-          <Animated.View style={[styles.dpTaskCard, { transform: [{ scale: taskCardScale }] }]}>
-            <View style={styles.dpTaskContent}>
-              <Text style={styles.dpTaskTitle}>Complete new tasks</Text>
-              <Text style={styles.dpTaskSub}>Lock apps and build your focus streak</Text>
-            </View>
-            <View style={styles.dpTaskBtn}>
-              <Text style={styles.dpTaskBtnText}>Start Now</Text>
-            </View>
-          </Animated.View>
-        </Pressable>
+        <Animated.View style={[styles.dpTaskCard, { transform: [{ scale: taskCardScale }] }]}>
+          <View style={styles.dpTaskContent}>
+            <Text style={styles.dpTaskTitle}>Complete new tasks</Text>
+            <Text style={styles.dpTaskSub}>Lock apps and build your focus streak</Text>
+          </View>
+          <Pressable
+            onPress={() => router.push("/coming-soon" as never)}
+            onPressIn={handleTaskCardPressIn}
+            onPressOut={handleTaskCardPressOut}
+            style={styles.dpTaskBtn}
+          >
+            <Text style={styles.dpTaskBtnText}>Start Now</Text>
+          </Pressable>
+        </Animated.View>
 
 
       </ScrollView>
@@ -1340,7 +1339,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 20,
     gap: 14,
-    backgroundColor: "#232327",
+    backgroundColor: "#18181F",
     // iOS shadow
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
@@ -1354,7 +1353,7 @@ const styles = StyleSheet.create({
   dpTaskSub: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.55)",
+    color: "#FFFFFF",
     lineHeight: 19,
   },
   dpTaskBtn: {
