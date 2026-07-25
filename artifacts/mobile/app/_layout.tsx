@@ -49,7 +49,7 @@ const queryClient = new QueryClient();
 
 // Routes that bypass the onboarding/setup guard — accessible directly in web
 // preview for design/dev iteration without completing the full setup flow.
-const DEV_BYPASS_ROUTES = ["/unlock-tasks", "/mock-reels", "/watch-video", "/coming-soon", "/duration-selector", "/reel-count-schedule", "/google-signin", "/intro", "/friend-battle", "/friend-battle-friends"];
+const DEV_BYPASS_ROUTES = ["/unlock-tasks", "/mock-reels", "/watch-video", "/coming-soon", "/duration-selector", "/reel-count-schedule", "/google-signin", "/intro", "/friend-battle", "/friend-battle-friends", "/walk"];
 
 function SetupGuard({ children }: { children: React.ReactNode }) {
   const { setupComplete, loading } = usePermissionStatus();

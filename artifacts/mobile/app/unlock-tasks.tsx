@@ -102,7 +102,11 @@ export default function UnlockTasksScreen() {
       router.push("/jump");
       return;
     }
-    // Walk, Scroll — wired up later
+    if (id === "walk") {
+      router.push("/walk");
+      return;
+    }
+    // Scroll — wired up later
     console.log(`[UnlockTasks] Card tapped: ${id}`);
   }
 

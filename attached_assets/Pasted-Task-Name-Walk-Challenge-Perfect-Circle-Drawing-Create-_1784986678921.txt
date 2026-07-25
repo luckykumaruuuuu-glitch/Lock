@@ -1,0 +1,55 @@
+Task Name: Walk Challenge – Perfect Circle Drawing
+Create a fully working offline task for the “Walk” challenge card.
+Flow:
+User taps on the Walk card.
+A full-screen black screen opens.
+A small pencil icon appears.
+When the user touches and moves finger on the screen:
+The pencil icon follows the finger in real-time.
+A white stroke is drawn following the finger path.
+When the user lifts the finger:
+The system calculates how perfect the drawn circle is (0% to 100%).
+A glassy / liquid / rubbery floating percentage number appears on the screen with bouncy animation.
+The number comes from a random side (left or right), stays for 1.5–2 seconds, then disappears with a soft exit animation.
+Scoring Logic (Very Important):
+Calculate circle perfection percentage using this method:
+Find the center point of the drawn path.
+Calculate average radius.
+Check how much each point deviates from the perfect circle.
+Also check if the start and end points are close (circle is closed).
+Final score = combination of roundness + closed shape.
+Success Threshold = 75
+If score ≥ 75 → Success
+If score < 75 → Fail
+The threshold value must be stored in a single constant so it can be changed later easily:
+const CIRCLE_SUCCESS_THRESHOLD = 75;
+Result Behavior:
+If score ≥ 75 (Success):
+Floating number appears in bright green color
+Show success feedback (haptic + small success indicator)
+Mark the Walk task as completed
+Automatically trigger the existing system that decides which screen to open next (do not hardcode next screen)
+If score < 75 (Fail):
+Floating number appears in blue color
+Show “Try Again” text
+Clear the drawn path
+Let the user draw again
+Floating Number Design:
+Glassy / liquid / fluid style
+Rubbery, bouncy, cute animation
+Slight scale + spring movement
+Appears from random horizontal side
+Stays visible for 1.5–2 seconds then fades/slides out
+Technical Requirements:
+Fully offline (no internet)
+Use react-native-gesture-handler + react-native-svg or @shopify/react-native-skia
+Smooth 60fps drawing
+Pencil icon must follow finger perfectly
+Clean and bug-free implementation
+Deliverables:
+Complete working screen for this task
+Circle scoring function (accurate)
+Floating percentage animation component
+Success / Fail handling with the 75% threshold
+Easy-to-change threshold constant
+Make the circle detection accurate and the overall experience smooth and polished.
