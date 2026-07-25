@@ -162,9 +162,11 @@ const buildEnv = {
   EXPO_PUBLIC_DOMAIN: replitDomain,
 };
 
+const EXPO_BIN = path.join(ROOT, "node_modules", ".bin", "expo");
+
 const buildProc = spawn(
-  "pnpm",
-  ["exec", "expo", "export", "--platform", "web", "--output-dir", "web-dist"],
+  EXPO_BIN,
+  ["export", "--platform", "web", "--output-dir", "web-dist"],
   { cwd: ROOT, stdio: "inherit", env: buildEnv }
 );
 
@@ -265,8 +267,8 @@ function startMetro(tunnelUrl) {
   };
 
   metroProc = spawn(
-    "pnpm",
-    ["exec", "expo", "start", "--lan", "--port", String(METRO_PORT)],
+    EXPO_BIN,
+    ["start", "--lan", "--port", String(METRO_PORT)],
     { cwd: ROOT, stdio: "inherit", env: metroEnv }
   );
   metroProc.on("error", (err) => log(`Metro error: ${err.message}`));
