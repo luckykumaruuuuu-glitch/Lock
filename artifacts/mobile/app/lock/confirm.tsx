@@ -38,10 +38,10 @@ function getDisplayDuration(preset: string, customDays: string, customHours: str
 
 /* ── Success Screen ── */
 function SuccessScreen({
-  lockedExpiry, lockedAppCount, skippedApps, notInstalledSkipped, configured, online,
+  lockedExpiry, lockedAppCount, skippedApps, notInstalledSkipped, configured, online, onDismiss,
 }: {
   lockedExpiry: string; lockedAppCount: number; skippedApps: string[];
-  notInstalledSkipped: string[]; configured: boolean; online: boolean;
+  notInstalledSkipped: string[]; configured: boolean; online: boolean; onDismiss: () => void;
 }) {
   const insets = useSafeAreaInsets();
   const shieldScale   = useRef(new Animated.Value(0)).current;
@@ -59,8 +59,11 @@ function SuccessScreen({
         Animated.timing(textOpacity,  { toValue: 1, duration: 300, useNativeDriver: true }),
         Animated.timing(cardOpacity,  { toValue: 1, duration: 350, useNativeDriver: true }),
       ]),
-    ]).start();
-  }, [shieldScale, shieldOpacity, textOpacity, cardOpacity]);
+    ]).start(() => {
+      // Animation done — dismiss after a brief moment so the user registers the success state
+      setTimeout(onDismiss, 800);
+    });
+  }, [shieldScale, shieldOpacity, textOpacity, cardOpacity, onDismiss]);
 
   return (
     <View style={[successStyles.root, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 }]}>
@@ -360,14 +363,14 @@ export default function ConfirmScreen() {
       setLockedExpiry(formatExpiryDate(entry.endTime));
       setLockedAppCount(entry.apps?.length ?? 0);
       setLocked(true);
-
-      setTimeout(() => {
-        resetSelection();
-        setTimeout(() => router.replace("/(tabs)"), 2500);
-      }, 4000);
     } catch {
       setSaving(false);
     }
+  }
+
+  function handleSuccessDismiss() {
+    resetSelection();
+    router.replace("/(tabs)");
   }
 
   if (locked) {
@@ -380,6 +383,7 @@ export default function ConfirmScreen() {
           notInstalledSkipped={notInstalledSkipped}
           configured={configured}
           online={online}
+          onDismiss={handleSuccessDismiss}
         />
       </GradientBackground>
     );
@@ -389,7 +393,7 @@ export default function ConfirmScreen() {
     <GradientBackground>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingTop: 16, paddingBottom: bottomPad + 130 }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: bottomPad + 130 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Info banner */}
