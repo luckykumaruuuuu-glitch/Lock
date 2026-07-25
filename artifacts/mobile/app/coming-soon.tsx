@@ -71,23 +71,11 @@ export default function PaywallScreen() {
       style={[
         styles.root,
         {
-          paddingTop: Math.max(insets.top, 12),
-          paddingBottom: Math.max(insets.bottom, 22),
+          paddingTop: Math.max(insets.top, 16),
+          paddingBottom: Math.max(insets.bottom + 16, 34),
         },
       ]}
     >
-      <View style={styles.statusBar}>
-        <Text style={styles.statusTime}>9:41</Text>
-        <View style={styles.dynamicIsland} />
-        <View style={styles.statusIcons}>
-          <Feather name="bar-chart-2" size={14} color={COLORS.white} />
-          <Feather name="wifi" size={14} color={COLORS.white} />
-          <View style={styles.battery}>
-            <View style={styles.batteryLevel} />
-          </View>
-        </View>
-      </View>
-
       <View style={[styles.topControls, { paddingHorizontal: horizontalPadding }]}>
         <Pressable
           accessibilityLabel="Close paywall"
@@ -232,51 +220,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     minHeight: 640,
   },
-  statusBar: {
-    width: "100%",
-    minHeight: 30,
-    paddingHorizontal: 24,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    position: "relative",
-  },
-  statusTime: {
-    color: COLORS.white,
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
-    letterSpacing: 0.1,
-  },
-  dynamicIsland: {
-    position: "absolute",
-    top: 0,
-    left: "50%",
-    width: 92,
-    height: 25,
-    marginLeft: -46,
-    borderRadius: 16,
-    backgroundColor: COLORS.black,
-  },
-  statusIcons: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-  },
-  battery: {
-    width: 22,
-    height: 11,
-    borderWidth: 1.3,
-    borderColor: COLORS.white,
-    borderRadius: 3,
-    padding: 1.5,
-    justifyContent: "center",
-  },
-  batteryLevel: {
-    width: "78%",
-    height: "100%",
-    borderRadius: 1,
-    backgroundColor: COLORS.white,
-  },
   topControls: {
     width: "100%",
     height: 42,
@@ -305,7 +248,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     paddingHorizontal: 16,
-    paddingTop: 92,
+    paddingTop: 180,
     paddingBottom: 18,
   },
   headlineBlock: {

@@ -1,0 +1,89 @@
+Update the current premium subscription screen (the one with black background, “Create Headshots without limits”) with these exact changes:
+1. Make it 3 Plan Boxes instead of 2
+Create three plan cards in a horizontal row (same style, same size, same dark gray background, same rounded corners as the existing Monthly & Yearly cards).
+Order from left to right:
+Card 1 – Free Trial
+Top label: small gray capsule “FREE TRIAL” or just leave empty if needed
+Main title: Free
+Price text: $0 or “3 Days Free”
+Bottom small text: “Then $4.99/week” or keep clean
+Orange badge (exact same style, size, position and color as the current “85% OFF” badge) on the top-right corner of this card with the text: FREE
+Card 2 – Monthly
+Keep exactly as it is now
+Label: “POPULAR”
+Title: Monthly
+Price: $19.99
+Bottom: $4.99/week
+Card 3 – Yearly
+Keep exactly as it is now
+Label: “BEST DEAL”
+Title: Yearly
+Price: $39.99
+Bottom: $0.79/week
+Keep the orange “85% OFF” badge on it
+2. Selection Behavior (Very Important)
+Only one card can be selected at a time.
+Selected card must have the bright green border (same as the current Monthly card has).
+Default selected card on screen load: Free Trial card (green border on Free Trial).
+3. Bottom Button Text must change automatically according to selection:
+When Free Trial is selected → Button text: TRY FREE 3-DAYS TRIAL
+When Monthly is selected → Button text: CONTINUE WITH MONTHLY
+When Yearly is selected → Button text: CONTINUE WITH YEARLY
+(The button style stays exactly the same – big white pill button with black text.)
+4. Keep everything else 100% same:
+Black background
+Green “Create Headshots” + white “without limits” title
+Same subtitle
+Same timer style
+Same “Restore” and close (X) button
+Same “Terms of Service and Privacy Policy” text
+Same spacing and overall layout
+Make the three cards fit nicely in one row with equal spacing (slightly smaller width than before if needed so they look balanced).
+
+The current premium screen layout with these strict instructions:
+Layout Changes (Very Important):
+Move the entire content downwards
+Currently everything is pushed too high.
+Shift the whole block (title + subtitle + 3 plan cards + timer + button + terms) significantly lower on the screen.
+Leave empty space on the top
+Keep a good amount of empty black space at the top of the screen.
+We will later place a background texture/image in that top empty area.
+Do not place any content too close to the status bar.
+Safe area for Android navigation buttons
+Make sure nothing goes behind or too close to the Android system navigation buttons (the 3 buttons at the bottom: Back, Home, Recent).
+Keep proper padding/margin from the bottom edge so the white “TRY FREE…” button and Terms text stay clearly above the system navigation bar.
+Keep the vertical order same:
+Empty space on top
+Title “Create Headshots without limits”
+Subtitle
+3 Plan cards (Free + Monthly + Yearly)
+Timer
+White button
+Terms text
+Safe space above Android nav buttons
+Everything else (3 cards, FREE badge, selection behavior, button text changing, colors, styles) stays exactly the same as the previous version.
+Just push the content lower and leave breathing room on top + bottom safe area.
+The premium subscription screen with these final instructions:
+1. Remove Top Status Bar Completely
+Delete the entire top status bar area.
+Remove time, battery percentage, network icons, signal, and any other system information from the top.
+The screen should start clean from the top with only the black background and the close (X) + “Restore” buttons.
+2. Make Everything Fully Working / Interactive
+This is not a static screenshot.
+All elements must be actual working buttons and interactive components:
+The three plan cards (Free, Monthly, Yearly) must be clickable.
+When a card is clicked:
+It gets the green border (selected state).
+The other two cards lose the green border.
+The bottom white button text changes automatically:
+Free selected → “TRY FREE 3-DAYS TRIAL”
+Monthly selected → “CONTINUE WITH MONTHLY”
+Yearly selected → “CONTINUE WITH YEARLY”
+The big white bottom button must be a real clickable button.
+The close (X) button and “Restore” text must also be clickable.
+Hover / press states should work properly (especially if this is web).
+3. Keep Previous Layout Rules
+Content should stay lower on the screen (not stuck to the top).
+Leave empty black space on the top side (for future background texture).
+Keep safe padding from the bottom so nothing goes under Android navigation buttons.
+Everything else (design, colors, 3 cards, FREE badge, spacing, etc.) remains the same.
