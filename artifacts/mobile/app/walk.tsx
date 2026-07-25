@@ -47,44 +47,69 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 /**
  * Returns a 0–100 score for how "circular" the drawn path is.
  *
- * Algorithm:
- *   1. Compute center of mass of all sampled points.
- *   2. Compute average radius from that center.
- *   3. Roundness  = 1 − (stddev of radii / avgRadius)  [low deviation = rounder]
- *   4. Closedness = 1 − (dist(start,end) / avgRadius)  [start ≈ end = closed]
- *   5. score = (roundness × 0.7 + closedness × 0.3) × 100
+ * Three independent checks — all must pass for a high score:
+ *   1. Roundness   — mean absolute deviation of radii from avgRadius (60%)
+ *   2. Closedness  — distance between start and end points            (20%)
+ *   3. Coverage    — largest angular gap in the path must be small    (20%)
+ *
+ * The coverage check is what rejects triangles, squares, and rectangles:
+ * those shapes leave large angular gaps between their corners, even when
+ * the start/end points happen to be close.
  */
 function scoreCircle(points: Array<{ x: number; y: number }>): number {
-  if (points.length < 20) return 0;
+  if (!points || points.length < 20) return 0;
 
   // 1. Center of mass
-  const cx = points.reduce((s, p) => s + p.x, 0) / points.length;
-  const cy = points.reduce((s, p) => s + p.y, 0) / points.length;
+  let sumX = 0, sumY = 0;
+  for (const p of points) { sumX += p.x; sumY += p.y; }
+  const center = { x: sumX / points.length, y: sumY / points.length };
 
-  // 2. Per-point radius and average
-  const radii = points.map((p) =>
-    Math.sqrt((p.x - cx) ** 2 + (p.y - cy) ** 2)
-  );
-  const avgR = radii.reduce((s, r) => s + r, 0) / radii.length;
-  if (avgR < 10) return 0; // scribble too tiny
+  // 2. Distance of every point from center
+  const distances = points.map((p) => {
+    const dx = p.x - center.x;
+    const dy = p.y - center.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  });
 
-  // 3. Roundness — punish radius variance
-  const variance =
-    radii.reduce((s, r) => s + (r - avgR) ** 2, 0) / radii.length;
-  const stddev = Math.sqrt(variance);
-  const roundness = Math.max(0, 1 - stddev / avgR);
+  const avgRadius = distances.reduce((a, b) => a + b, 0) / distances.length;
+  if (avgRadius < 20) return 0; // circle too tiny
 
-  // 4. Closedness — start and end should meet
+  // 3. Roundness — penalise mean absolute deviation from avgRadius
+  let totalDeviation = 0;
+  for (const d of distances) totalDeviation += Math.abs(d - avgRadius);
+  const avgDeviation = totalDeviation / distances.length;
+  const roundnessScore = Math.max(0, 100 - (avgDeviation / avgRadius) * 160);
+
+  // 4. Closing score — start and end must be near each other
   const start = points[0];
   const end = points[points.length - 1];
-  const closeDist = Math.sqrt(
-    (start.x - end.x) ** 2 + (start.y - end.y) ** 2
+  const closingDist = Math.sqrt(
+    Math.pow(start.x - end.x, 2) + Math.pow(start.y - end.y, 2)
   );
-  const closeness = Math.max(0, 1 - closeDist / avgR);
+  const closingScore = Math.max(0, 100 - (closingDist / avgRadius) * 90);
 
-  // 5. Weighted combination
-  const raw = roundness * 0.7 + closeness * 0.3;
-  return Math.min(100, Math.max(0, Math.round(raw * 100)));
+  // 5. Angle coverage — path must span a full 360°, not leave big gaps
+  //    (this is what rejects triangles, squares, rectangles, etc.)
+  const angles = points.map((p) =>
+    Math.atan2(p.y - center.y, p.x - center.x)
+  );
+  angles.sort((a, b) => a - b);
+
+  let maxGap = 0;
+  for (let i = 1; i < angles.length; i++) {
+    maxGap = Math.max(maxGap, angles[i] - angles[i - 1]);
+  }
+  // wrap-around gap between last and first angle
+  maxGap = Math.max(maxGap, angles[0] + Math.PI * 2 - angles[angles.length - 1]);
+  const coverageScore = Math.max(0, 100 - maxGap * 45);
+
+  // Final weighted score
+  const finalScore =
+    roundnessScore * 0.60 +
+    closingScore   * 0.20 +
+    coverageScore  * 0.20;
+
+  return Math.round(Math.min(100, Math.max(0, finalScore)));
 }
 
 // ─── Build SVG path string from point array ───────────────────────────────────

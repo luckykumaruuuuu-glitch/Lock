@@ -1,0 +1,77 @@
+Problem:
+अभी का सर्कल स्कोरिंग लॉजिक बहुत कमजोर है।
+ये सिर्फ शुरू और आखिरी पॉइंट को मिला रहा है।
+इस वजह से यूजर त्रिकोण, स्क्वायर, रेक्टैंगल, या कोई भी बंद आकृति बना ले तो भी ऊँचा स्कोर मिल जाता है।
+हमें ऐसा लॉजिक चाहिए जो सिर्फ सही गोल सर्कल को ही ऊँचा स्कोर दे।
+Solution:
+पुराना स्कोरिंग वाला फंक्शन पूरी तरह हटा दो और नीचे दिया हुआ नया सख्त फंक्शन लगा दो।
+नया Code (ये पूरा फंक्शन लगाओ):
+function calculateCircleScore(points) {
+  if (!points || points.length < 20) return 0;
+
+  // 1. Center निकालना
+  let sumX = 0, sumY = 0;
+  for (let p of points) {
+    sumX += p.x;
+    sumY += p.y;
+  }
+  const center = {
+    x: sumX / points.length,
+    y: sumY / points.length
+  };
+
+  // 2. हर पॉइंट की सेंटर से दूरी
+  const distances = points.map(p => {
+    const dx = p.x - center.x;
+    const dy = p.y - center.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  });
+
+  const avgRadius = distances.reduce((a, b) => a + b, 0) / distances.length;
+  if (avgRadius < 20) return 0; // बहुत छोटा सर्कल
+
+  // 3. Roundness Score (सबसे ज्यादा महत्वपूर्ण)
+  let totalDeviation = 0;
+  for (let d of distances) {
+    totalDeviation += Math.abs(d - avgRadius);
+  }
+  const avgDeviation = totalDeviation / distances.length;
+  const roundnessScore = Math.max(0, 100 - (avgDeviation / avgRadius) * 160);
+
+  // 4. Closing Score (शुरू और आखिर कितने पास हैं)
+  const start = points[0];
+  const end = points[points.length - 1];
+  const closingDist = Math.sqrt(
+    Math.pow(start.x - end.x, 2) + Math.pow(start.y - end.y, 2)
+  );
+  const closingScore = Math.max(0, 100 - (closingDist / avgRadius) * 90);
+
+  // 5. Angle Coverage (पूरे 360 डिग्री में फैले हैं या नहीं)
+  const angles = points.map(p => Math.atan2(p.y - center.y, p.x - center.x));
+  angles.sort((a, b) => a - b);
+
+  let maxGap = 0;
+  for (let i = 1; i < angles.length; i++) {
+    maxGap = Math.max(maxGap, angles[i] - angles[i - 1]);
+  }
+  // पहले और आखिरी के बीच का गैप
+  maxGap = Math.max(maxGap, (angles[0] + Math.PI * 2) - angles[angles.length - 1]);
+
+  const coverageScore = Math.max(0, 100 - (maxGap * 45));
+
+  // Final Score (Roundness को सबसे ज्यादा वजन)
+  let finalScore = (roundnessScore * 0.60) + (closingScore * 0.20) + (coverageScore * 0.20);
+  
+  finalScore = Math.round(Math.min(100, Math.max(0, finalScore)));
+
+  return finalScore;
+}
+Replit को Exact Instruction:
+पुराना calculateCircleScore या जो भी सर्कल स्कोर निकालने वाला फंक्शन है, उसे पूरी तरह हटा दो।
+ऊपर दिया हुआ नया calculateCircleScore फंक्शन लगा दो।
+जहाँ स्कोर निकाला जा रहा है, वहाँ यही नया फंक्शन कॉल हो।
+बाकी कोई भी चीज मत बदलना (UI, एनिमेशन, थ्रेशहोल्ड 75 आदि सब वही रहने दो)।
+ये लॉजिक लगाने के बाद:
+सही गोल सर्कल → 85-100 स्कोर
+थोड़ा टेढ़ा सर्कल → 70-84
+त्रिकोण / स्क्वायर / रेक्टैंगल → 10-35 स्कोर आएगा
