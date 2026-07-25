@@ -536,12 +536,19 @@ function DuckPalScreen() {
 
   // ── Revolut-style task card press animation ───────────────────────────────
   const taskCardScale = useRef(new Animated.Value(1)).current;
+  const taskCardOpacity = useRef(new Animated.Value(1)).current;
   const handleTaskCardPressIn = useCallback(() => {
-    Animated.spring(taskCardScale, { toValue: 0.96, useNativeDriver: true, speed: 50, bounciness: 0 }).start();
-  }, [taskCardScale]);
+    Animated.parallel([
+      Animated.spring(taskCardScale, { toValue: 0.97, useNativeDriver: true, speed: 50, bounciness: 0 }),
+      Animated.timing(taskCardOpacity, { toValue: 0.82, duration: 80, useNativeDriver: true }),
+    ]).start();
+  }, [taskCardScale, taskCardOpacity]);
   const handleTaskCardPressOut = useCallback(() => {
-    Animated.spring(taskCardScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }).start();
-  }, [taskCardScale]);
+    Animated.parallel([
+      Animated.spring(taskCardScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }),
+      Animated.timing(taskCardOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
+    ]).start();
+  }, [taskCardScale, taskCardOpacity]);
 
   return (
     <GradientBackground>
@@ -748,20 +755,20 @@ function DuckPalScreen() {
         </View>
 
         {/* ── Task card — Revolut-style dark elevated promo card ── */}
-        <Animated.View style={[styles.dpTaskCard, { transform: [{ scale: taskCardScale }] }]}>
-          <View style={styles.dpTaskContent}>
-            <Text style={styles.dpTaskTitle}>Complete new tasks</Text>
-            <Text style={styles.dpTaskSub}>Lock apps and build your focus streak</Text>
-          </View>
-          <Pressable
-            onPress={() => router.push("/coming-soon" as never)}
-            onPressIn={handleTaskCardPressIn}
-            onPressOut={handleTaskCardPressOut}
-            style={styles.dpTaskBtn}
-          >
-            <Text style={styles.dpTaskBtnText}>Start Now</Text>
-          </Pressable>
-        </Animated.View>
+        <Pressable onPressIn={handleTaskCardPressIn} onPressOut={handleTaskCardPressOut}>
+          <Animated.View style={[styles.dpTaskCard, { transform: [{ scale: taskCardScale }], opacity: taskCardOpacity }]}>
+            <View style={styles.dpTaskContent}>
+              <Text style={styles.dpTaskTitle}>Complete new tasks</Text>
+              <Text style={styles.dpTaskSub}>Lock apps and build your focus streak</Text>
+            </View>
+            <Pressable
+              onPress={() => router.push("/coming-soon" as never)}
+              style={styles.dpTaskBtn}
+            >
+              <Text style={styles.dpTaskBtnText}>Upgrade Now</Text>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
 
 
       </ScrollView>
