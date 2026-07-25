@@ -39,7 +39,7 @@ import Svg, { Path as SvgPath } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // ─── Threshold — change freely ────────────────────────────────────────────────
-const CIRCLE_SUCCESS_THRESHOLD = 75;
+const CIRCLE_SUCCESS_THRESHOLD = 95;
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -196,6 +196,7 @@ function ScoreBadge({ score, success, onDone }: BadgeProps) {
         styles.badge,
         {
           borderColor: color,
+          shadowColor: color,
           transform: [{ translateX: slideAnim }, { scale: scaleAnim }],
           opacity: opacityAnim,
         },
@@ -359,16 +360,42 @@ export default function WalkScreen() {
         </View>
       )}
 
-      {/* Pencil emoji — follows the finger */}
+      {/* Apple Pencil cursor — follows the finger, tip at touch point */}
       {pencilPos && (
         <View
           pointerEvents="none"
           style={[
             styles.pencil,
-            { left: pencilPos.x - 14, top: pencilPos.y - 38 },
+            { left: pencilPos.x - 7, top: pencilPos.y - 76 },
           ]}
         >
-          <Text style={styles.pencilEmoji}>✏️</Text>
+          <Svg width={14} height={76} viewBox="0 0 14 76">
+            {/* Eraser cap — light gray rounded top */}
+            <SvgPath
+              d="M 2 0 Q 7 0 12 0 Q 14 0 14 4 L 14 10 L 0 10 L 0 4 Q 0 0 2 0 Z"
+              fill="#D8D8D8"
+            />
+            {/* Cap band */}
+            <SvgPath
+              d="M 0 10 L 14 10 L 14 14 L 0 14 Z"
+              fill="#B0B0B0"
+            />
+            {/* White body */}
+            <SvgPath
+              d="M 0 14 L 14 14 L 14 62 L 0 62 Z"
+              fill="#FFFFFF"
+            />
+            {/* Taper section */}
+            <SvgPath
+              d="M 0 62 L 14 62 L 10 70 L 4 70 Z"
+              fill="#E0E0E0"
+            />
+            {/* Metal tip */}
+            <SvgPath
+              d="M 4 70 L 10 70 L 7 76 Z"
+              fill="#A8A8A8"
+            />
+          </Svg>
         </View>
       )}
 
@@ -428,12 +455,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // ── Pencil emoji ──────────────────────────────────────────────────────────
+  // ── Apple Pencil cursor ───────────────────────────────────────────────────
   pencil: {
     position: "absolute",
-  },
-  pencilEmoji: {
-    fontSize: 26,
   },
 
   // ── Score badge ───────────────────────────────────────────────────────────
@@ -443,17 +467,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   badge: {
-    backgroundColor: "rgba(0,0,0,0.55)",
-    borderWidth: 2,
-    borderRadius: 28,
+    backgroundColor: "rgba(6, 8, 18, 0.97)",
+    borderWidth: 2.5,
+    borderRadius: 22,
     paddingHorizontal: 36,
     paddingVertical: 20,
     alignItems: "center",
-    shadowColor: "#fff",
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 12,
+    shadowOpacity: 0.65,
+    shadowRadius: 22,
+    elevation: 18,
   },
   badgePercent: {
     fontSize: 64,
