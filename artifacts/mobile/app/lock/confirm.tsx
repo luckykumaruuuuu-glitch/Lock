@@ -38,10 +38,10 @@ function getDisplayDuration(preset: string, customDays: string, customHours: str
 
 /* ── Success Screen ── */
 function SuccessScreen({
-  lockedExpiry, lockedAppCount, skippedApps, notInstalledSkipped, configured, online, onDismiss,
+  lockedExpiry, lockedAppCount, skippedApps, notInstalledSkipped, configured, online,
 }: {
   lockedExpiry: string; lockedAppCount: number; skippedApps: string[];
-  notInstalledSkipped: string[]; configured: boolean; online: boolean; onDismiss: () => void;
+  notInstalledSkipped: string[]; configured: boolean; online: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const shieldScale   = useRef(new Animated.Value(0)).current;
@@ -59,11 +59,8 @@ function SuccessScreen({
         Animated.timing(textOpacity,  { toValue: 1, duration: 300, useNativeDriver: true }),
         Animated.timing(cardOpacity,  { toValue: 1, duration: 350, useNativeDriver: true }),
       ]),
-    ]).start(() => {
-      // Animation done — dismiss after a brief moment so the user registers the success state
-      setTimeout(onDismiss, 800);
-    });
-  }, [shieldScale, shieldOpacity, textOpacity, cardOpacity, onDismiss]);
+    ]).start();
+  }, [shieldScale, shieldOpacity, textOpacity, cardOpacity]);
 
   return (
     <View style={[successStyles.root, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 }]}>
@@ -340,6 +337,16 @@ export default function ConfirmScreen() {
 
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
+  // Auto-navigate home after the success animation completes (~850 ms) + buffer
+  useEffect(() => {
+    if (!locked) return;
+    const t = setTimeout(() => {
+      resetSelection();
+      router.replace("/(tabs)");
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [locked]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const durationText = getDisplayDuration(selection.durationPreset, selection.customDays, selection.customHours, selection.customMinutes);
   const durationMs   = getDurationMs(selection.durationPreset, selection.customDays, selection.customHours, selection.customMinutes);
   const expiryDate   = formatExpiryDate(Date.now() + durationMs);
@@ -368,11 +375,6 @@ export default function ConfirmScreen() {
     }
   }
 
-  function handleSuccessDismiss() {
-    resetSelection();
-    router.replace("/(tabs)");
-  }
-
   if (locked) {
     return (
       <GradientBackground>
@@ -383,7 +385,6 @@ export default function ConfirmScreen() {
           notInstalledSkipped={notInstalledSkipped}
           configured={configured}
           online={online}
-          onDismiss={handleSuccessDismiss}
         />
       </GradientBackground>
     );
@@ -391,9 +392,11 @@ export default function ConfirmScreen() {
 
   return (
     <GradientBackground>
+      {/* Safe-area top spacer — GradientBackground is a plain View with no inset handling */}
+      <View style={{ flex: 1, paddingTop: insets.top }}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: bottomPad + 130 }]}
+        contentContainerStyle={[styles.content, { paddingTop: 16, paddingBottom: bottomPad + 90 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Info banner */}
@@ -495,6 +498,7 @@ export default function ConfirmScreen() {
         onCancel={() => setShowAgreement(false)}
         onAgree={doLock}
       />
+      </View>{/* end safe-area wrapper */}
     </GradientBackground>
   );
 }
