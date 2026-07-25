@@ -360,35 +360,34 @@ export default function WalkScreen() {
         </View>
       )}
 
-      {/* Apple Pencil cursor — same size & angle as original ✏️ emoji */}
+      {/* Apple Pencil cursor — small, ~30° clockwise tilt matching reference */}
       {pencilPos && (
         <View
           pointerEvents="none"
           style={[
             styles.pencil,
             {
-              // After −45° rotation the tip (bottom-centre of SVG) lands at finger
-              left: pencilPos.x - 15,
-              top: pencilPos.y - 24,
-              transform: [{ rotate: "-45deg" }],
+              // Tip of 8×20 SVG rotated 30° CW lands at (9, 19) in view space
+              left: pencilPos.x - 9,
+              top: pencilPos.y - 19,
+              transform: [{ rotate: "30deg" }],
             },
           ]}
         >
-          {/* 10×28 — matches ~26 px emoji footprint when rotated 45° */}
-          <Svg width={10} height={28} viewBox="0 0 10 28">
+          <Svg width={8} height={20} viewBox="0 0 8 20">
             {/* Eraser cap */}
             <SvgPath
-              d="M 1 0 Q 5 0 9 0 Q 10 0 10 2 L 10 5 L 0 5 L 0 2 Q 0 0 1 0 Z"
+              d="M 1 0 Q 4 0 7 0 Q 8 0 8 1.5 L 8 4 L 0 4 L 0 1.5 Q 0 0 1 0 Z"
               fill="#D8D8D8"
             />
             {/* Cap band */}
-            <SvgPath d="M 0 5 L 10 5 L 10 7 L 0 7 Z" fill="#B0B0B0" />
+            <SvgPath d="M 0 4 L 8 4 L 8 5.5 L 0 5.5 Z" fill="#B0B0B0" />
             {/* White body */}
-            <SvgPath d="M 0 7 L 10 7 L 10 22 L 0 22 Z" fill="#FFFFFF" />
+            <SvgPath d="M 0 5.5 L 8 5.5 L 8 16 L 0 16 Z" fill="#FFFFFF" />
             {/* Taper */}
-            <SvgPath d="M 0 22 L 10 22 L 7 26 L 3 26 Z" fill="#E0E0E0" />
+            <SvgPath d="M 0 16 L 8 16 L 5.5 19 L 2.5 19 Z" fill="#E0E0E0" />
             {/* Metal tip */}
-            <SvgPath d="M 3 26 L 7 26 L 5 28 Z" fill="#A8A8A8" />
+            <SvgPath d="M 2.5 19 L 5.5 19 L 4 20 Z" fill="#A8A8A8" />
           </Svg>
         </View>
       )}
