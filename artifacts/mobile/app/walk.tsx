@@ -367,30 +367,30 @@ export default function WalkScreen() {
           style={[
             styles.pencil,
             {
-              // Tip is at SVG pixel (36,36) → subtract that to put tip on touch point
-              left: pencilPos.x - 36,
+              // Tip is at SVG pixel (4,36) → offset to place tip on touch point
+              left: pencilPos.x - 4,
               top: pencilPos.y - 36,
               // No View rotation — angle is drawn directly in the SVG paths
             },
           ]}
         >
           {/*
-           * 40×40 dp viewBox. Pencil runs upper-left→lower-right at 45°.
-           * Eraser: ~(4,4)  Body: (8,8)→(31,31)  Taper→tip: (36,36)
+           * 40×40 dp viewBox. Pencil runs upper-right→lower-left at 45° (/ tilt).
+           * Eraser: ~(36,4)  Body: (30,6)→(9,27)  Taper→tip: (4,36)
            * Total diagonal ≈ 32√2 ≈ 45 dp ≈ 0.70 cm.
-           * Tip pixel (36,36) is placed exactly on pencilPos.
+           * Tip pixel (4,36) is placed exactly on pencilPos.
            */}
           <Svg width={40} height={40} viewBox="0 0 40 40">
             {/* Eraser cap */}
-            <SvgPath d="M 2 6 L 6 2 L 8 4 L 4 8 Z" fill="#D8D8D8" />
+            <SvgPath d="M 38 6 L 34 2 L 32 4 L 36 8 Z" fill="#D8D8D8" />
             {/* Cap band */}
-            <SvgPath d="M 4 8 L 8 4 L 10 6 L 6 10 Z" fill="#B0B0B0" />
+            <SvgPath d="M 36 8 L 32 4 L 30 6 L 34 10 Z" fill="#B0B0B0" />
             {/* White body */}
-            <SvgPath d="M 6 10 L 10 6 L 31 27 L 27 31 Z" fill="#FFFFFF" />
+            <SvgPath d="M 34 10 L 30 6 L 9 27 L 13 31 Z" fill="#FFFFFF" />
             {/* Taper */}
-            <SvgPath d="M 27 31 L 31 27 L 36 36 Z" fill="#E0E0E0" />
+            <SvgPath d="M 13 31 L 9 27 L 4 36 Z" fill="#E0E0E0" />
             {/* Metal tip */}
-            <SvgPath d="M 33 36 L 36 33 L 36 36 Z" fill="#A8A8A8" />
+            <SvgPath d="M 7 36 L 4 33 L 4 36 Z" fill="#A8A8A8" />
           </Svg>
         </View>
       )}
