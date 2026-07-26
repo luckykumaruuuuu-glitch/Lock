@@ -65,6 +65,7 @@
     "@shopify/react-native-skia": "^1.12.4",
     "expo": "~54.0.35",
     "expo-application": "^57.0.0",
+    "expo-av": "^16.0.8",
     "expo-clipboard": "^57.0.1",
     "expo-file-system": "^19.0.23",
     "expo-intent-launcher": "^13.0.8",
