@@ -360,35 +360,37 @@ export default function WalkScreen() {
         </View>
       )}
 
-      {/* Apple Pencil cursor — small, ~30° clockwise tilt matching reference */}
+      {/* Apple Pencil cursor — 45° baked into SVG paths, tip at (36,36) in viewBox */}
       {pencilPos && (
         <View
           pointerEvents="none"
           style={[
             styles.pencil,
             {
-              // Tip of 8×44 SVG rotated 45° CW lands at (20, 38) in view space
-              left: pencilPos.x - 20,
-              top: pencilPos.y - 38,
-              transform: [{ rotate: "45deg" }],
+              // Tip is at SVG pixel (36,36) → subtract that to put tip on touch point
+              left: pencilPos.x - 36,
+              top: pencilPos.y - 36,
+              // No View rotation — angle is drawn directly in the SVG paths
             },
           ]}
         >
-          {/* 8×44 dp ≈ 0.70 cm tall at standard mobile DPI (160 dp/in ÷ 2.54) */}
-          <Svg width={8} height={44} viewBox="0 0 8 44">
+          {/*
+           * 40×40 dp viewBox. Pencil runs upper-left→lower-right at 45°.
+           * Eraser: ~(4,4)  Body: (8,8)→(31,31)  Taper→tip: (36,36)
+           * Total diagonal ≈ 32√2 ≈ 45 dp ≈ 0.70 cm.
+           * Tip pixel (36,36) is placed exactly on pencilPos.
+           */}
+          <Svg width={40} height={40} viewBox="0 0 40 40">
             {/* Eraser cap */}
-            <SvgPath
-              d="M 1 0 Q 4 0 7 0 Q 8 0 8 2 L 8 5 L 0 5 L 0 2 Q 0 0 1 0 Z"
-              fill="#D8D8D8"
-            />
+            <SvgPath d="M 2 6 L 6 2 L 8 4 L 4 8 Z" fill="#D8D8D8" />
             {/* Cap band */}
-            <SvgPath d="M 0 5 L 8 5 L 8 7 L 0 7 Z" fill="#B0B0B0" />
+            <SvgPath d="M 4 8 L 8 4 L 10 6 L 6 10 Z" fill="#B0B0B0" />
             {/* White body */}
-            <SvgPath d="M 0 7 L 8 7 L 8 37 L 0 37 Z" fill="#FFFFFF" />
+            <SvgPath d="M 6 10 L 10 6 L 31 27 L 27 31 Z" fill="#FFFFFF" />
             {/* Taper */}
-            <SvgPath d="M 0 37 L 8 37 L 5.5 41 L 2.5 41 Z" fill="#E0E0E0" />
+            <SvgPath d="M 27 31 L 31 27 L 36 36 Z" fill="#E0E0E0" />
             {/* Metal tip */}
-            <SvgPath d="M 2.5 41 L 5.5 41 L 4 44 Z" fill="#A8A8A8" />
+            <SvgPath d="M 33 36 L 36 33 L 36 36 Z" fill="#A8A8A8" />
           </Svg>
         </View>
       )}
