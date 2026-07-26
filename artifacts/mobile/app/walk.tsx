@@ -163,24 +163,24 @@ function ScoreBadge({ score, success, onDone }: BadgeProps) {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      // ── Hold 1.5–2 s, then exit ───────────────────────────────
-      const holdMs = 1500 + Math.random() * 500;
+      // ── Hold 0.8–1.0 s, then exit ────────────────────────────
+      const holdMs = 800 + Math.random() * 200;
       setTimeout(() => {
         Animated.parallel([
           Animated.spring(slideAnim, {
             toValue: fromLeft ? -SCREEN_W * 0.55 : SCREEN_W * 0.55,
             useNativeDriver: true,
-            tension: 80,
-            friction: 10,
+            tension: 120,
+            friction: 12,
           }),
           Animated.timing(opacityAnim, {
             toValue: 0,
-            duration: 300,
+            duration: 200,
             useNativeDriver: true,
           }),
           Animated.timing(scaleAnim, {
             toValue: 0.7,
-            duration: 300,
+            duration: 200,
             useNativeDriver: true,
           }),
         ]).start(() => onDoneRef.current());
