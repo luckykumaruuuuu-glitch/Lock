@@ -17,13 +17,13 @@
 
 import * as Haptics from "expo-haptics";
 import * as ScreenOrientation from "expo-screen-orientation";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { getUnlockDestination } from "@/lib/unlockFlowState";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
-  Dimensions,
   Linking,
   NativeModules,
   Platform,
@@ -41,107 +41,6 @@ const VIDEO_DURATION_SECONDS = 60;
 
 // How long controls auto-hide after a tap while playing (ms)
 const CONTROLS_AUTOHIDE_MS = 2800;
-
-// ── Smoke color fade background ────────────────────────────────────────────
-const SMOKE_COLORS = [
-  "#6D28D9", // deep purple
-  "#1D4ED8", // royal blue
-  "#0F766E", // teal
-  "#9D174D", // rose
-  "#B45309", // amber
-  "#065F46", // emerald
-  "#4A1942", // dark plum
-  "#7C3AED", // violet
-  "#0369A1", // sky blue
-  "#BE185D", // pink
-];
-
-type SmokeConfig = {
-  color: string;
-  blobSize: number;
-  x: number;
-  y: number;
-};
-
-function makeSmokeConfig(screenW: number, screenH: number): SmokeConfig {
-  const color = SMOKE_COLORS[Math.floor(Math.random() * SMOKE_COLORS.length)];
-  const blobSize = Math.max(screenW, screenH) * 2.2;
-  const half = blobSize / 2;
-  // Six spawn positions — each corner + top/bottom center
-  const positions = [
-    { x: -half * 0.65, y: -half * 0.65 },                 // top-left corner
-    { x: screenW - half * 0.35, y: -half * 0.65 },        // top-right corner
-    { x: -half * 0.65, y: screenH - half * 0.35 },        // bottom-left corner
-    { x: screenW - half * 0.35, y: screenH - half * 0.35 }, // bottom-right corner
-    { x: screenW / 2 - half, y: -half * 0.55 },           // top center
-    { x: screenW / 2 - half, y: screenH - half * 0.45 },  // bottom center
-  ];
-  const pos = positions[Math.floor(Math.random() * positions.length)];
-  return { color, blobSize, x: pos.x, y: pos.y };
-}
-
-function SmokeBackground({ screenW, screenH }: { screenW: number; screenH: number }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale   = useRef(new Animated.Value(0.55)).current;
-  const [cfg, setCfg] = useState<SmokeConfig>(() => makeSmokeConfig(screenW, screenH));
-  const activeRef = useRef(true);
-
-  function runCycle() {
-    if (!activeRef.current) return;
-    // Config update happens while opacity=0, so change is invisible
-    const next = makeSmokeConfig(screenW, screenH);
-    setCfg(next);
-    scale.setValue(0.55);
-
-    Animated.sequence([
-      // Smoke drifts in — grows and brightens
-      Animated.parallel([
-        Animated.timing(opacity, { toValue: 0.62, duration: 4500, useNativeDriver: true, isInteraction: false }),
-        Animated.timing(scale,   { toValue: 1.0,  duration: 4500, useNativeDriver: true, isInteraction: false }),
-      ]),
-      // Hold — smoke hangs in air
-      Animated.delay(2800),
-      // Smoke disperses — expands slightly and fades out
-      Animated.parallel([
-        Animated.timing(opacity, { toValue: 0,    duration: 4200, useNativeDriver: true, isInteraction: false }),
-        Animated.timing(scale,   { toValue: 1.18, duration: 4200, useNativeDriver: true, isInteraction: false }),
-      ]),
-      // Brief pause before next color
-      Animated.delay(400),
-    ]).start(({ finished }) => {
-      if (finished && activeRef.current) runCycle();
-    });
-  }
-
-  useEffect(() => {
-    activeRef.current = true;
-    const t = setTimeout(runCycle, 80);
-    return () => {
-      activeRef.current = false;
-      clearTimeout(t);
-      opacity.stopAnimation();
-      scale.stopAnimation();
-    };
-  }, []);
-
-  return (
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: "#000000", overflow: "hidden" }]}>
-      <Animated.View
-        style={{
-          position: "absolute",
-          width: cfg.blobSize,
-          height: cfg.blobSize,
-          borderRadius: cfg.blobSize / 2,
-          backgroundColor: cfg.color,
-          left: cfg.x,
-          top: cfg.y,
-          opacity,
-          transform: [{ scale }],
-        }}
-      />
-    </View>
-  );
-}
 
 // ── Format seconds → "m:ss" ────────────────────────────────────────────────
 function fmt(secs: number) {
@@ -226,14 +125,24 @@ export default function WatchVideoScreen() {
   // ── Orientation lock ──────────────────────────────────────────────────
   // Screen is locked to landscape the moment this screen mounts.
   // No detection, no listener — just a one-time lock/unlock.
-  const dims = Dimensions.get("window");
-
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).catch(() => {});
     return () => {
       ScreenOrientation.unlockAsync().catch(() => {});
     };
   }, []);
+
+  // ── Background video player ───────────────────────────────────────────
+  // Preloaded on mount, looping, fullscreen, controlled by isPlaying.
+  const player = useVideoPlayer(
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("../assets/forehead-scan-bg.mp4"),
+    (p) => {
+      p.loop = true;  // duration-agnostic: loops however many times needed
+      p.muted = true;
+      p.play();
+    },
+  );
 
   // ── Playback state ──────────────────────────────────────────────────────
   const [isPlaying,    setIsPlaying]    = useState(true);
@@ -272,6 +181,12 @@ export default function WatchVideoScreen() {
     if (isPlaying) startTick();
     else clearTick();
     return () => clearTick();
+  }, [isPlaying]);
+
+  // ── Sync video player with isPlaying state ───────────────────────────────
+  useEffect(() => {
+    if (isPlaying) player.play();
+    else player.pause();
   }, [isPlaying]);
 
   // ── Controls auto-hide ───────────────────────────────────────────────────
@@ -348,8 +263,15 @@ export default function WatchVideoScreen() {
   return (
     <View style={styles.root}>
 
-      {/* ── Smoke color-fade background ───────────────────────────────── */}
-      <SmokeBackground screenW={dims.width} screenH={dims.height} />
+      {/* ── Background video (fullscreen, looping) ───────────────────── */}
+      {!completedRef.current && (
+        <VideoView
+          player={player}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          nativeControls={false}
+        />
+      )}
 
       {/* ── Tap-to-show-controls area ────────────────────────────────── */}
       <Pressable style={StyleSheet.absoluteFill} onPress={handleTap}>
