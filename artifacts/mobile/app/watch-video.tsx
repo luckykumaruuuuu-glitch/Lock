@@ -17,6 +17,7 @@
 
 import * as Haptics from "expo-haptics";
 import * as ScreenOrientation from "expo-screen-orientation";
+import { Audio } from "expo-av";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -132,14 +133,25 @@ export default function WatchVideoScreen() {
     };
   }, []);
 
+  // ── Audio session — allow video audio to play over silent-switch/other audio
+  useEffect(() => {
+    Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+      playsInSilentModeIOS: true,   // play even when iOS silent switch is on
+      staysActiveInBackground: false,
+      shouldDuckAndroid: false,
+    }).catch(() => {});
+  }, []);
+
   // ── Background video player ───────────────────────────────────────────
   // Preloaded on mount, looping, fullscreen, controlled by isPlaying.
   const player = useVideoPlayer(
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     require("../assets/forehead-scan-bg.mp4"),
     (p) => {
-      p.loop = true;  // duration-agnostic: loops however many times needed
-      p.muted = true;
+      p.loop = true;   // duration-agnostic: loops however many times needed
+      p.muted = false; // audio ON — video has a built-in soundtrack
+      p.volume = 1.0;
       p.play();
     },
   );
