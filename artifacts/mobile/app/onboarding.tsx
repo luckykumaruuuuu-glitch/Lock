@@ -1,8 +1,8 @@
 /**
- * BrainPal — Onboarding + Auth entry flow (UI ONLY)
+ * DuckPal — Onboarding + Auth entry flow (UI ONLY)
  *
  * Screen 1: Landing  — "See your reels count", social icons, Get Started button
- * Screen 2: Sheet    — "Welcome to BrainPal", Continue With Google
+ * Screen 2: Sheet    — "Welcome to DuckPal", Continue With Google
  * Screen 3: Loading  — Spinner inside same sheet while auth is in progress
  *
  * Auth logic is the same as the original google-signin.tsx — zero backend changes.

@@ -1,4 +1,4 @@
-# BrainPal / DuckPal
+# DuckPal
 
 A social media screen-time tracker and app-blocker. Users see how many reels they've watched, set limits, and lock distracting apps (Instagram, TikTok, YouTube, Snapchat, Facebook, etc.).
 

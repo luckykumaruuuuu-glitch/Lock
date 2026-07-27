@@ -36,7 +36,7 @@ export default function HomeScreen({
             fontStyle: "italic",
           }}
         >
-          BRAINPAL
+          DUCKPAL
         </span>
         <button
           onClick={onProfile}
