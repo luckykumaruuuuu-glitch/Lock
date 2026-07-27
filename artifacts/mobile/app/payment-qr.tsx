@@ -276,7 +276,7 @@ export default function PaymentQRScreen() {
         accessibilityRole="button"
         accessibilityLabel="Share QR Code"
       >
-        <Feather name="share-2" size={18} color="#1A1A1A" style={{ marginRight: 8 }} />
+        <Feather name="share-2" size={18} color="#101010" style={{ marginRight: 8 }} />
         <Text style={styles.shareBtnText}>Share QR Code</Text>
       </Pressable>
 
@@ -353,12 +353,12 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
   timerLabel: {
-    color: COLORS.muted,
+    color: COLORS.white,
     fontFamily: "Inter_400Regular",
     fontSize: 13,
   },
   timerValue: {
-    color: COLORS.amber,
+    color: COLORS.white,
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
   },
@@ -367,12 +367,12 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 58,
     borderRadius: 30,
-    backgroundColor: COLORS.amber,
+    backgroundColor: COLORS.white,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: COLORS.amber,
-    shadowOpacity: 0.35,
+    shadowColor: COLORS.white,
+    shadowOpacity: 0.08,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.985 }],
   },
   shareBtnText: {
-    color: "#1A1A1A",
+    color: "#101010",
     fontFamily: "Inter_700Bold",
     fontSize: 16,
     letterSpacing: -0.2,
