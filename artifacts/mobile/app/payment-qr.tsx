@@ -21,6 +21,7 @@ import {
 } from "react-native";
 import Svg, { Rect } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { UpiSvgIcon } from "../components/ui/UpiAppIcons";
 
 const COLORS = {
   black: "#000000",
@@ -107,22 +108,12 @@ const qrStyles = StyleSheet.create({
   },
 });
 
-// ─── Small UPI app icons ───────────────────────────────────────────────────────
 function UpiAppIcons() {
   return (
     <View style={upiStyles.row}>
-      {/* Google Pay */}
-      <View style={[upiStyles.icon, { backgroundColor: "#FFFFFF" }]}>
-        <Text style={upiStyles.gpayG}>G</Text>
-      </View>
-      {/* PhonePe */}
-      <View style={[upiStyles.icon, { backgroundColor: "#5F259F" }]}>
-        <Text style={upiStyles.pe}>Pe</Text>
-      </View>
-      {/* Paytm */}
-      <View style={[upiStyles.icon, { backgroundColor: "#00BAF2" }]}>
-        <Text style={upiStyles.paytm}>P</Text>
-      </View>
+      <UpiSvgIcon kind="googlePay" accessibilityLabel="Google Pay" />
+      <UpiSvgIcon kind="phonePe" accessibilityLabel="PhonePe" />
+      <UpiSvgIcon kind="paytm" accessibilityLabel="Paytm" />
     </View>
   );
 }
@@ -130,31 +121,10 @@ function UpiAppIcons() {
 const upiStyles = StyleSheet.create({
   row: {
     flexDirection: "row",
-    gap: 10,
+    alignItems: "center",
+    gap: 8,
     justifyContent: "center",
     marginTop: 10,
-  },
-  icon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  gpayG: {
-    color: "#4285F4",
-    fontFamily: "Inter_700Bold",
-    fontSize: 15,
-  },
-  pe: {
-    color: "#FFFFFF",
-    fontFamily: "Inter_700Bold",
-    fontSize: 13,
-  },
-  paytm: {
-    color: "#FFFFFF",
-    fontFamily: "Inter_700Bold",
-    fontSize: 15,
   },
 });
 
