@@ -1,0 +1,57 @@
+Create the complete payment flow UI exactly matching the provided screenshots. This is only UI for now (no real payment integration).
+Screen 1: Subscription Plans (already exists)
+User selects one plan (Free / Monthly / Yearly).
+The selected plan’s amount should be passed forward to the next payment screens.
+Example: If Monthly is selected → amount becomes the Monthly price. If Free Trial → show ₹1 (as in screenshots).
+Screen 2: Payment Method Bottom Sheet
+When user clicks the main CTA button on the plans screen, open a bottom sheet that slides up from the bottom.
+Design must be exact same as screenshot:
+Title: Pay by UPI
+Subtitle: Choose payment method
+Only Three options (in this order):
+Google Pay
+Google Pay icon on left
+Text: Google Pay
+Right arrow
+On click → For now just show a placeholder (later it will open real Google Pay)
+PhonePe
+Purple PhonePe icon on left
+Text: PhonePe
+Right arrow
+On click → For now just show a placeholder (later it will open real PhonePe)
+Pay via QR Code
+QR code icon on left
+Text: Pay via QR Code
+Green “New” badge
+Right arrow
+On click → Open QR Code Screen (Screen 3)
+Background of bottom sheet should be dark.
+Handle bar on top of the sheet.
+Rest of the background dimmed.
+Important: Completely remove “Pay using Link” option. Do not create any Link payment screen.
+Screen 3: QR Code Payment Screen
+Must look exactly like the screenshot.
+Elements:
+Top left: Close (X) button
+Top right: “Need Help?”
+Center top: Amount (example ₹1) — this amount should come from the selected plan
+Big white QR Code box in center (generate a dummy/random QR code for now)
+Text below QR: “Scan and set-up pay using any UPI app”
+Three small UPI app icons (Google Pay, PhonePe, Paytm style)
+Timer text: “QR code is valid for 09:59 min”
+Timer should start from 10:00 and count down.
+When timer reaches 00:00 → automatically close this entire QR screen.
+Bottom yellow/orange button: Share QR Code
+Below it: Download button with download icon
+Behavior:
+Timer is mandatory (10 minutes).
+Share button should allow sharing the QR image.
+Download button should save the QR image.
+Currently use dummy QR code.
+Important Rules:
+All screens must match the screenshots as closely as possible (spacing, colors, fonts, corner radius, button styles).
+Bottom sheets should slide up from the bottom.
+Amount must be dynamic based on the plan selected on the first screen.
+No real payment gateway integration needed right now — only perfect UI + basic interactions (timer, share, download, close).
+Keep everything dark theme.
+Do not create or mention any “Pay using Link” screen.
