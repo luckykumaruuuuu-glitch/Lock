@@ -1,4 +1,5 @@
 import { FontAwesome5, Feather } from "@expo/vector-icons";
+import { PlatformIcon, hasPlatformSvg } from "@/components/ui/PlatformSvgIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
@@ -410,9 +411,17 @@ export default function ConfirmScreen() {
           {selection.selectedApps.map((app, idx) => (
             <View key={app.id}>
               <View style={styles.appRow}>
-                <View style={[styles.appIconBg, { backgroundColor: "#2C2C2E" }]}>
-                  <FontAwesome5 name={app.iconName as any} size={17} color="#FFBF80" />
-                </View>
+                {hasPlatformSvg(app.id) ? (
+                  // Custom SVG — no background, fills the 38×38 slot
+                  <View style={styles.appIconBg}>
+                    <PlatformIcon appId={app.id} size={38} />
+                  </View>
+                ) : (
+                  // FontAwesome5 fallback — keep dark bg
+                  <View style={[styles.appIconBg, { backgroundColor: "#2C2C2E" }]}>
+                    <FontAwesome5 name={app.iconName as any} size={17} color="#FFBF80" />
+                  </View>
+                )}
                 <View style={styles.appInfo}>
                   <Text style={styles.appName}>{app.name}</Text>
                   <Text style={styles.appPkg}>{app.packageName}</Text>

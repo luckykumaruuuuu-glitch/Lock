@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientBackground } from "@/components/ui/GradientBackground";
+import { PlatformIcon, hasPlatformSvg } from "@/components/ui/PlatformSvgIcons";
 import { DUMMY_APPS, AppItem, useLock } from "@/context/LockContext";
 import { getActiveLocks } from "@/hooks/useLockStorage";
 import { useSounds } from "@/hooks/useSounds";
@@ -60,25 +61,34 @@ function AppNotFoundPopup({ appName, onDismiss }: { appName: string; onDismiss: 
 function AppIcon({ app, dimmed }: { app: AppItem; dimmed: boolean }) {
   const [failed, setFailed] = useState(false);
 
-  if (failed || !app.iconUrl) {
+  // 1. Custom SVG icon — no background, fills the 56×56 container
+  if (hasPlatformSvg(app.id)) {
     return (
-      <View style={[styles.iconFallback, { backgroundColor: dimmed ? "#2C2C2E" : app.iconColor }]}>
-        <FontAwesome5
-          name={app.iconName as any}
-          size={28}
-          color={dimmed ? "#3A3A3C" : "#FFFFFF"}
-        />
-      </View>
+      <PlatformIcon appId={app.id} size={56} opacity={dimmed ? 0.3 : 1} />
     );
   }
 
+  // 2. Remote image URL
+  if (!failed && app.iconUrl) {
+    return (
+      <Image
+        source={{ uri: app.iconUrl }}
+        style={[styles.appIcon, { opacity: dimmed ? 0.3 : 1 }]}
+        resizeMode="cover"
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+
+  // 3. FontAwesome5 fallback with coloured rounded-square bg
   return (
-    <Image
-      source={{ uri: app.iconUrl }}
-      style={[styles.appIcon, { opacity: dimmed ? 0.3 : 1 }]}
-      resizeMode="contain"
-      onError={() => setFailed(true)}
-    />
+    <View style={[styles.iconFallback, { backgroundColor: dimmed ? "#2C2C2E" : app.iconColor }]}>
+      <FontAwesome5
+        name={app.iconName as any}
+        size={28}
+        color={dimmed ? "#3A3A3C" : "#FFFFFF"}
+      />
+    </View>
   );
 }
 

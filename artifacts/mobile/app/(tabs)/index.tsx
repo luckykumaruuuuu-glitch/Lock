@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome5, Feather } from "@expo/vector-icons";
+import { PlatformIcon, hasPlatformSvg } from "@/components/ui/PlatformSvgIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { router, useFocusEffect } from "expo-router";
@@ -348,9 +349,17 @@ function LockCard({ item, index }: { item: ActiveLockDisplayItem; index: number 
     <Animated.View style={{ transform: [{ translateY: slideAnim }], opacity: opacityAnim }}>
       <GlassCard style={styles.lockCard}>
         <View style={styles.lockCardInner}>
-          <View style={[styles.lockIconBg, { backgroundColor: item.app.iconColor }]}>
-            <FontAwesome5 name={item.app.iconName as any} size={22} color="#FFFFFF" />
-          </View>
+          {hasPlatformSvg(item.app.id) ? (
+            // Custom SVG — no background, fills the 50×50 slot
+            <View style={styles.lockIconBg}>
+              <PlatformIcon appId={item.app.id} size={50} />
+            </View>
+          ) : (
+            // FontAwesome5 fallback — keep coloured bg
+            <View style={[styles.lockIconBg, { backgroundColor: item.app.iconColor }]}>
+              <FontAwesome5 name={item.app.iconName as any} size={22} color="#FFFFFF" />
+            </View>
+          )}
 
           <View style={styles.lockInfo}>
             <Text style={styles.lockAppName}>{item.app.name}</Text>
