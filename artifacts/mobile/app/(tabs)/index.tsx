@@ -346,7 +346,7 @@ function LockCard({ item, index }: { item: ActiveLockDisplayItem; index: number 
 
   return (
     <Animated.View style={{ transform: [{ translateY: slideAnim }], opacity: opacityAnim }}>
-      <GlassCard style={styles.lockCard} backgroundColor="rgba(255,214,10,0.08)">
+      <GlassCard style={styles.lockCard}>
         <View style={styles.lockCardInner}>
           <View style={[styles.lockIconBg, { backgroundColor: item.app.iconColor }]}>
             <FontAwesome5 name={item.app.iconName as any} size={22} color="#FFFFFF" />
