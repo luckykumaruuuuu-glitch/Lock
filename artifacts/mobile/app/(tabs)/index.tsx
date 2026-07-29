@@ -1119,7 +1119,7 @@ const styles = StyleSheet.create({
   lockList: { gap: 10 },
   lockCard: {},
   lockCardInner: { flexDirection: "row", alignItems: "center", padding: 16, gap: 14 },
-  lockIconBg: { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,203,142,0.12)", overflow: "hidden" },
+  lockIconBg: { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,203,142,0.12)", shadowColor: "#FFBF80", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 12, elevation: 8 },
   lockInfo: { flex: 1, gap: 4 },
   lockAppName: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
   lockRemaining: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#FFBF80" },
