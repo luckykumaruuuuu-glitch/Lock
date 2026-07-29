@@ -37,6 +37,7 @@ import { useReelCount } from "@/hooks/useReelCount";
 const GOOGLE_USER_ID_KEY = "focuslock_google_user_id";
 
 // ─── Medal / rank badge ──────────────────────────────────────
+import { hasRankBadgeSvg, RankBadgeSvgIcon } from "@/components/ui/RankBadgeSvgs";
 
 const MEDAL_COLORS: Record<number, { bg: string; text: string }> = {
   1: { bg: "#FFD700", text: "#7A5900" },
@@ -45,7 +46,16 @@ const MEDAL_COLORS: Record<number, { bg: string; text: string }> = {
   4: { bg: theme.elevated, text: theme.secondaryText },
 };
 
+const BADGE_SIZE = 30;
+
 function RankBadge({ rank }: { rank: number }) {
+  if (hasRankBadgeSvg(rank)) {
+    return (
+      <View style={styles.rankBadge}>
+        <RankBadgeSvgIcon rank={rank} size={BADGE_SIZE} />
+      </View>
+    );
+  }
   const colors = MEDAL_COLORS[rank] ?? MEDAL_COLORS[4];
   return (
     <View style={[styles.rankBadge, { backgroundColor: colors.bg }]}>
