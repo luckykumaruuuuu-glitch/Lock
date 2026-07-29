@@ -1,0 +1,61 @@
+Fix Custom SVG Platform Icons (Do NOT redesign anything)
+Current implementation is incorrect. Please fix all custom platform SVG icons.
+Problems:
+Every custom SVG icon is rendered much smaller than the original FontAwesome icon.
+Transparent SVGs are being wrapped inside a new colored rounded-square background.
+Original icon proportions and shape are lost.
+WhatsApp, Telegram, Discord, LinkedIn and other icons no longer match their official appearance.
+Required Fix
+1. Do NOT create any background
+Never generate a background behind the SVG.
+If the uploaded SVG has a transparent background, keep it transparent.
+Do not draw any rounded rectangle, square, circle or color behind it.
+2. Preserve the original SVG exactly
+Render the uploaded SVG exactly as provided.
+Do not modify paths.
+Do not crop.
+Do not add padding.
+Do not recreate or redesign the icon.
+3. Match the original visual size
+The new SVG icon must occupy the same visual area as the previous FontAwesome icon.
+Do NOT use:
+resizeMode="contain"
+if it causes shrinking.
+Instead render the SVG so it fills the icon container.
+Remove every unnecessary padding, margin and wrapper.
+4. Keep official shape
+Examples:
+WhatsApp → circular logo only
+Telegram → circular logo only
+Discord → official icon only
+LinkedIn → official square logo only
+Reddit → official logo only
+Pinterest → official logo only
+Do not convert transparent icons into rounded-square icons.
+5. Fix PlatformIcon component
+Check:
+width
+height
+viewBox
+preserveAspectRatio
+wrapper View
+SvgXml
+SvgUri
+Remove any scaling that reduces the icon.
+The SVG should visually fill approximately 90–95% of the icon container while preserving aspect ratio.
+6. Apply everywhere
+Fix every platform icon in:
+Active Locks
+Select Apps
+Confirm Screen
+7. Important
+The uploaded SVG files are the source of truth.
+Do not redesign, redraw, recolor or recreate any icon.
+Only render the original SVG correctly.
+8. Final Verification
+After fixing:
+Every icon should appear the same size as before.
+Transparent backgrounds must remain transparent.
+No extra colored background should exist.
+No icon should look smaller than the others.
+All platform icons should have consistent visual sizing while keeping their official shapes.
