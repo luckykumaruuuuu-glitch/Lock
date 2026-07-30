@@ -1,0 +1,18 @@
+"Ek zaroori bug hai — permission-verification popup (jo already implement hai, jo check karta hai ki saari 6 permissions actually available hain ya nahi) ka trigger-logic galat jagah scoped hai.
+Expected behavior: App start ho, user permission-setup-flow complete kare, Home (DuckLock, default) screen par pahunche — us waqt yeh popup automatically trigger hona chahiye (agar koi permission missing/revoked mile).
+Actual behavior: Yeh popup DuckLock/Home par kabhi nahi aata. Sirf jab user DuckPal (Home Pro) mode par switch karta hai, tabhi yeh popup dikhta hai.
+Is baar guess mat karo — pehle poora current code dikhao jahan yeh permission-check-popup implement hai:
+Yeh popup ka trigger-logic (useEffect/mount-check) EXACTLY kis component/screen mein likha hai — DuckLock component mein, DuckPal component mein, ya kisi shared parent mein?
+Kya yeh check sirf ek baar (app-level, jaise root-layout ya App.tsx mein) chalna chahiye tha, ya har baar jab woh specific screen mount ho tab chalta hai?
+DuckLock aur DuckPal mode-switch (jo pehle implement hua tha) app ko in dono ko kaise treat karta hai — do alag mounted components jinme se ek unmount hoke doosra mount hota hai, ya ek hi parent ke andar conditional-render?
+Fix karna hai:
+Is permission-check-popup ke trigger-logic ko APP-LEVEL par le jao — jo sirf EK BAAR chale jab app start ho aur user permission-flow complete karke pehli baar Home (DuckLock) par pahunche, CHAHE user kabhi DuckPal par switch kare ya na kare
+Yeh check DuckLock aur DuckPal mode se INDEPENDENT hona chahiye — mode jo bhi ho, permission-status same rehta hai (yeh device-level permissions hain, app-mode-specific nahi)
+Duplicate-trigger na ho — agar popup ek baar dikh chuka aur dismiss ho gaya (ya permissions sahi nikli), to mode switch karne par (DuckLock↔DuckPal) yeh dobara na aaye baar-baar
+Agar future mein koi permission revoke ho jaaye app ke chalte hue (background mein), to yeh check phir se trigger ho sakta hai — iska existing re-check mechanism (agar hai) bhi is naye app-level placement mein preserve rehna chahiye
+Zaroori:
+DuckLock ka existing UI/function bilkul mat chhedna
+DuckPal ka existing UI/function (Reels-tracking, floating-icon, weekly-chart) bilkul mat chhedna
+Mode-switch logic (duck-icon/title-tap se DuckLock↔DuckPal) bilkul mat chhedna
+Sirf is popup ke TRIGGER-LOCATION ko fix karna hai
+Fix ke baad exact batao — yeh check ab kahan (kis file/component) mein hai, aur test karke confirm karo ki: (a) fresh app-start par DuckLock par hi popup aata hai bina DuckPal par jaaye, aur (b) mode switch karne par yeh dobara/duplicate nahi aata"

@@ -1,8 +1,11 @@
 import { Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Animated, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { PermissionGuardPopup } from "@/components/ui/PermissionGuardPopup";
+import { usePermissionGuard } from "@/hooks/usePermissionGuard";
 
 function AnimatedTabIcon({
   name,
@@ -45,7 +48,22 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = Platform.OS === "web" ? 84 : TAB_HEIGHT + insets.bottom;
 
+  // ── App-level permission guard ────────────────────────────────────────────
+  // Runs once when the user arrives at the tabs group (right after setup),
+  // and re-checks whenever the app comes back to the foreground (AppState).
+  // Lives here — not inside any individual tab — so it fires on the default
+  // "Home" tab and is independent of which tab is currently active.
+  // popupBypassed is session-only; it resets if the app is killed (intentional).
+  const { missingPerms, recheck } = usePermissionGuard();
+  const [popupBypassed, setPopupBypassed] = useState(false);
+
   return (
+    <>
+    <PermissionGuardPopup
+      missing={popupBypassed ? [] : missingPerms}
+      onRecheck={recheck}
+      onBypass={() => setPopupBypassed(true)}
+    />
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: "#FFBF80",
@@ -90,5 +108,6 @@ export default function TabLayout() {
         options={{ href: null }}
       />
     </Tabs>
+    </>
   );
 }
