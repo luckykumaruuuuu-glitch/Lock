@@ -269,7 +269,7 @@ export default function OnboardingScreen() {
               onPressOut={onPressOut}
             >
               <LinearGradient
-                colors={["#FFE8C8", "#FFBF80"]}
+                colors={["#F0A769", "#F0A769"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.getStartedBtn}
