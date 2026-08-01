@@ -144,7 +144,9 @@ export default function WatchVideoScreen() {
   }, []);
 
   // ── Background video player ───────────────────────────────────────────
-  // Preloaded on mount, looping, fullscreen, controlled by isPlaying.
+  // Configured on mount but NOT started yet — play() is called only once
+  // the player fires statusChange → readyToPlay, so the progress tick and
+  // the video frame are guaranteed to start at the exact same moment.
   const player = useVideoPlayer(
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     require("../assets/forehead-scan-bg.mp4"),
@@ -152,12 +154,19 @@ export default function WatchVideoScreen() {
       p.loop = true;   // duration-agnostic: loops however many times needed
       p.muted = false; // audio ON — video has a built-in soundtrack
       p.volume = 1.0;
-      p.play();
+      // ── Do NOT call p.play() here ──────────────────────────────────────
+      // Starting here would race against the video load. Instead we wait
+      // for the readyToPlay statusChange event below and start both the
+      // video and the progress tick at that single moment.
     },
   );
 
   // ── Playback state ──────────────────────────────────────────────────────
-  const [isPlaying,    setIsPlaying]    = useState(true);
+  // isPlaying starts false — the statusChange listener below sets it true
+  // the instant the video is ready, ensuring tick and video are in sync.
+  const [videoReady,   setVideoReady]   = useState(false);
+  const videoReadyRef = useRef(false);
+  const [isPlaying,    setIsPlaying]    = useState(false);
   const [elapsed,      setElapsed]      = useState(0);
   const [showControls, setShowControls] = useState(true);
 
@@ -187,6 +196,23 @@ export default function WatchVideoScreen() {
       }
     }, 1000);
   }
+
+  // ── Video-ready → start both video and tick atomically ──────────────────
+  // This is the ONLY place isPlaying is set to true on initial load.
+  // Using the same readyToPlay pattern proven on DuckCharacter. The ref
+  // guard (videoReadyRef) prevents re-triggering if the player emits
+  // readyToPlay again after a seek/loop while already playing.
+  useEffect(() => {
+    const sub = player.addListener("statusChange", ({ status }) => {
+      if (status === "readyToPlay" && !videoReadyRef.current) {
+        videoReadyRef.current = true;
+        setVideoReady(true);
+        player.play();          // video frame starts
+        setIsPlaying(true);     // tick starts — both at the same event
+      }
+    });
+    return () => sub.remove();
+  }, [player]);
 
   // Start/stop tick based on isPlaying — screen is always landscape, no check needed.
   useEffect(() => {
@@ -256,7 +282,9 @@ export default function WatchVideoScreen() {
   }
 
   function handlePlayPause() {
-    if (completedRef.current) return;
+    // Guard: ignore taps before video is ready (videoReady = false means
+    // the initial readyToPlay event hasn't fired yet — nothing to pause).
+    if (completedRef.current || !videoReady) return;
     setIsPlaying((v) => !v);
   }
 
