@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GradientBackground } from "@/components/ui/GradientBackground";
+import { PlatformIcon, hasPlatformSvg } from "@/components/ui/PlatformSvgIcons";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -151,9 +152,17 @@ function PlatformRow({
   return (
     <View style={rowStyles.row}>
       <Text style={rowStyles.rank}>#{rank}</Text>
-      <View style={[rowStyles.iconBox, { backgroundColor: platform.color }]}>
-        <FontAwesome5 name={platform.icon} size={18} color="#FFF" />
-      </View>
+      {hasPlatformSvg(platform.key) ? (
+        // Real SVG logo — icon contains its own background/colours
+        <View style={rowStyles.iconBox}>
+          <PlatformIcon appId={platform.key} size={44} />
+        </View>
+      ) : (
+        // FontAwesome5 fallback — coloured background
+        <View style={[rowStyles.iconBox, { backgroundColor: platform.color }]}>
+          <FontAwesome5 name={platform.icon} size={18} color="#FFF" />
+        </View>
+      )}
       <Text style={rowStyles.name}>{platform.label}</Text>
       <Text style={rowStyles.count}>
         {platform.count > 0 ? platform.count : "—"}
