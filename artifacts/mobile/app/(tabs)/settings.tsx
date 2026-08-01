@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BackButton } from "@/components/ui/BackButton";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientBackground } from "@/components/ui/GradientBackground";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
@@ -486,8 +487,11 @@ export default function SettingsScreen() {
         contentContainerStyle={[styles.content, { paddingTop: topPad + 16, paddingBottom: bottomPad + 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Page title */}
-        <Text style={styles.pageTitle}>{t("settings")}</Text>
+        {/* Page title with back button */}
+        <View style={styles.titleRow}>
+          <BackButton onPress={() => router.back()} />
+          <Text style={styles.pageTitle}>{t("settings")}</Text>
+        </View>
 
         {/* Google account profile */}
         <ProfileSection />
@@ -699,12 +703,17 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   content:   { paddingHorizontal: 20, gap: 16 },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 10,
+  },
   pageTitle: {
     fontSize: 30,
     fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
     letterSpacing: -0.8,
-    marginBottom: 10,
   },
 
   sectionLabel: {

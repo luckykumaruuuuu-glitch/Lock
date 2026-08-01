@@ -28,6 +28,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
+import { BackButton } from "@/components/ui/BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -114,15 +116,10 @@ export default function ReelCountScheduleScreen() {
     <View style={[styles.root, { paddingBottom: bottomPad }]}>
 
       {/* ── Absolute back button (top-left) ─────────────────────────── */}
-      {/* Uses a plain Unicode arrow — guaranteed to render on web/native
-          without depending on an icon-font being loaded first.           */}
-      <Pressable
+      <BackButton
         onPress={() => router.back()}
-        style={[styles.backBtn, { top: topPad + 8 }]}
-        hitSlop={12}
-      >
-        <Text style={styles.backArrow}>←</Text>
-      </Pressable>
+        style={{ position: "absolute", left: 20, top: topPad + 8, zIndex: 10 }}
+      />
 
       {/* ── Top section: image + heading ────────────────────────────── */}
       {/* flex: 1 so it expands to fill whatever space is left after the
@@ -216,25 +213,6 @@ const styles = StyleSheet.create({
   },
 
   // ── Back button ──
-  backBtn: {
-    position: "absolute",
-    left: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.10)",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-  },
-  // Unicode left arrow — renders on every platform without icon-font dependency
-  backArrow: {
-    color: "#FFFFFF",
-    fontSize: 22,
-    lineHeight: 26,
-    includeFontPadding: false,
-  },
-
   // ── Top section (image + heading) ──
   topSection: {
     flex: 1,
