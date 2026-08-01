@@ -522,6 +522,17 @@ function DuckPalScreen() {
     []
   );
 
+  // Reset calendar to today every time this screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      setSelectedCalIdx(CAL_CENTER);
+      calListRef.current?.scrollToOffset({
+        offset: (CAL_CENTER - 3) * calCellWidthRef.current,
+        animated: false,
+      });
+    }, [])
+  );
+
   // Tap any of the 7 visible cells → snap it to centre (slot 3) + navigate
   const handleDateTap = useCallback(
     (globalIdx: number, date: Date) => {
@@ -635,7 +646,10 @@ function DuckPalScreen() {
             horizontal
             keyExtractor={(_, i) => String(i)}
             renderItem={({ item: d, index: idx }) => {
-              const isSelected = idx === selectedCalIdx;
+              // isToday → always orange (today's actual date, never changes)
+              // isSelectedNotToday → white/neutral style (user tapped a non-today date)
+              const isToday = idx === CAL_CENTER;
+              const isSelectedNotToday = idx === selectedCalIdx && !isToday;
               return (
                 <Pressable
                   onPress={() => handleDateTap(idx, d)}
@@ -644,13 +658,15 @@ function DuckPalScreen() {
                   <View
                     style={[
                       styles.dpCalDot,
-                      isSelected && styles.dpCalDotSelected,
+                      isToday && styles.dpCalDotSelected,
+                      isSelectedNotToday && styles.dpCalDotActive,
                     ]}
                   />
                   <Text
                     style={[
                       styles.dpCalDayName,
-                      isSelected && styles.dpCalDayNameSelected,
+                      isToday && styles.dpCalDayNameSelected,
+                      isSelectedNotToday && styles.dpCalDayNameActive,
                     ]}
                   >
                     {DAY_NAMES_SHORT[d.getDay()]}
@@ -658,7 +674,7 @@ function DuckPalScreen() {
                   <Text
                     style={[
                       styles.dpCalDateNum,
-                      isSelected && styles.dpCalDateNumSelected,
+                      isToday && styles.dpCalDateNumSelected,
                     ]}
                   >
                     {d.getDate()}
@@ -1301,10 +1317,17 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,191,128,0.07)",
   },
   dpCalDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#3A3A3C" },
+  // Today → orange dot (reserved only for today's actual date)
   dpCalDotSelected: { backgroundColor: "#FFBF80" },
+  // Non-today selected → white dot
+  dpCalDotActive: { backgroundColor: "#FFFFFF" },
   dpCalDayName: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#8E8E93" },
+  // Today → orange day name
   dpCalDayNameSelected: { color: "#FFBF80" },
+  // Non-today selected → white day name
+  dpCalDayNameActive: { color: "#FFFFFF" },
   dpCalDateNum: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
+  // Today → orange date number
   dpCalDateNumSelected: { color: "#FFBF80" },
 
   // Friends + Streak row

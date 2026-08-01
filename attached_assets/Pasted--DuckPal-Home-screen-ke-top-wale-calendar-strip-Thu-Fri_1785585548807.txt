@@ -1,0 +1,14 @@
+"DuckPal Home screen ke top wale calendar-strip (Thu-Fri-Sat-Sun-Mon-Tue-Wed date-row) mein do bugs fix karne hain.
+Bug 1 — 'Today' ka highlight-color 'selected date' par bhi apply ho raha hai:
+Abhi jab user calendar-strip mein kisi bhi date par tap/scroll karke select karta hai (jo aaj ki date na ho), to woh date bhi wahi orange highlight-color/ring le leti hai jo sirf AAJ KI ACTUAL DATE ke liye honi chahiye. Yeh galat hai.
+Sahi behavior:
+Sirf aaj ki actual date (device ki real current date) hamesha orange color/ring mein highlighted honi chahiye — chahe user kahin bhi select/scroll kare, yeh kabhi nahi badalna chahiye
+Jo bhi date user select kare (agar woh aaj ki date nahi hai), to usko app ke DEFAULT/normal selection-style mein dikhna chahiye (jaise app mein baaki jagah default-selection ka style hai — normal border/color, orange nahi). Aaj ki date wala orange sirf 'today' ke liye reserved rahega, 'selected' ke liye nahi.
+Matlab: agar user aaj ki date ko hi select kare, to woh orange hi dikhegi (dono same ho jaate hain us case mein). Lekin agar koi aur date select ho, to sirf woh default-style mein highlight hogi, aur aaj ki date bhi apna orange-highlight alag se, saath mein, bana rahegi.
+Bug 2 — Screen se navigate away karke wapas aane par calendar reset nahi hota:
+Abhi jab user is screen se kisi doosri screen par jaata hai (jaise DuckLock/Settings), aur wapas is screen (DuckPal Home) par aata hai, to calendar-strip usi date/scroll-position par ruka rehta hai jahan use pehle chhoda tha.
+Sahi behavior: Jab bhi user is screen par (naya) aaye — chahe app-launch se ho ya kisi doosri screen se navigate karke wapas — calendar-strip hamesha current/today ki date par hi reset/scroll hona chahiye, pichli baar ki selection yaad nahi rakhni.
+Zaroori:
+Baaki koi existing function (Reels Today/Streak Days/Apps Blocked stats, Friends section, 'Keep it up' card, bottom navigation) bilkul mat chhedna
+Sirf calendar-strip ke selection-color-logic aur mount/focus-reset-logic fix karne hain
+Fix ke baad exact batao — 'today' aur 'selected' date ke liye ab alag-alag konsa style-value use ho raha hai, aur screen-focus par reset kaise implement hua"
