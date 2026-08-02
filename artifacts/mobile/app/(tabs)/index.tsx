@@ -308,7 +308,7 @@ function HomeHeader({ appName, source }: { appName: string; source: "duckpal" | 
   );
 }
 
-function StatCard({ value, label, color }: { value: string | number; label: string; color: string }) {
+function StatCard({ value, label, color, icon }: { value: string | number; label: string; color: string; icon: string }) {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -322,6 +322,7 @@ function StatCard({ value, label, color }: { value: string | number; label: stri
   return (
     <Animated.View style={[styles.statWrapper, { transform: [{ scale: scaleAnim }], opacity: opacityAnim }]}>
       <GlassCard style={styles.statCard} padding={16}>
+        <Feather name={icon as any} size={18} color={color} style={styles.statIcon} />
         <Text style={[styles.statValue, { color }]}>{value}</Text>
         <Text style={styles.statLabel}>{label}</Text>
       </GlassCard>
@@ -936,9 +937,9 @@ export function DuckLockHomeContent() {
 
         {/* Stats */}
         <View style={styles.statsRow}>
-          <StatCard value={locks.length} label={t("locks")} color="#FFBF80" />
-          <StatCard value={displayItems.length} label={t("blocked")} color="#FF453A" />
-          <StatCard value={avgDays > 0 ? `${avgDays}d` : "—"} label={t("avg")} color="#32D74B" />
+          <StatCard value={locks.length} label={t("locks")} color="#FFBF80" icon="lock" />
+          <StatCard value={displayItems.length} label={t("blocked")} color="#FF453A" icon="shield" />
+          <StatCard value={avgDays > 0 ? `${avgDays}d` : "—"} label={t("avg")} color="#32D74B" icon="bar-chart-2" />
         </View>
 
         {/* Reels Lock */}
@@ -1126,6 +1127,7 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: "row", gap: 10 },
   statWrapper: { flex: 1 },
   statCard: { alignItems: "center" },
+  statIcon: { marginBottom: 6 },
   statValue: { fontSize: 24, fontFamily: "Inter_700Bold", marginBottom: 3 },
   statLabel: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   ctaBtnShadow: {
