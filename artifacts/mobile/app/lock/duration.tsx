@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import * as Localization from "expo-localization";
 import { router } from "expo-router";
@@ -68,8 +68,39 @@ function DurationCardIcon({ name, size, color }: { name: "sun" | "calendar" | "a
     </Svg>
   );
   return (
-    <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+    <Svg width={s} height={s} viewBox="0 0 512 500.66" fill="none">
+      {/* Pencil tip base */}
+      <Path fillRule="nonzero" fill={color} d="M198.29 451.7c-2.06 4.4-6.03 7.28-10.45 8.14L17.92 500.25c-11.18 2.64-20.7-8.07-17.18-18.72l43.22-132.56c2.56-7.85 7.26-27.97 13.37-32.57a14.56 14.56 0 0113.34-2.21L198.29 451.7z" />
+      {/* Tip highlight */}
+      <Path fill={color} fillOpacity={0.55} d="M156.43 452.35L14.57 486.09l42.52-130.38c1.44 2.23 3.14 4.29 5.09 6.19 7.29 7.09 17.7 11.29 31 12.84.85 11.85 5.17 21.37 12.71 28.74 7.26 7.09 17.3 11.85 29.89 14.46.62 11.33 4.67 20.58 12.03 27.83 2.52 2.48 5.4 4.67 8.62 6.58z" />
+      {/* Tip shadow */}
+      <Path fill={color} fillOpacity={0.45} d="M154.94 452.98l1.83-.43c-3.36-1.95-6.35-4.21-8.96-6.78-7.36-7.25-11.41-16.5-12.03-27.83-4.3-.89-8.31-2.04-12.01-3.44l-42.85 19.04c2.87 3.69 5.35 7.66 7.46 11.89 3.34 6.69 5.64 13.9 6.94 21.46l59.62-13.91z" />
+      {/* Main pencil body */}
+      <Path fillRule="nonzero" fill={color} d="M493.98 157.18c-27.81 27.8-55.61 55.61-83.41 83.41-71.76 71.78-143.55 143.62-215.32 215.39-13.64 9.88-36.21.85-47.44-10.21-7.36-7.25-11.41-16.5-12.03-27.83-23.32-4.83-40.8-18.11-42.6-43.2-13.3-1.55-23.71-5.75-31-12.84-14.63-13.31-18.27-35.17-.4-50.76 69.82-69.82 139.66-139.71 209.48-209.54 27.85-27.86 55.7-55.72 83.56-83.58 24.03-24.03 63.29-24.03 87.32 0l51.84 51.84c24.03 24.03 24.03 63.28 0 87.32z" />
+      {/* Top cap */}
+      <Path fill={color} fillOpacity={0.65} d="M463.21 165.76l19.67-19.67c17.96-17.96 17.95-47.34 0-65.29l-51.83-51.83c-17.95-17.95-47.33-17.95-65.28 0l-19.68 19.67 117.12 117.12z" />
+      {/* Top cap shadow */}
+      <Path fill={color} fillOpacity={0.5} d="M463.21 165.76l19.67-19.67c17.96-17.96 17.95-47.34 0-65.29l-21.77-21.77-52.31 52.32 54.41 54.41z" />
+      {/* Tip cream */}
+      <Path fill={color} fillOpacity={0.6} d="M73.66 369.63l-14.72 45.51-.08-.04c-6.11-3.26-12.12-5.49-18.87-6.97l16.67-53.1c1.53 2.49 3.37 4.78 5.52 6.87 3.22 3.13 7.05 5.7 11.48 7.73z" />
+      {/* Eraser base */}
+      <Path fillRule="nonzero" fill={color} d="M84.23 483.87l-64.84 15.3c-4.19 1-22.08-1.28-17.37-18.84l19.86-61.58 17.42-10.79c30.06 6.53 50.95 28.87 56.06 59.15l-11.13 16.76z" />
+      {/* Eraser dark */}
+      <Path fill={color} fillOpacity={0.8} d="M15.99 484.85l64.84-15.3c-4.08-24.19-20.65-41.99-44.68-47.21l-20.16 62.51z" />
+      {/* Eraser mid */}
+      <Path fill={color} fillOpacity={0.65} d="M15.99 484.85l52.79-42.79c-7.9-9.83-19.08-16.77-32.63-19.72l-20.16 62.51z" />
+      {/* Eraser light */}
+      <Path fill={color} fillOpacity={0.5} d="M47.59 426a62.409 62.409 0 00-11.44-3.66l-19.91 61.74L47.59 426z" />
+      {/* Shaft gold */}
+      <Path fill={color} fillOpacity={0.75} d="M365.97 197.2L151.22 411.95c.15 21.51 20.14 32.89 32.9 32.89l214.75-214.75-32.9-32.89z" />
+      {/* Shaft yellow */}
+      <Path fill={color} fillOpacity={0.7} d="M281.74 112.96L66.99 327.72c-5.5 20.93 17.68 34.99 32.01 32.01l214.75-214.76-32.01-32.01z" />
+      {/* Shaft shadow */}
+      <Path fill={color} fillOpacity={0.6} d="M357.83 189.05L143.08 403.8c-19.79 2.35-37.7-16.48-35.05-35.04L322.78 154l35.05 35.05z" />
+      {/* Ferrule light */}
+      <Path fill={color} fillOpacity={0.45} d="M453.31 175.64l-44.32 44.33-117.12-117.11 44.33-44.33z" />
+      {/* Ferrule shadow */}
+      <Path fill={color} fillOpacity={0.35} d="M453.31 175.64l-44.32 44.33-34.71-34.7 44.33-44.33z" />
     </Svg>
   );
 }
