@@ -322,8 +322,10 @@ function StatCard({ value, label, color, icon }: { value: string | number; label
   return (
     <Animated.View style={[styles.statWrapper, { transform: [{ scale: scaleAnim }], opacity: opacityAnim }]}>
       <GlassCard style={styles.statCard} padding={16}>
-        <Feather name={icon as any} size={18} color={color} style={styles.statIcon} />
-        <Text style={[styles.statValue, { color }]}>{value}</Text>
+        <View style={styles.statValueRow}>
+          <Text style={[styles.statValue, { color }]}>{value}</Text>
+          <Feather name={icon as any} size={14} color={color} style={styles.statIcon} />
+        </View>
         <Text style={styles.statLabel}>{label}</Text>
       </GlassCard>
     </Animated.View>
@@ -1127,8 +1129,9 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: "row", gap: 10 },
   statWrapper: { flex: 1 },
   statCard: { alignItems: "center" },
-  statIcon: { marginBottom: 6 },
-  statValue: { fontSize: 24, fontFamily: "Inter_700Bold", marginBottom: 3 },
+  statValueRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 3 },
+  statIcon: { marginTop: 2 },
+  statValue: { fontSize: 24, fontFamily: "Inter_700Bold" },
   statLabel: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#8E8E93" },
   ctaBtnShadow: {
     borderRadius: 20,
