@@ -1,42 +1,34 @@
 # DuckPal
 
-A social media screen-time tracker and app-blocker. Users see how many reels they've watched, set limits, and lock distracting apps (Instagram, TikTok, YouTube, Snapchat, Facebook, etc.).
+A social media screen-time awareness app. Users track how many reels/shorts they've watched, compete in challenges, and get nudges to be more mindful of doomscrolling.
 
-## Monorepo structure
+## Stack
 
-| Path | Role |
-|---|---|
-| `artifacts/mobile` | React Native / Expo app — the primary product |
-| `artifacts/api-server` | Express 5 + Drizzle ORM API (port 3001) |
-| `artifacts/ui-design` | Vite/React web UI (port 5000) |
-| `artifacts/mockup-sandbox` | Design sandbox (not production) |
-| `lib/` | Shared TypeScript packages (`@workspace/*`) |
+- **Mobile app** (`artifacts/mobile`) — React Native + Expo (Expo Router), Firebase auth & Realtime DB
+- **API server** (`artifacts/api-server`) — Express 5 + TypeScript, runs on port 3001
+- **Web landing/UI** (`artifacts/ui-design`) — Vite + React, runs on port 5000 (the Replit preview)
+- **Monorepo** — pnpm workspaces, shared packages under `artifacts/`
 
-## Running on Replit
+## How to run
 
-Two workflows are configured and start automatically:
+Both workflows start automatically:
 
-### Web preview (port 5000)
-**Workflow:** `Start application`
-```
-pnpm install --frozen-lockfile && PORT=5000 node scripts/start-web.js
-```
-Starts the Vite web UI on port 5000 and the API server on port 3001.
+| Workflow | Command | Port |
+|---|---|---|
+| Start application | `pnpm install --frozen-lockfile && PORT=5000 node scripts/start-web.js` | 5000 (preview) |
+| Expo Go preview | `pnpm install --frozen-lockfile && PORT=8082 EXPO_PORT=18116 pnpm --filter @workspace/mobile run start-all` | 8082 (web export) + Metro |
 
-### Expo Go preview (port 8082)
-**Workflow:** `Expo Go preview`
-```
-pnpm install --frozen-lockfile && (fuser -k 8080/tcp 2>/dev/null; true) && sleep 1 && PORT=8082 EXPO_PORT=18116 pnpm --filter @workspace/mobile run start-all
-```
-- Serves a web export of the Expo app on port 8082
-- Spins up Metro bundler + a cloudflared tunnel for scanning with the **Expo Go** mobile app
+- The **Replit preview pane** shows the web version of the app on port 5000.
+- For native mobile testing, scan the QR code in the "Expo Go preview" workflow console with the Expo Go app.
 
 ## Firebase
-Firebase config is set via env vars in `.replit` (`[userenv.shared]`):
-- `EXPO_PUBLIC_FIREBASE_*` keys are already configured for the `focus-lock-6b0ab` project.
 
-## Session secret
-`SESSION_SECRET` is managed as a Replit secret.
+Firebase credentials are set as `EXPO_PUBLIC_FIREBASE_*` environment variables in `.replit` (shared env). No additional setup needed for Firebase.
+
+## Environment secrets
+
+- `SESSION_SECRET` — available but not currently wired into the codebase.
 
 ## User preferences
-_None recorded yet._
+
+<!-- Add any user-specific preferences here -->
