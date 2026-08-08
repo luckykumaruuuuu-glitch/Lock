@@ -621,7 +621,7 @@ function DuckPalScreen() {
           <View style={styles.dpStatDiv} />
           <View style={styles.dpStatCol}>
             <View style={styles.dpStatIconRow}>
-              <Feather name="hash" size={15} color="#FFBF80" />
+              <Feather name="video" size={15} color="#FFBF80" />
               <Text style={styles.dpStatNum}>{totalReels}</Text>
             </View>
             <Text style={styles.dpStatLbl}>Total Reels</Text>
