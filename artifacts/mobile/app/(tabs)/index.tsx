@@ -621,7 +621,7 @@ function DuckPalScreen() {
           <View style={styles.dpStatDiv} />
           <View style={styles.dpStatCol}>
             <View style={styles.dpStatIconRow}>
-              <Feather name="check-circle" size={15} color="#FFBF80" />
+              <Feather name="hash" size={15} color="#FFBF80" />
               <Text style={styles.dpStatNum}>{totalReels}</Text>
             </View>
             <Text style={styles.dpStatLbl}>Total Reels</Text>
@@ -629,7 +629,7 @@ function DuckPalScreen() {
           <View style={styles.dpStatDiv} />
           <View style={styles.dpStatCol}>
             <View style={styles.dpStatIconRow}>
-              <Feather name="shield" size={15} color="#FFBF80" />
+              <Feather name="bar-chart-2" size={15} color="#FFBF80" />
               <Text style={styles.dpStatNum}>{averageReels}</Text>
             </View>
             <Text style={styles.dpStatLbl}>Average Reels</Text>
