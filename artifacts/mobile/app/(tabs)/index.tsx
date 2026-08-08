@@ -555,7 +555,8 @@ function DuckPalScreen() {
   );
 
   const reelsToday = instagramCount ?? 0;
-  const appsBlocked = displayItems.length;
+  const totalReels = DUMMY_TOTAL_REELS;
+  const averageReels = DUMMY_DAILY_AVG;
 
   // ── Revolut-style task card press animation ───────────────────────────────
   const taskCardScale = useRef(new Animated.Value(1)).current;
@@ -621,17 +622,17 @@ function DuckPalScreen() {
           <View style={styles.dpStatCol}>
             <View style={styles.dpStatIconRow}>
               <Feather name="check-circle" size={15} color="#FFBF80" />
-              <Text style={styles.dpStatNum}>0</Text>
+              <Text style={styles.dpStatNum}>{totalReels}</Text>
             </View>
-            <Text style={styles.dpStatLbl}>Streak Days</Text>
+            <Text style={styles.dpStatLbl}>Total Reels</Text>
           </View>
           <View style={styles.dpStatDiv} />
           <View style={styles.dpStatCol}>
             <View style={styles.dpStatIconRow}>
               <Feather name="shield" size={15} color="#FFBF80" />
-              <Text style={styles.dpStatNum}>{appsBlocked}</Text>
+              <Text style={styles.dpStatNum}>{averageReels}</Text>
             </View>
-            <Text style={styles.dpStatLbl}>Apps Blocked</Text>
+            <Text style={styles.dpStatLbl}>Average Reels</Text>
           </View>
         </View>
 
