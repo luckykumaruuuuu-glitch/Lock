@@ -8,8 +8,9 @@
  *   • Count squats/jumps by tracking knee-angle state machine
  *   • Redirect to /coming-soon once TARGET_REPS are completed
  *
- * ⚠️  Requires a real APK / dev-client build — camera & native modules
- *     are unavailable on web. Web shows a graceful "not available" card.
+ * The pose detector and VisionCamera require a real APK / dev-client build.
+ * Expo Go still gets an independent expo-camera preview so the camera flow
+ * never silently disappears when the custom detector is unavailable.
  *
  * To change difficulty, edit TARGET_REPS below.
  */
@@ -156,10 +157,11 @@ function WebFallback() {
 function NativeJumpScreen() {
   const insets = useSafeAreaInsets();
 
-  // Lazy-import NON-HOOK exports only.
-  // Hooks (useCameraPermission, useCameraDevice, useFrameProcessor) must NOT be
-  // stored in state — they must be called via require() directly in JumpCamera
-  // so React's dispatcher sees them as normal top-level hook calls.
+  // Load the standard Expo camera independently from the custom detector.
+  // Expo Go can provide the former, but not VisionCamera or ExpoPoseDetection.
+  const [ExpoCamera, setExpoCamera] = useState<{
+    CameraView: any;
+  } | null>(null);
   const [Native, setNative] = useState<{
     Camera: any;
     VisionCameraProxy: any;
@@ -170,28 +172,82 @@ function NativeJumpScreen() {
     addPoseLandmarksListener: any;
     removePoseLandmarksListeners: any;
   } | null>(null);
+  const [detectionUnavailable, setDetectionUnavailable] = useState(false);
+  const [cameraLoadFailed, setCameraLoadFailed] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      const [vc, skia, pose] = await Promise.all([
-        import("react-native-vision-camera"),
-        import("@shopify/react-native-skia"),
-        import("../modules/expo-pose-detection"),
-      ]);
-      setNative({
-        Camera: vc.Camera,
-        VisionCameraProxy: vc.VisionCameraProxy,
-        Canvas: skia.Canvas,
-        Line: skia.Line,
-        Circle: skia.Circle,
-        vec: skia.vec,
-        addPoseLandmarksListener: pose.addPoseLandmarksListener,
-        removePoseLandmarksListeners: pose.removePoseLandmarksListeners,
+    let mounted = true;
+
+    console.log("[JumpScreen] Challenge screen opened");
+
+    // This import is deliberately separate: a missing custom module must not
+    // block the standard camera from opening in Expo Go.
+    import("expo-camera")
+      .then((camera) => {
+        if (mounted) {
+          console.log("[JumpScreen] expo-camera loaded");
+          setExpoCamera({ CameraView: camera.CameraView });
+        }
+      })
+      .catch((error) => {
+        console.error("[JumpScreen] expo-camera failed to load:", error);
+        if (mounted) setCameraLoadFailed(true);
       });
-    })();
+
+    // These are only available in a development/native build. If any one is
+    // missing, keep the Expo camera preview alive and explain the limitation.
+    Promise.all([
+      import("react-native-vision-camera"),
+      import("@shopify/react-native-skia"),
+      import("../modules/expo-pose-detection"),
+    ])
+      .then(([vc, skia, pose]) => {
+        if (!mounted) return;
+        console.log("[JumpScreen] Pose detection native modules loaded");
+        setNative({
+          Camera: vc.Camera,
+          VisionCameraProxy: vc.VisionCameraProxy,
+          Canvas: skia.Canvas,
+          Line: skia.Line,
+          Circle: skia.Circle,
+          vec: skia.vec,
+          addPoseLandmarksListener: pose.addPoseLandmarksListener,
+          removePoseLandmarksListeners: pose.removePoseLandmarksListeners,
+        });
+      })
+      .catch((error) => {
+        console.warn(
+          "[JumpScreen] Pose detection unavailable; continuing with camera-only mode:",
+          error
+        );
+        if (mounted) setDetectionUnavailable(true);
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  if (!Native) {
+  if (cameraLoadFailed) {
+    return (
+      <View style={[styles.root, styles.centerContent, { paddingTop: insets.top }]}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Feather name="chevron-left" size={26} color="#FFFFFF" />
+        </Pressable>
+        <Text style={styles.permTitle}>Camera unavailable</Text>
+        <Text style={styles.permBody}>
+          The camera module could not be loaded. Please test this challenge in
+          Expo Go or a development build with camera access enabled.
+        </Text>
+      </View>
+    );
+  }
+
+  if (!ExpoCamera) {
     return (
       <View style={[styles.root, styles.centerContent]}>
         <Text style={styles.statusText}>Loading camera…</Text>
@@ -199,7 +255,114 @@ function NativeJumpScreen() {
     );
   }
 
+  if (detectionUnavailable || !Native) {
+    return (
+      <ExpoCameraOnly
+        insets={insets}
+        CameraModule={ExpoCamera}
+        detectionUnavailable={detectionUnavailable}
+      />
+    );
+  }
+
   return <JumpCamera insets={insets} Native={Native} />;
+}
+
+// ─── Expo Go camera-only fallback ─────────────────────────────────────────────
+function ExpoCameraOnly({
+  insets,
+  CameraModule,
+  detectionUnavailable,
+}: {
+  insets: any;
+  CameraModule: { CameraView: any };
+  detectionUnavailable: boolean;
+}) {
+  const { CameraView } = CameraModule;
+  const [permission, requestPermission] = require("expo-camera").useCameraPermissions();
+  const [cameraFacing, setCameraFacing] = useState<"front" | "back">("front");
+
+  useEffect(() => {
+    if (!permission?.granted && permission?.canAskAgain !== false) {
+      console.log("[JumpScreen] Requesting camera permission in camera-only mode");
+      requestPermission();
+    }
+  }, [permission?.granted, permission?.canAskAgain, requestPermission]);
+
+  if (!permission?.granted) {
+    return (
+      <View style={[styles.root, styles.centerContent, { paddingTop: insets.top }]}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Feather name="chevron-left" size={26} color="#FFFFFF" />
+        </Pressable>
+        <Text style={styles.permTitle}>Camera Permission Needed</Text>
+        <Text style={styles.permBody}>
+          Allow camera access to preview the Jump challenge. Pose detection
+          will be enabled in a development build.
+        </Text>
+        <Pressable
+          onPress={() => {
+            console.log("[JumpScreen] Camera permission Try Again pressed");
+            requestPermission();
+          }}
+          style={({ pressed }) => [styles.permBtn, { opacity: pressed ? 0.8 : 1 }]}
+        >
+          <Text style={styles.permBtnText}>Try Again</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.root}>
+      <CameraView
+        style={StyleSheet.absoluteFill}
+        facing={cameraFacing}
+      />
+
+      <View style={[styles.hud, { paddingTop: insets.top + 8 }]}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.hudBack, { opacity: pressed ? 0.6 : 1 }]}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityLabel="Go back"
+        >
+          <Feather name="chevron-left" size={26} color="#FFFFFF" />
+        </Pressable>
+        <View style={styles.repBadge}>
+          <Text style={styles.repCount}>0</Text>
+          <Text style={styles.repLabel}>/ {TARGET_REPS}</Text>
+        </View>
+      </View>
+
+      <View style={[styles.statusBar, { paddingBottom: insets.bottom + 12 }]}>
+        <Text style={styles.statusText}>
+          {detectionUnavailable
+            ? "Pose detection is unavailable in Expo Go"
+            : "Preparing pose detection…"}
+        </Text>
+        <Text style={styles.hintText}>
+          Camera preview is working. Test movement detection in a real APK or
+          development build.
+        </Text>
+        <Pressable
+          onPress={() => setCameraFacing((prev) => (prev === "front" ? "back" : "front"))}
+          style={({ pressed }) => [
+            styles.cameraSwitchBtn,
+            { bottom: insets.bottom + 16, opacity: pressed ? 0.7 : 1 },
+          ]}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityLabel="Switch camera"
+        >
+          <Feather name="refresh-cw" size={22} color="#FFFFFF" />
+        </Pressable>
+      </View>
+    </View>
+  );
 }
 
 // ─── Camera + skeleton component (native only) ────────────────────────────────
@@ -222,6 +385,7 @@ function JumpCamera({ insets, Native }: { insets: any; Native: any }) {
   //    immediately when the screen opens — no manual tap required.
   useEffect(() => {
     if (!hasPermission) {
+      console.log("[JumpScreen] Requesting VisionCamera permission");
       requestPermission();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

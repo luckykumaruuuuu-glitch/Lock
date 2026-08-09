@@ -99,6 +99,7 @@ export default function UnlockTasksScreen() {
       return;
     }
     if (id === "jump") {
+      console.log("[UnlockTasks] Jump challenge tapped — navigating to /jump");
       router.push("/jump");
       return;
     }

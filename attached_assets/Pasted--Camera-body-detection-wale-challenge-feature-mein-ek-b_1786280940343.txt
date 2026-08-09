@@ -1,0 +1,12 @@
+"Camera + body-detection wale challenge-feature mein ek bug hai. Jab is challenge par tap karte hain Expo Go mein test karte waqt, to KUCH bhi nahi hota — na camera khulta hai, na koi error/permission-popup, na koi console-log. Screen bilkul unresponsive rehti hai.
+Expected behavior samjhao pehle mujhe:
+Agar body-detection wala part ek CUSTOM NATIVE module use kar raha hai (jo Expo Go mein available nahi ho sakta, jaisa Device Admin/Accessibility Service the) — to sirf DETECTION Expo Go mein kaam nahi karega, yeh samajh sakte hain
+Lekin CAMERA khud (expo-camera ya jo bhi camera-library use ho rahi hai) — yeh Expo Go mein bhi kaam karna chahiye, kyunki yeh koi custom-native module nahi hai standard Expo SDK ka hissa hai
+Debug karo, guess mat karo:
+Jab is challenge-button par tap hota hai, kya onPress/navigation-handler actually trigger ho raha hai? Ek console.log lagao button ke andar confirm karne ke liye
+Kya camera-permission-request call ho rahi hai? Agar permission already granted/denied hai, kya woh silently fail ho rahi hai kisi wajah se (jaise Expo Go mein koi native-check pehle hi crash/return kar raha ho body-detection-module ke missing hone ki wajah se, jisse pura flow hi block ho raha hai, camera tak nahi pahunch pa raha)
+Kya poora feature ek single component mein hai jahan camera aur detection dono ek saath initialize hote hain — agar aisa hai, to detection-module ka silent-fail poore component (camera-part sameet) ko crash/block kar sakta hai. Agar aisa hai, to camera-preview aur detection-logic ko ALAG karna hoga taaki camera Expo Go mein bhi independently khul sake, aur sirf detection-result specifically 'Expo Go mein available nahi' jaisa clear message de
+Zaroori:
+Yeh sirf iss ek challenge-feature ka debug hai
+Baaki koi existing function mat chhedna
+Fix ke baad exact batao — kya tha root-cause, aur kya ab camera Expo Go mein khulta hai (detection na ho tab bhi), ya yeh poora feature genuinely sirf real APK par hi test ho sakta hai (agar aisa hai to bhi clearly bata do, koi silent-block na ho, kam se kam ek 'yeh feature real device par test hoga' jaisa message dikhna chahiye)"

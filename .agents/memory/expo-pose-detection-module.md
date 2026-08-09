@@ -28,9 +28,14 @@ Custom Expo module copied/adapted from reference project into `artifacts/mobile/
 ## Jump screen (artifacts/mobile/app/jump.tsx)
 - `Platform.OS === 'web'` → graceful WebFallback component (no crash)
 - Native: lazy `import()` of vision-camera, skia, expo-pose-detection to prevent web bundling issues
+- Expo Go uses a separate `expo-camera` camera-only path; VisionCamera and the custom ExpoPoseDetection module are dev-client/APK-only and must never gate camera startup.
 - Squat counter: knee angle state machine (SQUAT_DOWN_THRESHOLD=100°, STAND_UP_THRESHOLD=150°)
 - `TARGET_REPS = 10` (configurable constant at top of file)
 - On completion: `router.replace("/coming-soon")` after 500ms
+
+**Why:** Expo Go does not include the custom pose module or react-native-vision-camera. Loading those in the same `Promise.all` as the camera caused the Jump screen to remain stuck without a permission prompt or useful error.
+
+**How to apply:** Keep standard Expo camera permission/preview initialization independent, catch native detector import failures, and show a clear camera-only / real-build-required message instead of silently blocking the feature.
 
 ## app.json changes
 - Added `android.permission.CAMERA` to permissions array
