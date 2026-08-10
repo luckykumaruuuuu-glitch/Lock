@@ -126,7 +126,7 @@ export default function PaywallScreen() {
           <Text style={styles.headlineGreen}>Take Back</Text>
           <Text style={styles.headlineWhite}>your time</Text>
           <Text style={styles.subtitle}>
-            Block distracting apps and reels — stay focused, feel better every day
+            Lock distracting apps, track your Reels, and build a focus streak — with DuckPal by your side
           </Text>
         </View>
 

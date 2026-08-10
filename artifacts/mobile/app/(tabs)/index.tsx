@@ -787,8 +787,8 @@ function DuckPalScreen() {
         <Pressable onPressIn={handleTaskCardPressIn} onPressOut={handleTaskCardPressOut}>
           <Animated.View style={[styles.dpTaskCard, { transform: [{ scale: taskCardScale }], opacity: taskCardOpacity }]}>
             <View style={styles.dpTaskContent}>
-              <Text style={styles.dpTaskTitle}>Complete new tasks</Text>
-              <Text style={styles.dpTaskSub}>Lock apps and build your focus streak</Text>
+              <Text style={styles.dpTaskTitle}>Unlock Home PRO</Text>
+              <Text style={styles.dpTaskSub}>Get advanced tracking, streaks, and more with DuckPal PRO</Text>
             </View>
             <Pressable
               onPress={() => router.push("/coming-soon" as never)}
