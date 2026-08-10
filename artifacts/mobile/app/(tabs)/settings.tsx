@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -165,24 +164,14 @@ function HomeProBanner() {
       onPress={() => router.push("/coming-soon" as never)}
       style={({ pressed }) => [styles.homeProBanner, pressed && styles.homeProBannerPressed]}
     >
-      <LinearGradient
-        colors={["#7A4A0F", "#A15D0F"]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={styles.homeProBannerGradient}
-      >
-        <LinearGradient
-          colors={["#FFD97A", "#FFB347"]}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={styles.homeProBadge}
-        >
+      <View style={styles.homeProBannerContent}>
+        <View style={styles.homeProBadge}>
           <Text style={styles.homeProBadgeText}>PRO</Text>
-        </LinearGradient>
+        </View>
 
-        <Text style={styles.homeProTitle}>Home PRO</Text>
+        <Text style={styles.homeProTitle}>Home PRO at ₹1</Text>
         <Feather name="chevron-right" size={22} color="#FFFFFF" />
-      </LinearGradient>
+      </View>
     </Pressable>
   );
 }
@@ -835,11 +824,12 @@ const styles = StyleSheet.create({
   homeProBanner: {
     borderRadius: 16,
     overflow: "hidden",
+    backgroundColor: "#1C1C24",
   },
   homeProBannerPressed: {
     opacity: 0.82,
   },
-  homeProBannerGradient: {
+  homeProBannerContent: {
     minHeight: 80,
     flexDirection: "row",
     alignItems: "center",
@@ -854,11 +844,12 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#FFFFFF",
   },
   homeProBadgeText: {
     fontSize: 14,
     fontFamily: "Inter_700Bold",
-    color: "#4A2A08",
+    color: "#1C1C24",
     letterSpacing: 0.2,
   },
   homeProTitle: {
