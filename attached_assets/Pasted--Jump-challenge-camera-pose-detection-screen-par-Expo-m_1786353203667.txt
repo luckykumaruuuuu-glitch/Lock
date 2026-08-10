@@ -1,0 +1,12 @@
+"Jump-challenge (camera/pose-detection) screen par Expo mein tap karte hi ek crash-loop aa raha hai — screen khulti hi nahi, camera start nahi hota.
+Error: Cannot read property 'ReactCurrentOwner' of undefined, react-reconciler.development.js mein, jo Canvas.tsx:17 se trigger ho raha hai. Error-log counter bhi continuously badh raha hai (jaise 'Log 1 of 13', phir 14, 15, 16...) — matlab yeh crash ek baar nahi, baar-baar/loop mein ho raha hai.
+Debug karo, guess mat karo:
+Canvas.tsx file dhoondo aur batao yeh kis library ka component hai (jaise @shopify/react-native-skia, react-three-fiber, ya koi aur graphics/canvas-rendering library) — yeh pose-detection/skeleton-overlay dikhane ke liye use ho rahi hogi shayad
+Is library ka installed version check karo, aur confirm karo yeh current React version aur React Native/Expo-SDK-54 version ke saath COMPATIBLE hai ya nahi — 'ReactCurrentOwner of undefined' error classically tab aata hai jab do alag react-reconciler copies (ek library ki apni, ek React Native ki) clash karti hain, ya library ka version bahut purana/naya hai current React ke against
+Package.json mein check karo — kya is library ke multiple versions accidentally install ho gaye hain (duplicate/nested node_modules mein), ya peer-dependency mismatch hai
+Yeh bhi confirm karo — kya yeh Canvas-component sirf REAL APK/dev-build ke liye tha (jaisa VisionCamera/pose-detection module), aur Expo Go mein ise bhi properly isolate/guard karna hoga (jaisa camera-vs-pose-detection ko pehle separate kiya tha) — taaki Expo Go mein yeh Canvas load hi na ho, sirf real-build mein ho
+Loop/repeat-crash ko rokna zaroori hai — agar yeh incompatible-hai-hi Expo Go mein, to isse ek baar fail hokar clear error-message dena chahiye, baar-baar retry/crash nahi karna chahiye
+Zaroori:
+Yeh sirf is crash ka fix hai
+Baaki koi existing function (camera-fallback jo pehle fix hua tha, doosre challenges, DuckLock/DuckPal) bilkul mat chhedna
+Fix ke baad exact batao — root-cause version-mismatch tha ya kuch aur, aur ab yeh Expo Go mein kya behavior dega (clean camera-open, ya clear 'not available' message, bina crash-loop ke)"

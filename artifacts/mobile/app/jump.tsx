@@ -16,6 +16,7 @@
  */
 
 import { router } from "expo-router";
+import Constants from "expo-constants";
 import { getUnlockDestination } from "@/lib/unlockFlowState";
 import React, {
   useCallback,
@@ -156,6 +157,7 @@ function WebFallback() {
 // ─── Native jump screen ───────────────────────────────────────────────────────
 function NativeJumpScreen() {
   const insets = useSafeAreaInsets();
+  const isExpoGo = Constants.appOwnership === "expo";
 
   // Load the standard Expo camera independently from the custom detector.
   // Expo Go can provide the former, but not VisionCamera or ExpoPoseDetection.
@@ -194,6 +196,18 @@ function NativeJumpScreen() {
         if (mounted) setCameraLoadFailed(true);
       });
 
+    // Skia 1.x and the custom pose stack are native-build-only dependencies.
+    // Skia 1.12.4 bundles react-reconciler 0.27, which is incompatible with
+    // this app's React 19 / RN 0.81 pair. Do not evaluate that module in Expo
+    // Go: the import itself can crash before its Promise catch runs.
+    if (isExpoGo) {
+      console.log("[JumpScreen] Expo Go detected; using camera-only mode");
+      setDetectionUnavailable(true);
+      return () => {
+        mounted = false;
+      };
+    }
+
     // These are only available in a development/native build. If any one is
     // missing, keep the Expo camera preview alive and explain the limitation.
     Promise.all([
@@ -226,7 +240,7 @@ function NativeJumpScreen() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isExpoGo]);
 
   if (cameraLoadFailed) {
     return (
