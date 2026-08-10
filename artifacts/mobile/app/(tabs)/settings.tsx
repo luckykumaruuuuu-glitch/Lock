@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -12,6 +13,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -157,6 +159,25 @@ function ProfileSection() {
 }
 
 function HomeProBanner() {
+  const { width: screenWidth } = useWindowDimensions();
+  const shimmerX = useRef(new Animated.Value(-140)).current;
+
+  useEffect(() => {
+    const sweep = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerX, {
+          toValue: screenWidth + 140,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        Animated.delay(1600),
+      ])
+    );
+
+    sweep.start();
+    return () => sweep.stop();
+  }, [screenWidth, shimmerX]);
+
   return (
     <Pressable
       accessibilityLabel="Home PRO membership"
@@ -172,6 +193,25 @@ function HomeProBanner() {
         <Text style={styles.homeProTitle}>Home PRO at ₹1</Text>
         <Feather name="chevron-right" size={22} color="#FFFFFF" />
       </View>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.homeProShimmer,
+          { transform: [{ translateX: shimmerX }, { rotate: "22deg" }] },
+        ]}
+      >
+        <LinearGradient
+          colors={[
+            "rgba(255,255,255,0)",
+            "rgba(255,255,255,0.42)",
+            "rgba(255,255,255,0)",
+          ]}
+          locations={[0, 0.5, 1]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={styles.homeProShimmerGradient}
+        />
+      </Animated.View>
     </Pressable>
   );
 }
@@ -829,6 +869,19 @@ const styles = StyleSheet.create({
   homeProBannerPressed: {
     opacity: 0.82,
   },
+  homeProShimmer: {
+    position: "absolute",
+    top: -52,
+    left: 0,
+    width: 76,
+    height: 184,
+    opacity: 0.9,
+    zIndex: 2,
+  },
+  homeProShimmerGradient: {
+    flex: 1,
+    width: "100%",
+  },
   homeProBannerContent: {
     minHeight: 80,
     flexDirection: "row",
@@ -836,6 +889,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     gap: 12,
+    zIndex: 1,
   },
   homeProBadge: {
     minWidth: 72,
