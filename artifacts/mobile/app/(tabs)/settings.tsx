@@ -167,10 +167,10 @@ function HomeProBanner() {
       Animated.sequence([
         Animated.timing(shimmerX, {
           toValue: screenWidth + 140,
-          duration: 900,
+          duration: 2700,
           useNativeDriver: true,
         }),
-        Animated.delay(1600),
+        Animated.delay(1500),
       ])
     );
 
