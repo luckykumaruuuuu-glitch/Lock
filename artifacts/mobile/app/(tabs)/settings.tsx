@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -153,6 +154,36 @@ function ProfileSection() {
         <Text style={profileSt.email} numberOfLines={1}>{profile.email}</Text>
       )}
     </View>
+  );
+}
+
+function HomeProBanner() {
+  return (
+    <Pressable
+      accessibilityLabel="Home PRO membership"
+      accessibilityRole="button"
+      onPress={() => router.push("/coming-soon" as never)}
+      style={({ pressed }) => [styles.homeProBanner, pressed && styles.homeProBannerPressed]}
+    >
+      <LinearGradient
+        colors={["#7A4A0F", "#A15D0F"]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={styles.homeProBannerGradient}
+      >
+        <LinearGradient
+          colors={["#FFD97A", "#FFB347"]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={styles.homeProBadge}
+        >
+          <Text style={styles.homeProBadgeText}>PRO</Text>
+        </LinearGradient>
+
+        <Text style={styles.homeProTitle}>Home PRO</Text>
+        <Feather name="chevron-right" size={22} color="#FFFFFF" />
+      </LinearGradient>
+    </Pressable>
   );
 }
 
@@ -496,6 +527,9 @@ export default function SettingsScreen() {
         {/* Google account profile */}
         <ProfileSection />
 
+        {/* Premium membership shortcut */}
+        <HomeProBanner />
+
         {/* PREFERENCES */}
         <GlassCard padding={0}>
           <SoundToggleRow
@@ -796,6 +830,43 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 10,
     marginBottom: 4,
+  },
+
+  homeProBanner: {
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  homeProBannerPressed: {
+    opacity: 0.82,
+  },
+  homeProBannerGradient: {
+    minHeight: 80,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  homeProBadge: {
+    minWidth: 72,
+    height: 48,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  homeProBadgeText: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+    color: "#4A2A08",
+    letterSpacing: 0.2,
+  },
+  homeProTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+    letterSpacing: -0.2,
   },
 
   updateBadge: {
