@@ -4,3 +4,4 @@
 - [Android app-block debounce/overlay bypass](android-block-debounce-bypass.md) — global debounce vars + missing onNewIntent on singleTask overlay Activities can silently let a blocked app through.
 - [expo-pose-detection custom module](expo-pose-detection-module.md) — MediaPipe+VisionCamera custom Expo module copied to artifacts/mobile/modules/expo-pose-detection; Skia peer warnings on RN 0.81 are safe to ignore for native builds.
 - [Google Sign-In flow](google-signin-flow.md) — bottom-sheet via Modal+Animated, GOOGLE_SIGNIN_DONE_KEY guards the SetupGuard step between onboarding and setup.
+- [Native stack transition surface](native-stack-transition-surface.md) — keep the root stack content transparent; route roots own the opaque black background to avoid pop-transition gaps.

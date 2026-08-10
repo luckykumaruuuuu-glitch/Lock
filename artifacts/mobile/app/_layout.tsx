@@ -155,7 +155,10 @@ function RootLayoutNav() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: "#000000" },
+          // Every route owns its opaque black root surface. Keep the native
+          // stack itself transparent so a pop never exposes a black gap
+          // between the outgoing and returning screens.
+          contentStyle: { backgroundColor: "transparent" },
           animation: "slide_from_right",
           animationDuration: 300,
           gestureEnabled: true,

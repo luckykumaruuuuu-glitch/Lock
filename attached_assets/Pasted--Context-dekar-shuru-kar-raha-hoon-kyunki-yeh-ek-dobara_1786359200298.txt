@@ -1,0 +1,21 @@
+"Context dekar shuru kar raha hoon, kyunki yeh ek dobara-try wala kaam hai — pichle session mein isi bug par kaam hua tha, lekin credits khatam ho gaye aur koi REAL improvement nahi hua tha.
+Bug: Poori app mein (DuckLock, DuckPal, Settings, aur Settings ke andar ke sabhi options) — jab bhi user BACK-navigation karta hai (back-arrow-button se ya Android hardware-back-button se), ek visible problem aati hai:
+Current screen ka content gayab ho jaata hai
+Ek BLACK-SCREEN briefly flash hoti hai
+Uske baad target-screen aati hai
+Forward-navigation (kisi screen ke andar jaana) bilkul sahi/smooth hai — current-screen LEFT ki taraf slide-out hoti hai, nayi-screen RIGHT se slide-in hoti hai. Back-navigation mein yeh REVERSE-slide nahi ho raha, uski jagah black-flash ho raha hai.
+Pichli baar kya try hua tha (jo KAAM NAHI KIYA — dobara mat karna, ya agar zaroori lage to pehle verify karo ki woh actually apply hua tha ya nahi):
+Root _layout.tsx mein animationMatchesGesture: true set kiya gaya tha, aur presentation: 'card' explicitly pin kiya gaya tha
+Yeh sirf WEB-PREVIEW/typecheck se verify hua tha, REAL DEVICE par nahi
+Maine khud real app/Expo-Go par test kiya — koi improvement NAHI dikha, black-flash aur jhatka waisa hi tha
+Is baar karna yeh hai:
+Pehle current root _layout.tsx ka POORA code dikhao — exact animation, animationMatchesGesture, presentation, contentStyle/sceneContainerStyle values kya hain ABHI
+Fresh se, deeply debug karo — na ki pichli baar wala hi fix dobara try karo. Specifically check karo:
+Kya contentStyle/sceneContainerStyle mein background BLACK set hai kisi jagah — yeh transition ke beech mein 'gap' ki tarah expose ho sakta hai
+Kya sabhi screens same native-stack ke andar hain, ya kahin nested-navigators/multiple-stacks mix ho rahe hain (jo transition ko break kar sakta hai)
+Kya koi screen headerShown/presentation ko individually override kar rahi hai jo global-config se conflict kare
+Fix karne ke baad, MUJHE REAL-DEVICE PAR khud test karna hoga — is baar sirf 'fix ho gaya' mat bolna, exact batao ki tumne KAISE confirm kiya (agar is environment mein real-device-test possible nahi hai, to clearly bolo ki 'yeh sirf real-device par verify ho sakta hai', jhoothi confirmation mat do)
+Zaroori:
+Forward-navigation ka current (sahi) behavior bilkul mat chhedna
+Baaki koi bhi function/screen mat chhedna
+Chhote, verifiable steps mein kaam karo — ek baar mein bahut zyada mat badalna, taaki agar galat ho to pinpoint karna aasan rahe"
