@@ -1,0 +1,15 @@
+"Pichla fix (root stack ka contentStyle transparent karna) kaam nahi kiya — black-flash back-navigation mein abhi bhi hai. Is baar guess-based patch nahi, EXPLICIT reverse-animation chahiye.
+Exact requirement:
+Forward-navigation (jaisa abhi already sahi kaam kar raha hai): User kisi option/screen ke andar jaata hai → current-screen LEFT ki taraf slide karke gayab hoti hai, aur nayi-screen RIGHT se slide karke aati hai, dono screens transition ke dauraan CONNECTED/overlapping dikhti hain (smooth, no gap, no flash).
+Back-navigation ab EXACT REVERSE hona chahiye: User back-arrow ya Android hardware-back dabaye → current-screen RIGHT ki taraf slide karke gayab honi chahiye, aur PICHLI-screen LEFT se slide karke wapas aani chahiye — bilkul waisa hi smooth/connected feel, jaise forward mein hai, bas direction ulti.
+Karna yeh hai:
+Forward-push ke liye jo animation-config already hai (slide_from_right, jaisa bhi timing/easing hai) — usko bilkul mat chhedna
+Back/pop ke liye EXPLICITLY ek reverse-animation config karo — agar current React Navigation/Expo Router version mein pop ke liye alag se animation set karne ka tarika hai (per-screen ya stack-level), use karo. Agar default-native-pop is reverse-slide ko automatically nahi deta (jaisa abhi horaha hai — black-flash aa raha hai), to explicitly ek custom transition-config likho jo:
+Current-screen ko RIGHT-side slide-out kare
+Pichli-screen ko LEFT-side se slide-in kare (opacity/position dono screens ke saath simultaneously animate ho, taaki koi gap/flash na aaye)
+Yeh test karo ki koi intermediate 'blank/black' frame na ho beech mein — dono screens ko transition ke dauraan hamesha kuch-na-kuch visible/rendered rehna chahiye, kabhi dono ek saath invisible nahi honi chahiye
+Zaroori:
+Forward-navigation ka current (sahi/smooth) behavior aur timing bilkul mat badalna
+Baaki koi function/screen/route-structure mat chhedna
+Agar is library/version mein custom-reverse-transition define karna possible NA ho (technical limitation), to mujhe clearly bata do ki kyun nahi ho sakta, guess-fix mat do jo kaam na kare
+Fix ke baad clearly bolo — is baar ka change real-device par definitely reverse-slide dega, ya sirf ek partial-fix hai jise physical-device par hi confirm kiya ja sakta hai"
