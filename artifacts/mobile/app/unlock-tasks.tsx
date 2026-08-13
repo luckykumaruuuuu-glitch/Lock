@@ -110,7 +110,7 @@ function ChallengeCard({
         style={StyleSheet.absoluteFill}
       />
 
-      {/* White bold label — bottom-left */}
+      {/* White bold label — bottom-centre */}
       <Text style={styles.cardLabel}>{challenge.label}</Text>
     </Pressable>
   );
@@ -174,7 +174,7 @@ export default function UnlockTasksScreen() {
         </View>
 
         {/* ── Heading ─────────────────────────────────────────────── */}
-        <Text style={styles.heading}>Choose a challenge{"\n"}to unlock</Text>
+        <Text style={styles.heading}>Choose a challenge to unlock</Text>
 
         {/* ── 2-column card grid ─────────────────────────────────── */}
         {ROWS.map((indices, rowIdx) => (
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     paddingRight: 20,
   },
 
-  // Heading — matches Kotlin: 26sp bold, white, left-aligned
+  // Heading — matches the reference: 26sp bold, white, single line
   heading: {
     fontSize: 26,
     fontFamily: "Inter_700Bold",
@@ -259,12 +259,12 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
 
-  // White bold label — bottom-left, padding matches Kotlin (12/12/14)
+  // White bold label — bottom-centre, padding matches Kotlin (12/12/14)
   cardLabel: {
     fontSize: 14,
     fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
-    textAlign: "left",
+    textAlign: "center",
     paddingHorizontal: 12,
     paddingBottom: 14,
     lineHeight: 20,
