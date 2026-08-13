@@ -37,31 +37,31 @@ const { width: SCREEN_W } = Dimensions.get("window");
 const CHALLENGES = [
   {
     id: "phone_flip",
-    label: "Phone Flip Down",
+    label: "Scroll",
     bg: "#2A1F14",
     image: require("@/assets/challenge_phone_flip.webp"),
   },
   {
     id: "forehead",
-    label: "Forehead Scan",
+    label: "Watch",
     bg: "#112230",
     image: require("@/assets/challenge_forehead_scan.webp"),
   },
   {
     id: "walk",
-    label: "Walk",
+    label: "Circle Draw",
     bg: "#0F2018",
     image: require("@/assets/challenge_walk.webp"),
   },
   {
     id: "jump",
-    label: "Jump",
+    label: "Squat",
     bg: "#101828",
     image: require("@/assets/challenge_jump.webp"),
   },
   {
     id: "scroll",
-    label: "Scroll",
+    label: "Push Up",
     bg: "#1A1228",
     image: require("@/assets/challenge_scroll.webp"),
   },
