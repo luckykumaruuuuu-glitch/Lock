@@ -15,6 +15,7 @@
  */
 
 import { Feather } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React from "react";
@@ -34,11 +35,36 @@ const { width: SCREEN_W } = Dimensions.get("window");
 // ── Challenge definitions ─────────────────────────────────────────────────────
 // Colours match the Kotlin CHALLENGES companion-object exactly.
 const CHALLENGES = [
-  { id: "phone_flip",   label: "Phone Flip Down", bg: "#2A1F14" },
-  { id: "forehead",     label: "Forehead Scan",   bg: "#112230" },
-  { id: "walk",         label: "Walk",             bg: "#0F2018" },
-  { id: "jump",         label: "Jump",             bg: "#101828" },
-  { id: "scroll",       label: "Scroll",           bg: "#1A1228" },
+  {
+    id: "phone_flip",
+    label: "Phone Flip Down",
+    bg: "#2A1F14",
+    image: require("@/assets/challenge_phone_flip.webp"),
+  },
+  {
+    id: "forehead",
+    label: "Forehead Scan",
+    bg: "#112230",
+    image: require("@/assets/challenge_forehead_scan.webp"),
+  },
+  {
+    id: "walk",
+    label: "Walk",
+    bg: "#0F2018",
+    image: require("@/assets/challenge_walk.webp"),
+  },
+  {
+    id: "jump",
+    label: "Jump",
+    bg: "#101828",
+    image: require("@/assets/challenge_jump.webp"),
+  },
+  {
+    id: "scroll",
+    label: "Scroll",
+    bg: "#1A1228",
+    image: require("@/assets/challenge_scroll.webp"),
+  },
 ] as const;
 
 // Card layout — mirrors Kotlin geometry
@@ -71,6 +97,12 @@ function ChallengeCard({
         pressed && { opacity: 0.82 },
       ]}
     >
+      <Image
+        source={challenge.image}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+      />
+
       {/* Dark gradient overlay — transparent at top (35%) → near-black at bottom */}
       <LinearGradient
         colors={["transparent", "rgba(0,0,0,0.85)"]}
