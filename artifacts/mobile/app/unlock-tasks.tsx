@@ -101,6 +101,9 @@ function ChallengeCard({
         source={challenge.image}
         style={StyleSheet.absoluteFill}
         contentFit="cover"
+        contentPosition={
+          challenge.id === "walk" || challenge.id === "scroll" ? "left" : undefined
+        }
       />
 
       {/* Dark gradient overlay — transparent at top (35%) → near-black at bottom */}
