@@ -39,10 +39,11 @@ function getDisplayDuration(preset: string, customDays: string, customHours: str
 
 /* ── Success Screen ── */
 function SuccessScreen({
-  lockedExpiry, lockedAppCount, skippedApps, notInstalledSkipped, configured, online,
+  lockedExpiry, lockedAppCount, skippedApps, notInstalledSkipped, configured, online, embedded = false,
 }: {
   lockedExpiry: string; lockedAppCount: number; skippedApps: string[];
   notInstalledSkipped: string[]; configured: boolean; online: boolean;
+  embedded?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const shieldScale   = useRef(new Animated.Value(0)).current;
@@ -64,20 +65,24 @@ function SuccessScreen({
   }, [shieldScale, shieldOpacity, textOpacity, cardOpacity]);
 
   return (
-    <View style={[successStyles.root, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 }]}>
+    <View style={[
+      successStyles.root,
+      embedded && successStyles.embeddedRoot,
+      { paddingTop: embedded ? 0 : insets.top + 24, paddingBottom: embedded ? 0 : insets.bottom + 32 },
+    ]}>
       <Animated.View style={[successStyles.iconWrap, { transform: [{ scale: shieldScale }], opacity: shieldOpacity }]}>
-        <LinearGradient colors={["#32D74B", "#30C244"]} style={successStyles.iconCircle}>
-          <Feather name="shield" size={52} color="#000" />
+        <LinearGradient colors={["#32D74B", "#30C244"]} style={[successStyles.iconCircle, embedded && successStyles.embeddedIconCircle]}>
+          <Feather name="shield" size={embedded ? 38 : 52} color="#000" />
         </LinearGradient>
       </Animated.View>
 
-      <Animated.View style={{ opacity: textOpacity, alignItems: "center", gap: 8 }}>
-        <Text style={successStyles.title}>Lock Active</Text>
+      <Animated.View style={{ opacity: textOpacity, alignItems: "center", gap: embedded ? 4 : 8 }}>
+        <Text style={[successStyles.title, embedded && successStyles.embeddedTitle]}>Lock Active</Text>
         <Text style={successStyles.subtitle}>{lockedAppCount} app{lockedAppCount !== 1 ? "s" : ""} are now blocked</Text>
       </Animated.View>
 
       <Animated.View style={{ opacity: cardOpacity, width: "100%", gap: 12 }}>
-        <GlassCard padding={20} borderColor="rgba(50,215,75,0.12)">
+        <GlassCard padding={embedded ? 14 : 20} borderColor="rgba(50,215,75,0.12)">
           <View style={successStyles.infoRow}>
             <View style={successStyles.infoIcon}><Feather name="clock" size={15} color="#FFBF80" /></View>
             <View style={{ flex: 1 }}>
@@ -134,7 +139,7 @@ function SuccessScreen({
           </GlassCard>
         )}
 
-        <GlassCard padding={18} borderColor="rgba(255,255,255,0.06)">
+        <GlassCard padding={embedded ? 14 : 18} borderColor="rgba(255,255,255,0.06)">
           <Text style={successStyles.tipText}>Stay committed. Your future self will thank you. 💪</Text>
         </GlassCard>
       </Animated.View>
@@ -144,9 +149,12 @@ function SuccessScreen({
 
 const successStyles = StyleSheet.create({
   root:       { flex: 1, alignItems: "center", paddingHorizontal: 24, gap: 28 },
+  embeddedRoot: { flex: 0, width: "100%", paddingHorizontal: 0, gap: 14 },
   iconWrap:   { shadowColor: "#32D74B", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 32, elevation: 18 },
   iconCircle: { width: 110, height: 110, borderRadius: 36, alignItems: "center", justifyContent: "center" },
+  embeddedIconCircle: { width: 76, height: 76, borderRadius: 24 },
   title:      { fontSize: 34, fontFamily: "Inter_700Bold", color: "#FFFFFF", letterSpacing: -0.5 },
+  embeddedTitle: { fontSize: 24 },
   subtitle:   { fontSize: 15, fontFamily: "Inter_400Regular", color: "#8E8E93", textAlign: "center" },
   infoRow:    { flexDirection: "row", alignItems: "center", gap: 12 },
   infoIcon:   { width: 32, height: 32, borderRadius: 10, backgroundColor: "#2C2C2E", alignItems: "center", justifyContent: "center" },
@@ -163,6 +171,13 @@ function AgreementModal({
   appNames,
   durationText,
   expiryDate,
+  success,
+  lockedExpiry,
+  lockedAppCount,
+  skippedApps,
+  notInstalledSkipped,
+  configured,
+  online,
   onCancel,
   onAgree,
 }: {
@@ -170,6 +185,13 @@ function AgreementModal({
   appNames: string[];
   durationText: string;
   expiryDate: string;
+  success: boolean;
+  lockedExpiry: string;
+  lockedAppCount: number;
+  skippedApps: string[];
+  notInstalledSkipped: string[];
+  configured: boolean;
+  online: boolean;
   onCancel: () => void;
   onAgree: () => void;
 }) {
@@ -192,84 +214,105 @@ function AgreementModal({
     <Modal visible={visible} transparent animationType="none" onRequestClose={onCancel}>
       <Animated.View style={[agStyles.overlay, { opacity: opacityAnim }]}>
         <Animated.View style={[agStyles.sheet, { transform: [{ scale: scaleAnim }] }]}>
-
-          {/* Scrollable body */}
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-            contentContainerStyle={agStyles.scrollContent}
-          >
-            {/* Lock icon */}
-            <View style={agStyles.iconRow}>
-              <View style={agStyles.iconCircle}>
-                <Feather name="lock" size={24} color="#FFBF80" />
-              </View>
-            </View>
-
-            {/* Title */}
-            <Text style={agStyles.title}>Final Agreement</Text>
-            <View style={agStyles.titleUnderline} />
-
-            {/* Apps being locked */}
-            <View style={agStyles.infoBlock}>
-              <Text style={agStyles.infoHeading}>APPS BEING LOCKED</Text>
-              <Text style={agStyles.infoValue}>
-                {appNames.length > 0 ? appNames.join(", ") : "No apps selected"}
-              </Text>
-            </View>
-
-            {/* Lock duration */}
-            <View style={agStyles.infoBlock}>
-              <Text style={agStyles.infoHeading}>LOCK DURATION</Text>
-              <Text style={agStyles.infoValue}>{durationText}</Text>
-              <Text style={agStyles.infoSub}>Unlocks: {expiryDate}</Text>
-            </View>
-
-            <View style={agStyles.divider} />
-
-            {/* Agreement clauses */}
-            <Text style={agStyles.clauseHeading}>By agreeing, you confirm that:</Text>
-            <View style={agStyles.clauses}>
-              {[
-                "This lock CANNOT be removed before the timer expires.",
-                "You cannot uninstall this app during the lock period.",
-                "No PIN, no bypass, no exceptions.",
-                "This decision is final and irreversible.",
-              ].map((clause, i) => (
-                <View key={i} style={agStyles.clauseRow}>
-                  <View style={agStyles.bullet} />
-                  <Text style={agStyles.clauseText}>{clause}</Text>
-                </View>
-              ))}
-            </View>
-          </ScrollView>
-
-          <View style={agStyles.divider} />
-
-          {/* Buttons — outside scroll, always visible */}
-          <View style={agStyles.btnRow}>
-            <Pressable
-              onPress={onCancel}
-              style={({ pressed }) => [agStyles.cancelBtn, { opacity: pressed ? 0.65 : 1 }]}
+          {success ? (
+            /* Reuse the existing Lock Active UI, now inside this same modal sheet. */
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+              style={agStyles.successScroll}
+              contentContainerStyle={agStyles.successScrollContent}
             >
-              <Text style={agStyles.cancelText}>Cancel</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={onAgree}
-              style={({ pressed }) => [{ flex: 1, opacity: pressed ? 0.85 : 1 }]}
-            >
-              <LinearGradient
-                colors={["#FFBF80", "#FFA660"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={agStyles.agreeBtn}
+              <SuccessScreen
+                embedded
+                lockedExpiry={lockedExpiry}
+                lockedAppCount={lockedAppCount}
+                skippedApps={skippedApps}
+                notInstalledSkipped={notInstalledSkipped}
+                configured={configured}
+                online={online}
+              />
+            </ScrollView>
+          ) : (
+            <>
+              {/* Scrollable body */}
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+                contentContainerStyle={agStyles.scrollContent}
               >
-                <Feather name="lock" size={16} color="#000000" />
-                <Text style={agStyles.agreeText}>I Agree &amp; Lock</Text>
-              </LinearGradient>
-            </Pressable>
-          </View>
+                {/* Lock icon */}
+                <View style={agStyles.iconRow}>
+                  <View style={agStyles.iconCircle}>
+                    <Feather name="lock" size={24} color="#FFBF80" />
+                  </View>
+                </View>
+
+                {/* Title */}
+                <Text style={agStyles.title}>Final Agreement</Text>
+                <View style={agStyles.titleUnderline} />
+
+                {/* Apps being locked */}
+                <View style={agStyles.infoBlock}>
+                  <Text style={agStyles.infoHeading}>APPS BEING LOCKED</Text>
+                  <Text style={agStyles.infoValue}>
+                    {appNames.length > 0 ? appNames.join(", ") : "No apps selected"}
+                  </Text>
+                </View>
+
+                {/* Lock duration */}
+                <View style={agStyles.infoBlock}>
+                  <Text style={agStyles.infoHeading}>LOCK DURATION</Text>
+                  <Text style={agStyles.infoValue}>{durationText}</Text>
+                  <Text style={agStyles.infoSub}>Unlocks: {expiryDate}</Text>
+                </View>
+
+                <View style={agStyles.divider} />
+
+                {/* Agreement clauses */}
+                <Text style={agStyles.clauseHeading}>By agreeing, you confirm that:</Text>
+                <View style={agStyles.clauses}>
+                  {[
+                    "This lock CANNOT be removed before the timer expires.",
+                    "You cannot uninstall this app during the lock period.",
+                    "No PIN, no bypass, no exceptions.",
+                    "This decision is final and irreversible.",
+                  ].map((clause, i) => (
+                    <View key={i} style={agStyles.clauseRow}>
+                      <View style={agStyles.bullet} />
+                      <Text style={agStyles.clauseText}>{clause}</Text>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+
+              <View style={agStyles.divider} />
+
+              {/* Buttons — outside scroll, always visible */}
+              <View style={agStyles.btnRow}>
+                <Pressable
+                  onPress={onCancel}
+                  style={({ pressed }) => [agStyles.cancelBtn, { opacity: pressed ? 0.65 : 1 }]}
+                >
+                  <Text style={agStyles.cancelText}>Cancel</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={onAgree}
+                  style={({ pressed }) => [{ flex: 1, opacity: pressed ? 0.85 : 1 }]}
+                >
+                  <LinearGradient
+                    colors={["#FFBF80", "#FFA660"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={agStyles.agreeBtn}
+                  >
+                    <Feather name="lock" size={16} color="#000000" />
+                    <Text style={agStyles.agreeText}>I Agree &amp; Lock</Text>
+                  </LinearGradient>
+                </Pressable>
+              </View>
+            </>
+          )}
         </Animated.View>
       </Animated.View>
     </Modal>
@@ -297,6 +340,8 @@ const agStyles = StyleSheet.create({
     gap: 12,
   },
   scrollContent: { gap: 10, paddingBottom: 4 },
+  successScroll: { width: "100%" },
+  successScrollContent: { flexGrow: 1, alignItems: "center" },
   iconRow:    { alignItems: "center" },
   iconCircle: { width: 52, height: 52, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,191,128,0.12)", borderWidth: 1, borderColor: "rgba(255,191,128,0.2)" },
   title:      { fontSize: 20, fontFamily: "Inter_700Bold", color: "#FFFFFF", textAlign: "center" },
@@ -354,7 +399,6 @@ export default function ConfirmScreen() {
   const appNames     = selection.selectedApps.map(a => a.name);
 
   async function doLock() {
-    setShowAgreement(false);
     if (saving) return;
     setSaving(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -374,21 +418,6 @@ export default function ConfirmScreen() {
     } catch {
       setSaving(false);
     }
-  }
-
-  if (locked) {
-    return (
-      <GradientBackground>
-        <SuccessScreen
-          lockedExpiry={lockedExpiry}
-          lockedAppCount={lockedAppCount}
-          skippedApps={skippedApps}
-          notInstalledSkipped={notInstalledSkipped}
-          configured={configured}
-          online={online}
-        />
-      </GradientBackground>
-    );
   }
 
   return (
@@ -504,7 +533,14 @@ export default function ConfirmScreen() {
         appNames={appNames}
         durationText={durationText}
         expiryDate={expiryDate}
-        onCancel={() => setShowAgreement(false)}
+        success={locked}
+        lockedExpiry={lockedExpiry}
+        lockedAppCount={lockedAppCount}
+        skippedApps={skippedApps}
+        notInstalledSkipped={notInstalledSkipped}
+        configured={configured}
+        online={online}
+        onCancel={() => { if (!saving && !locked) setShowAgreement(false); }}
         onAgree={doLock}
       />
       </View>{/* end safe-area wrapper */}
