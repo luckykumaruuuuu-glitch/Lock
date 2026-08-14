@@ -72,7 +72,7 @@ function SuccessScreen({
       { paddingTop: embedded ? 0 : insets.top + 24, paddingBottom: embedded ? 0 : insets.bottom + 32 },
     ]}>
       <Animated.View style={[successStyles.iconWrap, { transform: [{ scale: shieldScale }], opacity: shieldOpacity }]}>
-        <SuccessConfettiAnimation size={embedded ? 76 : 110} />
+        <SuccessConfettiAnimation size={embedded ? 120 : 160} />
       </Animated.View>
 
       <Animated.View style={{ opacity: textOpacity, alignItems: "center", gap: embedded ? 4 : 8 }}>
