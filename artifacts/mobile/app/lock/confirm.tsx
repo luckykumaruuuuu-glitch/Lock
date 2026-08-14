@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientBackground } from "@/components/ui/GradientBackground";
+import { SuccessConfettiAnimation } from "@/components/ui/SuccessConfettiAnimation";
 import { useFirebaseSyncContext } from "@/context/FirebaseSyncContext";
 import { useLock } from "@/context/LockContext";
 import { formatExpiryDate, getDurationMs } from "@/hooks/useLockStorage";
@@ -71,9 +72,7 @@ function SuccessScreen({
       { paddingTop: embedded ? 0 : insets.top + 24, paddingBottom: embedded ? 0 : insets.bottom + 32 },
     ]}>
       <Animated.View style={[successStyles.iconWrap, { transform: [{ scale: shieldScale }], opacity: shieldOpacity }]}>
-        <LinearGradient colors={["#32D74B", "#30C244"]} style={[successStyles.iconCircle, embedded && successStyles.embeddedIconCircle]}>
-          <Feather name="shield" size={embedded ? 38 : 52} color="#000" />
-        </LinearGradient>
+        <SuccessConfettiAnimation size={embedded ? 76 : 110} />
       </Animated.View>
 
       <Animated.View style={{ opacity: textOpacity, alignItems: "center", gap: embedded ? 4 : 8 }}>

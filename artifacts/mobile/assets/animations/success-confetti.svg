@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-960 -960 1920 1920" fill="none">
+  <title>Success confetti animation source</title>
+  <desc>
+    Native implementation in components/ui/SuccessConfettiAnimation.tsx
+    replaces the source SMIL timeline with React Native Animated.
+  </desc>
+  <circle cx="0" cy="0" r="346.667" fill="#1E71ED"/>
+  <circle cx="0" cy="0" r="346.667" fill="#50D05C"/>
+  <path d="M-153.033 0.588 L-51.404 102.218 L151.749 -100.935" stroke="#fff" stroke-width="55" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

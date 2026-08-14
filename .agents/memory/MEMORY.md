@@ -5,3 +5,4 @@
 - [expo-pose-detection custom module](expo-pose-detection-module.md) — MediaPipe+VisionCamera custom Expo module copied to artifacts/mobile/modules/expo-pose-detection; Skia peer warnings on RN 0.81 are safe to ignore for native builds.
 - [Google Sign-In flow](google-signin-flow.md) — bottom-sheet via Modal+Animated, GOOGLE_SIGNIN_DONE_KEY guards the SetupGuard step between onboarding and setup.
 - [Native stack custom transitions](native-stack-transition-surface.md) — native-stack has no separate pop interpolator; transparent root content was tested and did not remove the black flash.
+- [SMIL SVG animations](smil-svg-native.md) — react-native-svg does not execute SMIL; preserve vector geometry and drive the timeline with native React Native animation layers.
