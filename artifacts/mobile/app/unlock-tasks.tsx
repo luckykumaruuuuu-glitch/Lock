@@ -142,8 +142,11 @@ export default function UnlockTasksScreen() {
       router.push("/walk");
       return;
     }
-    // Scroll — wired up later
-    console.log(`[UnlockTasks] Card tapped: ${id}`);
+    if (id === "scroll") {
+      console.log("[UnlockTasks] Push Up challenge tapped — navigating to /pushup");
+      router.push("/pushup");
+      return;
+    }
   }
 
   function handleBack() {
