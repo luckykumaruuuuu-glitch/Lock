@@ -1,0 +1,15 @@
+"Context dekar shuru kar raha hoon, kyunki yeh ek naye-account/session mein transfer hua project hai — pichli baar credits khatam ho gaye, is task ka sirf ek chhota hissa pending reh gaya.
+Background: App-lock lagate waqt ek 'I Agree' popup khulta hai. User 'I Agree' dabata hai to usi popup ke andar (koi naya route/screen nahi) 'Lock Active' confirmation-content dikhta hai — yeh existing content-swap already implement hai (artifacts/mobile/app/lock/confirm.tsx mein), auto-close 2-second-timer ke saath.
+Is 'Lock Active' content ke top-side mein ek animation hai — SuccessConfettiAnimation.tsx naam ka naya component (artifacts/mobile/components/ui/), jo asset artifacts/mobile/assets/animations/success-confetti.svg use karta hai. Yeh animation: blue-circle bounce-scale-in → green-circle-reveal → checkmark progressive-stroke-draw → confetti-burst, 3-second timing mein.
+Ab tak kya-kya fix hua is component par:
+Size chhota tha (76×76 popup / 110×110 full-screen), isse BADA kiya gaya — 120×120 (popup) aur 160×160 (full-screen)
+Success-sound-effect maanga gaya tha, lekin project mein koi actual audio-file (.mp3/.wav) available nahi hai. Existing useSounds.playSuccess() sirf haptic + web-par-generated-tone deta hai, real audio-asset nahi — isliye AUDIO IDEA CHHOD DIYA GAYA.
+Yeh PENDING kaam hai jo abhi karna hai:
+Audio ke bajaye, ek HAPTIC-feedback (vibration) add karni hai — jab SuccessConfettiAnimation trigger ho (matlab jab user 'I Agree' dabaye aur 'Lock Active' animation shuru ho), us EXACT moment par ek 'success'-type haptic-impact bajni chahiye.
+Zaroori:
+Yeh haptic app ke EXISTING Sound-Effects-toggle (Settings screen mein) se INDEPENDENT rahega — us toggle ka sirf existing touch-sounds (jaise duck-icon-tap) se lena-dena hai. Chahe Sound-Effects-toggle ON ho ya OFF, yeh naya success-haptic HAMESHA trigger honi chahiye
+Pehle poore codebase mein check karo — kya expo-haptics (ya koi aur haptic-library) already installed/use ho rahi hai kahin (jaise duck-icon-touch mein) — agar haan, USI ko reuse karo, koi nayi dependency mat install karo
+Haptic-type 'success/notification'-style ka ho (medium-impact ya notification-success-feedback), simple light-tap nahi
+SuccessConfettiAnimation ka size/design/timing (jo already fix ho chuka hai) BILKUL mat chhedna
+Popup ka baaki content/lock-logic/Firebase-sync/auto-close-timer bilkul mat chhedna
+Fix ke baad exact batao — kaunsi haptic-API/pattern use hui, aur confirm karo ki yeh Sound-Effects-toggle se independent hai

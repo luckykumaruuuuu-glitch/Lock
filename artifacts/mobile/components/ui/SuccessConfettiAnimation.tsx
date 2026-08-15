@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import * as Haptics from "expo-haptics";
 import { Animated, Easing, StyleSheet, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 
@@ -30,6 +31,7 @@ export function SuccessConfettiAnimation({ size }: SuccessConfettiAnimationProps
 
   useEffect(() => {
     progress.setValue(0);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     const loop = Animated.loop(
       Animated.timing(progress, {
         toValue: 1,
