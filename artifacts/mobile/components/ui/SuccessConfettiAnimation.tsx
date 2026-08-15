@@ -3,7 +3,10 @@ import * as Haptics from "expo-haptics";
 import { Animated, Easing, StyleSheet, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 
+import { playSuccessSound, prepareSuccessSound } from "./successSound";
+
 const AnimatedPath = Animated.createAnimatedComponent(Path);
+prepareSuccessSound();
 
 const COLORS = {
   blue: "#1E71ED",
@@ -32,6 +35,7 @@ export function SuccessConfettiAnimation({ size }: SuccessConfettiAnimationProps
   useEffect(() => {
     progress.setValue(0);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    playSuccessSound();
     const loop = Animated.loop(
       Animated.timing(progress, {
         toValue: 1,
